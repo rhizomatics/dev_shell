@@ -1,34 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" shape-rendering="crispEdges">
-  <!-- PIE: a slice of cherry pie, drawn in the chunky flat-shaded style of a
-       late-90s Visual Basic icon (hard 2px outlines, no gradients/blur). -->
+  <!-- A thick slice of cherry pie, crust to the left, tip to the right - drawn in
+       the chunky flat-shaded style of an early-90s (Visual Basic 3) icon: hard
+       2px outlines, no gradients/blur, a front "cut face" wall to show it's a
+       solid wedge rather than a flat (pizza-like) top-down shape. -->
 
   <!-- ground shadow -->
-  <ellipse cx="34" cy="57" rx="22" ry="4" fill="#000000" opacity="0.18"/>
+  <ellipse cx="28" cy="62" rx="22" ry="3.5" fill="#000000" opacity="0.18"/>
 
-  <!-- filling (the wedge body) -->
-  <path d="M 14.0,55.0 L 21.5,12.7 L 27.3,14.1 L 32.8,16.4 L 38.0,19.4 L 42.8,23.0 L 46.9,27.4 L 50.5,32.2 L 53.3,37.5 L 55.3,43.1 L 56.6,49.0 Z"
+  <!-- front cut-face wall (the slice's cross-section: crust then filling) -->
+  <path d="M 50.0,30.0 L 12.0,46.0 L 12.0,59.0 L 50.0,43.0 Z"
         fill="#C23B4B" stroke="#3B2412" stroke-width="2.5" stroke-linejoin="miter"/>
-
-  <!-- cherries in the filling -->
-  <circle cx="28.3" cy="34.5" r="3.4" fill="#7A1F2B" stroke="#3B2412" stroke-width="1.2"/>
-  <circle cx="26.9" cy="33.1" r="1.0" fill="#E8A3AD"/>
-  <circle cx="30.1" cy="44.9" r="3.0" fill="#7A1F2B" stroke="#3B2412" stroke-width="1.2"/>
-  <circle cx="28.9" cy="43.7" r="0.9" fill="#E8A3AD"/>
-  <circle cx="39.7" cy="46.7" r="3.2" fill="#7A1F2B" stroke="#3B2412" stroke-width="1.2"/>
-  <circle cx="38.4" cy="45.4" r="0.9" fill="#E8A3AD"/>
-
-  <!-- crust (crimped rim along the outer edge) -->
-  <path d="M 21.5,12.7 L 27.3,14.1 L 32.8,16.4 L 38.0,19.4 L 42.8,23.0 L 46.9,27.4 L 50.5,32.2 L 53.3,37.5 L 55.3,43.1 L 56.6,49.0 L 46.7,50.4 L 45.7,45.9 L 44.1,41.6 L 42.0,37.5 L 39.3,33.8 L 36.1,30.5 L 32.5,27.6 L 28.5,25.3 L 24.2,23.6 L 19.7,22.5 Z"
+  <path d="M 50.0,39.1 L 12.0,55.1 L 12.0,59.0 L 50.0,43.0 Z"
         fill="#D2A054" stroke="#3B2412" stroke-width="2.5" stroke-linejoin="miter"/>
 
-  <!-- crimp marks -->
-  <circle cx="28.2" cy="19.8" r="1.6" fill="#A67C3D"/>
-  <circle cx="35.2" cy="23.5" r="1.6" fill="#A67C3D"/>
-  <circle cx="41.3" cy="28.6" r="1.6" fill="#A67C3D"/>
-  <circle cx="46.2" cy="34.9" r="1.6" fill="#A67C3D"/>
-  <circle cx="49.7" cy="42.0" r="1.6" fill="#A67C3D"/>
+  <!-- crust rim bulge along the left edge -->
+  <path d="M 12.0,8.0 L 12.0,46.0 L 8.0,46.0 L 8.0,8.0 Z"
+        fill="#D2A054" stroke="#3B2412" stroke-width="2.5" stroke-linejoin="miter"/>
 
-  <!-- hard specular highlight, 90s-icon style (flat patch, no gradient) -->
-  <path d="M 21.2,14.1 L 26.8,15.5 L 32.2,17.7 L 37.2,20.6 L 33.3,26.4 L 29.1,24.0 L 24.7,22.2 L 20.0,21.0 Z"
-        fill="#F5DDA3"/>
+  <!-- top surface (filling exposed) -->
+  <path d="M 50.0,30.0 L 12.0,46.0 L 12.0,8.0 Z"
+        fill="#C23B4B" stroke="#3B2412" stroke-width="2.5" stroke-linejoin="miter"/>
+
+  <!-- berries baked into the top -->
+  <circle cx="30" cy="20" r="3.2" fill="#7A1F2B" stroke="#3B2412" stroke-width="1.2"/>
+  <circle cx="28.7" cy="18.7" r="0.9" fill="#E8A3AD"/>
+  <circle cx="24" cy="30" r="3.0" fill="#7A1F2B" stroke="#3B2412" stroke-width="1.2"/>
+  <circle cx="22.8" cy="28.8" r="0.9" fill="#E8A3AD"/>
+  <circle cx="34" cy="34" r="2.6" fill="#7A1F2B" stroke="#3B2412" stroke-width="1.2"/>
+  <circle cx="33" cy="33" r="0.8" fill="#E8A3AD"/>
+
+  <!-- crimp marks down the crust rim -->
+  <circle cx="10" cy="8" r="1.5" fill="#A67C3D"/>
+  <circle cx="10" cy="15.6" r="1.5" fill="#A67C3D"/>
+  <circle cx="10" cy="23.2" r="1.5" fill="#A67C3D"/>
+  <circle cx="10" cy="30.8" r="1.5" fill="#A67C3D"/>
+  <circle cx="10" cy="38.4" r="1.5" fill="#A67C3D"/>
+  <circle cx="10" cy="46" r="1.5" fill="#A67C3D"/>
+
+  <!-- hard specular highlight on the top surface, 90s-icon style (flat patch) -->
+  <path d="M 12.0,8.0 L 12.0,20.0 L 23.0,14.0 Z" fill="#F08FA0"/>
 </svg>
