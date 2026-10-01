@@ -20,8 +20,12 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_sessions)
 
 
-def _manager(hass: HomeAssistant) -> SessionManager:
-    return hass.data[DOMAIN]
+def _manager(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> SessionManager | None:
+    if (manager := hass.data.get(DOMAIN)) is None:
+        connection.send_error(msg["id"], "not_loaded", "Hass Shell integration is not loaded")
+    return manager
 
 
 @websocket_api.require_admin
@@ -37,8 +41,9 @@ def _manager(hass: HomeAssistant) -> SessionManager:
 async def ws_exec(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
-    session = _manager(hass).get(msg["session"])
-    result = await session.run(msg["code"], msg.get("timeout"))
+    if (manager := _manager(hass, connection, msg)) is None:
+        return
+    result = await manager.get(msg["session"]).run(msg["code"], msg.get("timeout"))
     connection.send_result(msg["id"], result.as_dict())
 
 
@@ -53,7 +58,9 @@ async def ws_exec(
 def ws_reset(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
-    connection.send_result(msg["id"], {"reset": _manager(hass).reset(msg["session"])})
+    if (manager := _manager(hass, connection, msg)) is None:
+        return
+    connection.send_result(msg["id"], {"reset": manager.reset(msg["session"])})
 
 
 @websocket_api.require_admin
@@ -62,4 +69,6 @@ def ws_reset(
 def ws_sessions(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
-    connection.send_result(msg["id"], {"sessions": _manager(hass).describe()})
+    if (manager := _manager(hass, connection, msg)) is None:
+        return
+    connection.send_result(msg["id"], {"sessions": manager.describe()})

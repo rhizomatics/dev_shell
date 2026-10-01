@@ -153,6 +153,6 @@ hass.states.get("light.kitchen_lights").state
 PY
 ```
 
-On a real instance, add `dev_shell:` to `configuration.yaml`, then set `HASS_URL` and `HASS_TOKEN` (an admin long-lived token).
+On a real instance, install via HACS and add **Home Assistant Developer Shell** from Settings → Devices & services → Add integration (or add `dev_shell:` to `configuration.yaml`, which is imported as a config entry), then set `HASS_URL` and `HASS_TOKEN` (an admin long-lived token).
 
 Tests: `uv run pytest` covers the engine without needing HA.

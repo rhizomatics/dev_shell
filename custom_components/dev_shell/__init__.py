@@ -1,6 +1,7 @@
 """Hass Shell: a live Python REPL inside Home Assistant, served over the websocket API.
 
-Enabled with `dev_shell:` in configuration.yaml. Executes arbitrary code as admin; never
+Set up from Settings > Devices & services > Add integration, or with `dev_shell:` in
+configuration.yaml (imported as a config entry). Executes arbitrary code as admin; never
 enable it on an instance where admin accounts are not fully trusted.
 """
 
@@ -8,6 +9,7 @@ from __future__ import annotations
 
 import logging
 
+from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
@@ -24,11 +26,28 @@ CONFIG_SCHEMA = cv.empty_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    # Commands stay registered for the life of the process (HA has no unregister);
+    # they report an error while no config entry is loaded.
+    websocket_api.async_register(hass)
+    if DOMAIN in config:
+        hass.async_create_task(
+            hass.config_entries.flow.async_init(
+                DOMAIN, context={"source": SOURCE_IMPORT}, data={}
+            )
+        )
+    return True
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN] = SessionManager(
         {"hass": hass, "obj": ObjTree(hass), "open": open_target}
     )
-    websocket_api.async_register(hass)
     _LOGGER.warning(
         "Hass Shell is enabled: admin users can execute arbitrary Python in this instance"
     )
+    return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    hass.data.pop(DOMAIN, None)
     return True
