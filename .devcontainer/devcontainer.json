@@ -1,0 +1,20 @@
+// Throwaway Home Assistant for developing dev_shell: HA runs from pip inside this container,
+// with custom_components/dev_shell symlinked into dev/config. Start it with: dev/run-ha.sh
+{
+  "name": "dev_shell dev (Home Assistant)",
+  "image": "mcr.microsoft.com/devcontainers/python:3.14",
+  "forwardPorts": [8123],
+  "portsAttributes": { "8123": { "label": "Home Assistant" } },
+  "containerEnv": {
+    // Keep the container's virtualenvs off the bind-mounted workspace, so they
+    // don't clobber the host's macOS .venv.
+    "UV_PROJECT_ENVIRONMENT": "/home/vscode/.venv-hass-shell",
+    "HA_VENV": "/home/vscode/.venv-ha"
+  },
+  "postCreateCommand": "dev/setup.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python", "charliermarsh.ruff"]
+    }
+  }
+}
