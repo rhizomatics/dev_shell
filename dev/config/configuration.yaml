@@ -1,0 +1,11 @@
+# Dev instance for Hass Shell. Kept lean (no default_config) so it runs from a plain pip
+# install; `demo:` provides sample entities to poke at.
+frontend:
+config:
+demo:
+dev_shell:
+
+logger:
+  default: info
+  logs:
+    custom_components.dev_shell: debug

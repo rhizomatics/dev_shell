@@ -1,0 +1,11 @@
+{
+  "domain": "dev_shell",
+  "name": "Home Assistant Developer Shell",
+  "codeowners": [],
+  "dependencies": ["websocket_api"],
+  "documentation": "https://github.com/",
+  "integration_type": "system",
+  "iot_class": "local_push",
+  "requirements": [],
+  "version": "0.1.0"
+}

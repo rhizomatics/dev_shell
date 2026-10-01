@@ -1,0 +1,50 @@
+# help(obj) documents an object's *type*, which isn't very discoverable for core
+# Home Assistant classes - there's no narrative docstring pointing you at the real
+# developer docs. This maps a class's fully-qualified name ("<module>.<qualname>",
+# exactly as session.py computes it from type(obj)) to the page that documents it.
+#
+# Entries here are shown as a "See also:" line appended to help()'s output.
+
+homeassistant.core.HomeAssistant: https://developers.home-assistant.io/docs/dev_101_hass
+homeassistant.helpers.entity.Entity: https://developers.home-assistant.io/docs/core/entity
+homeassistant.helpers.entity_registry.EntityRegistry: https://developers.home-assistant.io/docs/entity_registry_index
+homeassistant.helpers.device_registry.DeviceRegistry: https://developers.home-assistant.io/docs/device_registry_index
+homeassistant.helpers.area_registry.AreaRegistry: https://developers.home-assistant.io/docs/area_registry_index
+# Per-domain entity base classes, one per platform that gets its own page under
+# https://developers.home-assistant.io/docs/core/entity/<slug> (confirmed against
+# the site's sitemap.xml - slugs mostly swap "_" for "-", except wake_word).
+homeassistant.components.alarm_control_panel.AlarmControlPanelEntity: https://developers.home-assistant.io/docs/core/entity/alarm-control-panel
+homeassistant.components.assist_satellite.entity.AssistSatelliteEntity: https://developers.home-assistant.io/docs/core/entity/assist-satellite
+homeassistant.components.binary_sensor.BinarySensorEntity: https://developers.home-assistant.io/docs/core/entity/binary-sensor
+homeassistant.components.button.ButtonEntity: https://developers.home-assistant.io/docs/core/entity/button
+homeassistant.components.calendar.CalendarEntity: https://developers.home-assistant.io/docs/core/entity/calendar
+homeassistant.components.camera.Camera: https://developers.home-assistant.io/docs/core/entity/camera
+homeassistant.components.climate.ClimateEntity: https://developers.home-assistant.io/docs/core/entity/climate
+homeassistant.components.cover.CoverEntity: https://developers.home-assistant.io/docs/core/entity/cover
+homeassistant.components.device_tracker.entity.TrackerEntity: https://developers.home-assistant.io/docs/core/entity/device-tracker
+homeassistant.components.event.EventEntity: https://developers.home-assistant.io/docs/core/entity/event
+homeassistant.components.fan.FanEntity: https://developers.home-assistant.io/docs/core/entity/fan
+homeassistant.components.humidifier.HumidifierEntity: https://developers.home-assistant.io/docs/core/entity/humidifier
+homeassistant.components.image.ImageEntity: https://developers.home-assistant.io/docs/core/entity/image
+homeassistant.components.lawn_mower.LawnMowerEntity: https://developers.home-assistant.io/docs/core/entity/lawn-mower
+homeassistant.components.light.LightEntity: https://developers.home-assistant.io/docs/core/entity/light
+homeassistant.components.lock.LockEntity: https://developers.home-assistant.io/docs/core/entity/lock
+homeassistant.components.media_player.MediaPlayerEntity: https://developers.home-assistant.io/docs/core/entity/media-player
+homeassistant.components.notify.NotifyEntity: https://developers.home-assistant.io/docs/core/entity/notify
+homeassistant.components.number.NumberEntity: https://developers.home-assistant.io/docs/core/entity/number
+homeassistant.components.remote.RemoteEntity: https://developers.home-assistant.io/docs/core/entity/remote
+homeassistant.components.scene.Scene: https://developers.home-assistant.io/docs/core/entity/scene
+homeassistant.components.select.SelectEntity: https://developers.home-assistant.io/docs/core/entity/select
+homeassistant.components.sensor.SensorEntity: https://developers.home-assistant.io/docs/core/entity/sensor
+homeassistant.components.siren.SirenEntity: https://developers.home-assistant.io/docs/core/entity/siren
+homeassistant.components.stt.SpeechToTextEntity: https://developers.home-assistant.io/docs/core/entity/stt
+homeassistant.components.switch.SwitchEntity: https://developers.home-assistant.io/docs/core/entity/switch
+homeassistant.components.text.TextEntity: https://developers.home-assistant.io/docs/core/entity/text
+homeassistant.components.todo.TodoListEntity: https://developers.home-assistant.io/docs/core/entity/todo
+homeassistant.components.tts.entity.TextToSpeechEntity: https://developers.home-assistant.io/docs/core/entity/tts
+homeassistant.components.update.UpdateEntity: https://developers.home-assistant.io/docs/core/entity/update
+homeassistant.components.vacuum.StateVacuumEntity: https://developers.home-assistant.io/docs/core/entity/vacuum
+homeassistant.components.valve.entity.ValveEntity: https://developers.home-assistant.io/docs/core/entity/valve
+homeassistant.components.wake_word.WakeWordDetectionEntity: https://developers.home-assistant.io/docs/core/entity/wake_word
+homeassistant.components.water_heater.WaterHeaterEntity: https://developers.home-assistant.io/docs/core/entity/water-heater
+homeassistant.components.weather.WeatherEntity: https://developers.home-assistant.io/docs/core/entity/weather
