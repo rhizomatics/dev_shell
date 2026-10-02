@@ -30,7 +30,7 @@ registry-less follow-up.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 
 from homeassistant.core import HomeAssistant
@@ -56,13 +56,18 @@ def _get_entity(hass: HomeAssistant, entity_id: str) -> Entity | None:
 
 
 @dataclass(frozen=True)
-class ObjTree:
+class ObjTree(Mapping[str, "Entity | ObjTree"]):
     """A view of the object tree, optionally restricted to a subtree.
 
     `integration` and/or `domain` pin this view to that part of the tree -
     the way `obj["/alexa_devices"]` or `obj["/alexa_devices/media_player"]`
     does. Indexing a restricted view only needs the remaining path segments,
     given either as a single "a/b" string or one segment at a time.
+
+    Implementing collections.abc.Mapping (on top of __getitem__, __iter__ and
+    __len__) gets `in`, .get(), and real KeysView/ItemsView/ValuesView from
+    .keys()/.items()/.values() for free, consistent with any other dict-like
+    object.
     """
 
     hass: HomeAssistant
@@ -121,9 +126,3 @@ class ObjTree:
         scope = "/".join(p for p in (self.integration, self.domain) if p is not None)
         label = f"obj:/{scope}" if scope else "obj"
         return f"<{label}: {len(self)} entities>"
-
-    def keys(self) -> Iterator[str]:
-        return iter(self)
-
-    def values(self) -> Iterator[Entity]:
-        return (self[key] for key in self)
