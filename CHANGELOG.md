@@ -1,6 +1,6 @@
 # What's New
 
-## 0.0.1
+## 0.1.0
 
 Initial working shell, useful in both `api` (API use only) and `custom` (custom server component) modes.
 
