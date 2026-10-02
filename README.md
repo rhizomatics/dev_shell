@@ -1,6 +1,6 @@
 # Developer Shell for Home Assistant 
 
-<img src="./assets/icon.png" width="128" height="128" align="left" alt="A slice of cherry pie, drawn like a 1990s Visual Basic icon">
+<img src="https://rhizomatics.github.io/dev_shell/assets/icon.png" width="128" height="128" align="left" alt="A slice of cherry pie, drawn like a 1990s Visual Basic icon">
 
 A Home Assistant environment designed for custom component developers, tinkerers and native Python speakers. Makes it easy as pie!
 
