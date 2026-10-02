@@ -47,7 +47,7 @@ async def run_api_repl(client: Client, ttl: float) -> int:
     lines: list[str] = []
     while True:
         try:
-            line = await prompt.prompt_async("... " if lines else "api> ")
+            line = await prompt.prompt_async("... " if lines else ">>> ")
         except KeyboardInterrupt:
             lines.clear()
             continue

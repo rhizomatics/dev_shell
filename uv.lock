@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.14"
 resolution-markers = [
     "python_full_version >= '3.15'",
@@ -2087,6 +2087,7 @@ docs = [
     { name = "mkdocs-autorefs" },
     { name = "mkdocs-coverage" },
     { name = "mkdocs-git-revision-date-localized-plugin" },
+    { name = "mkdocs-homepage-copier" },
     { name = "mkdocs-htmlproofer-plugin" },
     { name = "mkdocs-materialx" },
     { name = "mkdocs-meta-descriptions-plugin" },
@@ -2094,6 +2095,7 @@ docs = [
     { name = "mkdocs-pagetree-plugin" },
     { name = "properdocs" },
     { name = "pymdown-extensions" },
+    { name = "termynal" },
 ]
 
 [package.metadata]
@@ -2128,6 +2130,7 @@ docs = [
     { name = "mkdocs-autorefs" },
     { name = "mkdocs-coverage" },
     { name = "mkdocs-git-revision-date-localized-plugin" },
+    { name = "mkdocs-homepage-copier" },
     { name = "mkdocs-htmlproofer-plugin" },
     { name = "mkdocs-materialx" },
     { name = "mkdocs-meta-descriptions-plugin" },
@@ -2135,6 +2138,7 @@ docs = [
     { name = "mkdocs-pagetree-plugin" },
     { name = "properdocs" },
     { name = "pymdown-extensions" },
+    { name = "termynal" },
 ]
 
 [[package]]
@@ -2605,6 +2609,17 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f1/a7/ded2f0e2321213862225f9f657a51493af8f92626e3dd0a02ce9ef9b1131/mkdocs_git_revision_date_localized_plugin-1.6.0.tar.gz", hash = "sha256:469af4b344a4d493a6402aa92eec87a6138e1dac444e9551c1af06991453954b", size = 36957, upload-time = "2026-09-14T12:57:04.84Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5a/f7/d4aeef9f48150900634e7f864b076038e69014fb3ae4e515035803bca561/mkdocs_git_revision_date_localized_plugin-1.6.0-py3-none-any.whl", hash = "sha256:88b2d524d24c49a05cd6c9b1456f7dc0c8fa5e233b09ecf8a1dd12aebc127990", size = 27966, upload-time = "2026-09-14T12:57:03.607Z" },
+]
+
+[[package]]
+name = "mkdocs-homepage-copier"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "mkdocs" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f1/17/0507d12f9061d96b2ed8d5782af4bcef558d7f5852cca224d3d0c6904277/mkdocs_homepage_copier-1.0.0-py3-none-any.whl", hash = "sha256:4d97d530320fa6f1dc1ec3df066da51763dd0e21d9d8882978f7289559942220", size = 4079, upload-time = "2023-10-19T10:03:29.569Z" },
 ]
 
 [[package]]
@@ -4871,6 +4886,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/46/79/cf31d7a93a8fdc6aa0fbb665be84426a8c5a557d9240b6239e9e11e35fc5/termcolor-3.3.0.tar.gz", hash = "sha256:348871ca648ec6a9a983a13ab626c0acce02f515b9e1983332b17af7979521c5", size = 14434, upload-time = "2025-12-29T12:55:21.882Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/33/d1/8bb87d21e9aeb323cc03034f5eaf2c8f69841e40e4853c2627edf8111ed3/termcolor-3.3.0-py3-none-any.whl", hash = "sha256:cf642efadaf0a8ebbbf4bc7a31cec2f9b5f21a9f726f4ccbb08192c9c26f43a5", size = 7734, upload-time = "2025-12-29T12:55:20.718Z" },
+]
+
+[[package]]
+name = "termynal"
+version = "0.14.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "markdown" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/26/8c/ea13868e6008ed964837db011648e3e7766e0ecfa1b42d7b9a4cf0c228e2/termynal-0.14.0.tar.gz", hash = "sha256:2918a1a6cf468497fbb3a72dc3726743988829eef1136d0c78a81df70ec869f6", size = 178022, upload-time = "2026-03-16T16:56:21.539Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c3/8f/c089f7c9f9fc1da25e6271386e5df84e1f6e0b04d2f0b408939b51b2876f/termynal-0.14.0-py3-none-any.whl", hash = "sha256:b5147545e29256d35148251f5c2d3d23dec1d2fb0b4ba464ff330a7de8b56fc6", size = 11754, upload-time = "2026-03-16T16:56:22.76Z" },
 ]
 
 [[package]]

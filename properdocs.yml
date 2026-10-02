@@ -6,9 +6,9 @@ repo_name: rhizomatics/dev_shell
 repo_url: https://github.com/rhizomatics/dev_shell
 edit_uri: edit/main/docs/
 docs_dir: docs
-watch:
-  - README.md
-  - CHANGELOG.md
+#watch:
+#  - README.md
+#  - CHANGELOG.md
 
 theme:
   name: materialx
@@ -41,14 +41,25 @@ hooks:
 
 plugins:
   - search
+  - termynal:
+      include_assets: true
+      prompt_literal_start:
+        - '$'
+        - '>>>'
   - autorefs
+  - mkdocs-homepage-copier:
+      extras:
+        - src: CHANGELOG.md
+          dest: docs/changelog.md
+          copy: true
+
   - pagetree
   - meta-descriptions
   - tags
   - htmlproofer:
       skip_downloads: True
-  - minify:
-      minify_html: true
+  #- minify:
+  #    minify_html: true
   - git-revision-date-localized:
       enable_creation_date: true
   - coverage:
@@ -70,5 +81,5 @@ markdown_extensions:
   - toc:
       permalink: true
   - sane_lists
-  - pymdownx.snippets:
-      check_paths: true
+  #- pymdownx.snippets:
+  #    check_paths: true

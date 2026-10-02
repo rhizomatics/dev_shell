@@ -1,5 +1,12 @@
 # Developer Shell for Home Assistant 
 
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/rhizomatics/dev_shell/python-package.yml)
+[![PyPI](https://img.shields.io/pypi/v/homeassistant-devshell)](https://pypi.org/project/homeassistant-devshell/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/homeassistant-devshell)](https://www.python.org/downloads/)
+[![Docs](https://img.shields.io/badge/docs-latest-blue)](https://rhizomatics.github.io/dev_shell/)
+![GitHub](https://img.shields.io/github/license/rhizomatics/dev_shell)
+![GitHub last commit](https://img.shields.io/github/last-commit/rhizomatics/dev_shell)
+
 <img src="https://rhizomatics.github.io/dev_shell/assets/icon.png" width="128" height="128" align="left" alt="A slice of cherry pie, drawn like a 1990s Visual Basic icon">
 
 A Home Assistant environment designed for custom component developers, tinkerers and native Python speakers. Makes it easy as pie!
@@ -10,6 +17,26 @@ It is an opinionated REPL ([Read-Eval-Print-Loop](https://en.wikipedia.org/wiki/
 - Trialling out snippets of code
 - Debugging code (but see note below)
 - Hotfixing issues that don't have built in support to do so from existing components.
+
+<!-- termynal -->
+```bash
+$ uv run --with homeassistant-devshell dev_shell --url http://192.168.1.100:8123 --token=<insert token here>
+Dev Shell (API client mode) connected to ws://192.168.1.100:8123/api/websocket. `obj` only, read-only - no `hass`. Ctrl-D to exit.
+>>> obj["/mqtt/binary_sensor/kitchen_terrace_window_tilt"].state
+'off'
+>>> [o.name for o in obj["/rflink/binary_sensor"].values() if o.state=='unavailable']
+['Shed Intruder Alarm', 'Panic Keyfob']
+>>> {(o.entity_id, o.state) for o in obj.find(domain="binary_sensor",platform="mqtt")}
+{
+    ('binary_sensor.terrace_pir_occupancy', 'unavailable'),
+    ('binary_sensor.scullery_smoke_alarm_battery_low', 'off'),
+    ('binary_sensor.kitchen_terrace_window_tweaked', 'off'),
+    ('binary_sensor.scullery_water_detector_water_leak', 'dry'),
+    ('binary_sensor.boiler_co_detector_battery_low', 'off'),
+    ('binary_sensor.pantry_sensor_occupancy', 'off')
+}
+>>>
+```
 
 If you're not already comfortable using Python tools to manipulate data on the fly, or better REPL shells in other languages, this is a great way to learn, and faster at the keyboard than clicking around Jupyter notebooks.
 
@@ -92,12 +119,16 @@ This allows dictionary ('Mapping') access to the object tree.
 In the example tree below, the objects and subtrees of objects can be accessed like:
 
 ```python
-obj["/rflink/sensor/shed_temperature"].state. # prints out temperature
-obj["/rflink"]        # the 'light','binary_sensor' and 'sensor' subtrees for rflink
-obj["/rflink/sensor"] # all the sensors for rflink
-len(obj["/rflink/sensor"]) # count of rflink sensors in this example
+obj["/rflink/sensor/shed_temperature"].state  # prints out temperature
+obj[
+    "/rflink/sensor/shed_temperature"
+].state_attributes  # prints out additional attributes
+obj["/rflink"]  # the 'light','binary_sensor' and 'sensor' subtrees for rflink
+obj["/rflink/sensor"]  # all the sensors for rflink
+len(obj["/rflink/sensor"])  # count of rflink sensors in this example
 ```
-#### Example Tree
+
+##### Example Tree
 
 ```
 ...
@@ -116,7 +147,6 @@ len(obj["/rflink/sensor"]) # count of rflink sensors in this example
     - kitchen_humidity
 ...
 ```
-
 
 >[!NOTE]
 >In the roadmap, there will be a visual Object Browser to view and select entities. For now, it is accessible only via Python code. It also may extend beyond entities, to things like areas, users, categories and devices.

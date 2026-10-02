@@ -53,6 +53,8 @@ docs=[
     "mkdocs-autorefs",
     "mkdocs-pagetree-plugin",
     "mkdocs-coverage",
+    "termynal",
+    "mkdocs-homepage-copier",
     "pymdown-extensions",
     "mkdocs-meta-descriptions-plugin",
     "mkdocs-git-revision-date-localized-plugin",
