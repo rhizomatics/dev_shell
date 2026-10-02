@@ -86,6 +86,7 @@ norecursedirs = [
 ]
 addopts = [
     "--timeout=30",
+    "--junitxml=junit/test-results.xml",
     "--cov-report=xml:cov.xml",
     "--cov-report=html",
     "--cov-report=term-missing",
