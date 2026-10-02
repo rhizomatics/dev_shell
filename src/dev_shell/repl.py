@@ -42,7 +42,7 @@ async def run_repl(client: Client, session_name: str) -> int:
         lines.clear()
         if not source.strip():
             continue
-        if _is_quit_call(source):
+        if is_quit_call(source):
             return 0
         result = await client.call(
             "dev_shell_server/exec", code=source, session=session_name, **display_options()
@@ -50,7 +50,7 @@ async def run_repl(client: Client, session_name: str) -> int:
         print_result(result)
 
 
-def _is_quit_call(source: str) -> bool:
+def is_quit_call(source: str) -> bool:
     """True for a bare `quit()` or `exit()` - the standard way to leave a REPL.
 
     Sending that to the server would just raise SystemExit there, caught and

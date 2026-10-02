@@ -1,12 +1,17 @@
-"""dev_shell - run Python inside a live Home Assistant.
+"""dev_shell - run Python against a live Home Assistant.
 
-  dev_shell exec 'hass.states.get("sun.sun")'    run a snippet
-  dev_shell exec -f snippet.py                    run a file
-  dev_shell exec - <<'EOF' ... EOF                read the snippet from stdin
-  dev_shell                                       interactive REPL
-  dev_shell reset / dev_shell sessions            manage server-side sessions
+  dev_shell                                       interactive safe-mode shell (default)
+                                                    `obj` only, read-only, no HACS component needed
+  dev_shell repl                                   interactive full-mode shell
+                                                    `hass` + `obj` (same `obj` API, live not cached);
+                                                    needs the dev_shell_server component
+  dev_shell exec 'hass.states.get("sun.sun")'      run a snippet (full mode only)
+  dev_shell exec -f snippet.py                     run a file
+  dev_shell exec - <<'EOF' ... EOF                 read the snippet from stdin
+  dev_shell reset / dev_shell sessions             manage full-mode server-side sessions
 
 Connection: HASS_URL (default http://localhost:8123), HASS_TOKEN, HASS_SESSION.
+Safe mode: --ttl seconds before the cached snapshot is refreshed (default 30).
 Exit status of exec is 1 when the snippet raised, 2 on connection/usage errors.
 """
 
@@ -44,9 +49,15 @@ def _parser() -> argparse.ArgumentParser:
         "-s", "--session", default=os.environ.get("HASS_SESSION", "default")
     )
     parser.add_argument("--json", action="store_true", help="print raw JSON results")
+    parser.add_argument(
+        "--ttl",
+        type=float,
+        default=30.0,
+        help="safe mode: seconds before the cached snapshot is refreshed (default: 30)",
+    )
     sub = parser.add_subparsers(dest="command")
 
-    exec_ = sub.add_parser("exec", help="run code and print output and result")
+    exec_ = sub.add_parser("exec", help="run code and print output and result (full mode only)")
     exec_.add_argument("code", nargs="?", help="code to run, or - for stdin")
     exec_.add_argument("-f", "--file", help="run the contents of a file")
     exec_.add_argument("-t", "--timeout", type=float, help="cancel after N seconds")
@@ -54,9 +65,14 @@ def _parser() -> argparse.ArgumentParser:
         "--reset", action="store_true", help="reset the session before running"
     )
 
-    sub.add_parser("repl", help="interactive shell (the default)")
-    sub.add_parser("reset", help="discard the session's variables")
-    sub.add_parser("sessions", help="list sessions on the server")
+    sub.add_parser(
+        "safe", help="interactive safe-mode shell (the default): obj only, no HACS component needed"
+    )
+    sub.add_parser(
+        "repl", help="interactive full-mode shell: hass + obj, needs the dev_shell_server component"
+    )
+    sub.add_parser("reset", help="discard the full-mode session's variables")
+    sub.add_parser("sessions", help="list full-mode sessions on the server")
     return parser
 
 
@@ -74,10 +90,14 @@ async def _dispatch(args: argparse.Namespace) -> int:
                 result = await client.call("dev_shell_server/sessions")
                 _emit(args, result, _format_sessions(result["sessions"]))
                 return 0
-            case _:
+            case "repl":
                 from .repl import run_repl
 
                 return await run_repl(client, args.session)
+            case _:  # "safe", or no subcommand at all - safe mode is the default
+                from .saferepl import run_safe_repl
+
+                return await run_safe_repl(client, args.ttl)
 
 
 async def _exec(client: Client, args: argparse.Namespace) -> int:

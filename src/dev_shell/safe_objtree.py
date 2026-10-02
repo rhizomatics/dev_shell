@@ -1,10 +1,12 @@
-"""`objs[...]` - safe mode's read-only mirror of `obj[]`, built entirely from
-Home Assistant's standard websocket API (get_states, config/*_registry/list) -
-no dev_shell_server component needed, works against any instance an admin
-token can reach. Entities only have what that API exposes: state + attributes
-from get_states, and whatever the entity registry's own partial dict exposes
-(no live component instance, so no calling methods on it, no fields an
-integration keeps off the registry/state).
+"""SafeObjTree - safe mode's read-only `obj[...]`, built entirely from Home
+Assistant's standard websocket API (get_states, config/*_registry/list) - no
+dev_shell_server component needed, works against any instance an admin token
+can reach. Bound to the same name, `obj`, as the live tree (see saferepl.py)
+so a snippet that only touches `obj` runs unchanged in either mode. Entities
+only have what that API exposes: state + attributes from get_states, and
+whatever the entity registry's own partial dict exposes (no live component
+instance, so no calling methods on it, no fields an integration keeps off the
+registry/state).
 
 Mirrors custom_components/dev_shell_server/objtree.py's shape - __getitem__,
 .keys()/.values()/.items(), find(), show() all behave the same way modulo the
@@ -38,7 +40,7 @@ from collections.abc import (
 )
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
+from typing import Any, NamedTuple
 
 from .client import Client
 
@@ -57,6 +59,15 @@ def _as_set(value: str | list[str] | None) -> set[str]:
     if value is None:
         return set()
     return {value} if isinstance(value, str) else set(value)
+
+
+def _require_str(value: Any, what: str = "path") -> str:
+    """A clear TypeError at the boundary beats a confusing one from deep
+    inside parse_path - duplicated from objtree.py's identical helper, see
+    that module for the rationale."""
+    if not isinstance(value, str):
+        raise TypeError(f"{what} must be a str, not {type(value).__name__}")
+    return value
 
 
 class _OrderedView(Iterable[Any]):
@@ -97,6 +108,13 @@ class SafeEntity:
     area_id: str | None
     labels: frozenset[str]
     registry: dict[str, Any]
+
+
+class Found(NamedTuple):
+    """One find() match - unpacks as `path, entity`, or access either by name."""
+
+    path: str
+    entity: SafeEntity
 
 
 # The two registry JSON fields that are Unix-timestamp floats rather than the
@@ -220,6 +238,7 @@ class SafeObjTree(Mapping[str, "SafeEntity | SafeObjTree"]):
         self.cache.reset()
 
     def __getitem__(self, key: str) -> SafeEntity | SafeObjTree:
+        _require_str(key, "key")
         if "/" not in key and self.integration is None:
             entity = self.cache.entities.get(key)
             if entity is None:
@@ -260,7 +279,8 @@ class SafeObjTree(Mapping[str, "SafeEntity | SafeObjTree"]):
             (entity.platform, entity.domain, entity.object_id)[len(scope)]
             for entity in self._entries(scope)
         }
-        yield from sorted(children)
+        for child in sorted(children):
+            yield "/" + child
 
     def __len__(self) -> int:
         return sum(1 for _ in self)
@@ -279,11 +299,17 @@ class SafeObjTree(Mapping[str, "SafeEntity | SafeObjTree"]):
         path: str = "/",
         *,
         platform: str | list[str] | None = None,
+        domain: str | list[str] | None = None,
         area: str | list[str] | None = None,
         label: str | list[str] | None = None,
-    ) -> Iterator[str]:
-        """Same shape as the live tree's find() - see that docstring. No order
-        guarantee here either; wrap in sorted(...) if you want one."""
+    ) -> Iterator[Found]:
+        """Same shape as the live tree's find() - see that docstring: yields
+        (path, entity) pairs, find_names() is the same search with just the
+        path strings. `domain` matches the HA domain (e.g. "light") across
+        integrations, the same way `platform` does for the owning
+        integration. No order guarantee here either; wrap in sorted(...) if
+        you want one."""
+        _require_str(path)
         scope = tuple(p for p in (self.integration, self.domain) if p is not None)
         try:
             prefix = scope if path in ("", "/") else scope + parse_path(path)
@@ -293,27 +319,48 @@ class SafeObjTree(Mapping[str, "SafeEntity | SafeObjTree"]):
             raise KeyError(path)
 
         platforms = _as_set(platform)
+        domains = _as_set(domain)
         area_ids = _resolve_from_cache(area, self.cache.areas, "area", "area_id")
         label_ids = _resolve_from_cache(label, self.cache.labels, "label", "label_id")
 
-        def _matches() -> Iterator[str]:
+        def _matches() -> Iterator[Found]:
             for entity in self._entries(prefix):
                 if platforms and entity.platform not in platforms:
+                    continue
+                if domains and entity.domain not in domains:
                     continue
                 if area_ids and entity.area_id not in area_ids:
                     continue
                 if label_ids and not (entity.labels & label_ids):
                     continue
-                yield "/" + "/".join(
+                full_path = "/" + "/".join(
                     (entity.platform, entity.domain, entity.object_id)[len(scope) :]
                 )
+                yield Found(full_path, entity)
 
         return _matches()
+
+    def find_names(
+        self,
+        path: str = "/",
+        *,
+        platform: str | list[str] | None = None,
+        domain: str | list[str] | None = None,
+        area: str | list[str] | None = None,
+        label: str | list[str] | None = None,
+    ) -> Iterator[str]:
+        """Just the path strings from find() - see that docstring for the
+        filters."""
+        return (
+            found.path
+            for found in self.find(path, platform=platform, domain=domain, area=area, label=label)
+        )
 
     def show(self, path: str) -> dict[str, Any]:
         """Same shape as the live tree's show() - the registry entry's own
         fields plus `state`/`state_attributes`, cleaned the same way (None/
         empty-collection dropped, timestamps as local ISO 8601)."""
+        _require_str(path)
         scope = tuple(p for p in (self.integration, self.domain) if p is not None)
         try:
             full = scope + parse_path(path)
@@ -332,7 +379,9 @@ class SafeObjTree(Mapping[str, "SafeEntity | SafeObjTree"]):
         return _clean(data)
 
     def __repr__(self) -> str:
+        # "(safe)" is just a display hint for a human reading output - the
+        # binding name and API are identical to the live tree's on purpose.
         scope = "/".join(p for p in (self.integration, self.domain) if p is not None)
-        label = f"objs:/{scope}" if scope else "objs"
+        label = f"obj:/{scope}" if scope else "obj"
         kind = "entities" if self.domain is not None else "domains" if self.integration else "integrations"
-        return f"<{label}: {len(self)} {kind}>"
+        return f"<{label}: {len(self)} {kind} (safe)>"

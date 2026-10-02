@@ -1,5 +1,5 @@
-"""Tests for safe mode's objs tree, against a fake Client - no real Home
-Assistant needed. Payload shapes mirror what get_states and the
+"""Tests for safe mode's obj tree (SafeObjTree), against a fake Client - no
+real Home Assistant needed. Payload shapes mirror what get_states and the
 config/*_registry/list websocket commands actually return."""
 
 from __future__ import annotations
@@ -117,8 +117,8 @@ async def test_missing_intermediate_path_raises(tree: SafeObjTree):
         tree["/hue/sensor"]  # hue has no sensors
 
 
-async def test_find_flat_no_filters(tree: SafeObjTree):
-    assert sorted(tree.find()) == [
+async def test_find_names_flat_no_filters(tree: SafeObjTree):
+    assert sorted(tree.find_names()) == [
         "/alexa_devices/media_player/kitchen_show",
         "/demo/sensor/outside_temp",
         "/hue/light/kitchen_lights",
@@ -126,36 +126,74 @@ async def test_find_flat_no_filters(tree: SafeObjTree):
     ]
 
 
-async def test_find_by_area_inherits_from_device(tree: SafeObjTree):
+async def test_find_names_by_area_inherits_from_device(tree: SafeObjTree):
     # light.kitchen_lights has no area of its own, but its device (dev_hue) does.
-    assert sorted(tree.find(area="Kitchen")) == [
+    assert sorted(tree.find_names(area="Kitchen")) == [
         "/alexa_devices/media_player/kitchen_show",
         "/hue/light/kitchen_lights",
     ]
 
 
-async def test_find_by_area_id_too(tree: SafeObjTree):
-    assert sorted(tree.find(area="area_lounge")) == ["/hue/light/lounge_lamp"]
+async def test_find_names_by_area_id_too(tree: SafeObjTree):
+    assert sorted(tree.find_names(area="area_lounge")) == ["/hue/light/lounge_lamp"]
 
 
-async def test_find_by_platform(tree: SafeObjTree):
-    assert sorted(tree.find(platform="hue")) == [
+async def test_find_names_by_platform(tree: SafeObjTree):
+    assert sorted(tree.find_names(platform="hue")) == [
         "/hue/light/kitchen_lights",
         "/hue/light/lounge_lamp",
     ]
 
 
-async def test_find_by_label_name(tree: SafeObjTree):
-    assert list(tree.find(label="Important")) == ["/hue/light/kitchen_lights"]
+async def test_find_names_by_label_name(tree: SafeObjTree):
+    assert list(tree.find_names(label="Important")) == ["/hue/light/kitchen_lights"]
 
 
-async def test_find_scoped_by_path(tree: SafeObjTree):
-    assert sorted(tree.find("/hue")) == ["/hue/light/kitchen_lights", "/hue/light/lounge_lamp"]
+async def test_find_names_scoped_by_path(tree: SafeObjTree):
+    assert sorted(tree.find_names("/hue")) == [
+        "/hue/light/kitchen_lights",
+        "/hue/light/lounge_lamp",
+    ]
+
+
+async def test_find_names_by_domain_across_integrations(tree: SafeObjTree):
+    assert sorted(tree.find_names(domain="light")) == [
+        "/hue/light/kitchen_lights",
+        "/hue/light/lounge_lamp",
+    ]
+
+
+async def test_find_names_filters_and_together(tree: SafeObjTree):
+    # domain=light AND platform=demo: no light is on the demo platform here.
+    assert list(tree.find_names(domain="light", platform="demo")) == []
+
+
+async def test_find_yields_path_entity_pairs(tree: SafeObjTree):
+    [found] = list(tree.find(domain="light", platform="hue", area="Kitchen"))
+    path, entity = found  # plain tuple-unpacking must work
+    assert path == "/hue/light/kitchen_lights"
+    assert entity is found.entity
+    assert found.path == path
+    assert entity.state == "on"
+    # Same object indexing would give you - not a separate lookup/copy.
+    assert entity is tree["/hue/light/kitchen_lights"]
 
 
 async def test_find_unknown_area_raises_immediately(tree: SafeObjTree):
     with pytest.raises(KeyError):
         tree.find(area="Nonexistent")  # must raise before iteration, not during
+
+
+async def test_passing_an_entity_instead_of_a_path_raises_typeerror(tree: SafeObjTree):
+    # Regression: tree.show(tree["/hue/light/kitchen_lights"]) used to crash
+    # deep inside parse_path with a confusing AttributeError.
+    entity = tree["/hue/light/kitchen_lights"]
+    with pytest.raises(TypeError):
+        tree.show(entity)
+    with pytest.raises(TypeError):
+        tree.find(entity)  # must raise immediately, not only once iterated
+    with pytest.raises(TypeError):
+        tree[entity]
 
 
 async def test_show_cleans_and_merges(tree: SafeObjTree):

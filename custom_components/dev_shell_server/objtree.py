@@ -16,9 +16,11 @@ directories can be navigated a level at a time:
 
 `.keys()`/iteration mirror that: `alexa.keys()` lists just the domains directly
 under `/alexa_devices` (one level, like `ls` on a directory), not every entity
-underneath it recursively. `obj.find()` is the flat alternative - every entity
-path under a subtree, optionally filtered by platform/area/label - and
-`obj.show(path)` renders one entity's registry entry plus its live state.
+underneath it recursively. `obj.find()` is the flat alternative - every
+(path, entity) pair under a subtree, optionally filtered by
+platform/domain/area/label; `obj.find_names()` is the same search but yields
+just the path strings. `obj.show(path)` renders one entity's registry entry
+plus its live state.
 
 Both return the live Entity object - the actual LightEntity/SensorEntity/etc.
 instance a component wrote, not the hass.states.get() State snapshot - since this
@@ -48,7 +50,7 @@ from collections.abc import (
 )
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
+from typing import Any, NamedTuple
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import area_registry as ar
@@ -80,6 +82,23 @@ def _as_set(value: str | list[str] | None) -> set[str]:
     if value is None:
         return set()
     return {value} if isinstance(value, str) else set(value)
+
+
+def _require_str(value: Any, what: str = "path") -> str:
+    """A clear TypeError at the boundary beats a confusing one from deep
+    inside parse_path (e.g. passing an Entity instead of its path - an easy
+    slip, since indexing returns one and it's natural to then pass it back
+    in somewhere a path string was wanted)."""
+    if not isinstance(value, str):
+        raise TypeError(f"{what} must be a str, not {type(value).__name__}")
+    return value
+
+
+class Found(NamedTuple):
+    """One find() match - unpacks as `path, entity`, or access either by name."""
+
+    path: str
+    entity: Entity
 
 
 def _resolve_ids(
@@ -203,6 +222,7 @@ class ObjTree(Mapping[str, "Entity | ObjTree"]):
     domain: str | None = None
 
     def __getitem__(self, key: str) -> Entity | ObjTree:
+        _require_str(key, "key")
         if "/" not in key and self.integration is None:
             entity = _get_entity(self.hass, key)
             if entity is None:
@@ -275,23 +295,33 @@ class ObjTree(Mapping[str, "Entity | ObjTree"]):
         path: str = "/",
         *,
         platform: str | list[str] | None = None,
+        domain: str | list[str] | None = None,
         area: str | list[str] | None = None,
         label: str | list[str] | None = None,
-    ) -> Iterator[str]:
-        """Every entity path under `path` (relative to this view, "/" meaning
-        this view's whole subtree) - flat, skipping the directory-style
-        one-level-at-a-time grouping .keys()/indexing give you.
+    ) -> Iterator[Found]:
+        """Every (path, entity) pair under `path` (relative to this view, "/"
+        meaning this view's whole subtree) - flat, skipping the
+        directory-style one-level-at-a-time grouping .keys()/indexing give
+        you. find_names() is the same search with just the path strings, if
+        that's all you want.
+
+        Skips anything with no live Entity object backing it - same
+        requirement as indexing - so an entity id from here always works if
+        passed back into this view.
 
         No order guarantee, unlike .keys()/iteration - this follows whatever
         order the entity/domain registries happen to iterate in. Wrap in
         sorted(...) if you want one.
 
         `platform` matches the registry entry's platform (owning integration)
-        directly; `area`/`label` each take an id or a display name, and an
-        entity's area falls back to its device's when it has none of its own -
-        the same rule the frontend uses. Each of the three ORs within itself
-        when given a list, and they AND together.
+        directly; `domain` matches the HA domain (e.g. "light"), letting you
+        search across integrations without fixing `path` to one; `area`/`label`
+        each take an id or a display name, and an entity's area falls back to
+        its device's when it has none of its own - the same rule the frontend
+        uses. Each of the four ORs within itself when given a list, and they
+        AND together.
         """
+        _require_str(path)
         scope = tuple(p for p in (self.integration, self.domain) if p is not None)
         try:
             prefix = scope if path in ("", "/") else scope + parse_path(path)
@@ -301,6 +331,7 @@ class ObjTree(Mapping[str, "Entity | ObjTree"]):
             raise KeyError(path)
 
         platforms = _as_set(platform)
+        domains = _as_set(domain)
         areas = ar.async_get(self.hass)
         labels = lr.async_get(self.hass)
         area_ids = _resolve_ids(
@@ -311,17 +342,39 @@ class ObjTree(Mapping[str, "Entity | ObjTree"]):
         )
         devices = dr.async_get(self.hass)
 
-        def _matches() -> Iterator[str]:
-            for entry, domain, object_id in self._entries(prefix):
+        def _matches() -> Iterator[Found]:
+            for entry, dom, object_id in self._entries(prefix):
                 if platforms and entry.platform not in platforms:
+                    continue
+                if domains and dom not in domains:
                     continue
                 if area_ids and _entity_area_id(entry, devices) not in area_ids:
                     continue
                 if label_ids and not (entry.labels & label_ids):
                     continue
-                yield "/" + "/".join((entry.platform, domain, object_id)[len(scope) :])
+                entity = _get_entity(self.hass, entry.entity_id)
+                if entity is None:
+                    continue
+                full_path = "/" + "/".join((entry.platform, dom, object_id)[len(scope) :])
+                yield Found(full_path, entity)
 
         return _matches()
+
+    def find_names(
+        self,
+        path: str = "/",
+        *,
+        platform: str | list[str] | None = None,
+        domain: str | list[str] | None = None,
+        area: str | list[str] | None = None,
+        label: str | list[str] | None = None,
+    ) -> Iterator[str]:
+        """Just the path strings from find() - see that docstring for the
+        filters."""
+        return (
+            found.path
+            for found in self.find(path, platform=platform, domain=domain, area=area, label=label)
+        )
 
     def show(self, path: str) -> dict[str, Any]:
         """The registry entry's own fields (minus _cache and other data this
@@ -332,6 +385,7 @@ class ObjTree(Mapping[str, "Entity | ObjTree"]):
         and None/empty-set values are dropped throughout, including inside
         nested dicts like state_attributes.
         """
+        _require_str(path)
         scope = tuple(p for p in (self.integration, self.domain) if p is not None)
         try:
             full = scope + parse_path(path)
