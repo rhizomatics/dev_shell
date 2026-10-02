@@ -3,9 +3,9 @@
 frontend:
 config:
 demo:
-dev_shell:
+dev_shell_server:
 
 logger:
   default: info
   logs:
-    custom_components.dev_shell: debug
+    custom_components.dev_shell_server: debug

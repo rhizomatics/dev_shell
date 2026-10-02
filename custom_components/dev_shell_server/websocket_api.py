@@ -1,4 +1,5 @@
-"""Websocket commands: dev_shell/exec, dev_shell/reset, dev_shell/sessions (all admin only)."""
+"""Websocket commands: dev_shell_server/exec, dev_shell_server/reset,
+dev_shell_server/sessions (all admin only)."""
 
 from __future__ import annotations
 
@@ -31,7 +32,7 @@ def _manager(
 @websocket_api.require_admin
 @websocket_api.websocket_command(
     {
-        vol.Required("type"): "dev_shell/exec",
+        vol.Required("type"): "dev_shell_server/exec",
         vol.Required("code"): str,
         vol.Optional("session", default=DEFAULT_SESSION): str,
         vol.Optional("timeout"): vol.Coerce(float),
@@ -50,7 +51,7 @@ async def ws_exec(
 @websocket_api.require_admin
 @websocket_api.websocket_command(
     {
-        vol.Required("type"): "dev_shell/reset",
+        vol.Required("type"): "dev_shell_server/reset",
         vol.Optional("session", default=DEFAULT_SESSION): str,
     }
 )
@@ -64,7 +65,7 @@ def ws_reset(
 
 
 @websocket_api.require_admin
-@websocket_api.websocket_command({vol.Required("type"): "dev_shell/sessions"})
+@websocket_api.websocket_command({vol.Required("type"): "dev_shell_server/sessions"})
 @callback
 def ws_sessions(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]

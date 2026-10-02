@@ -1,6 +1,6 @@
 """Hass Shell: a live Python REPL inside Home Assistant, served over the websocket API.
 
-Set up from Settings > Devices & services > Add integration, or with `dev_shell:` in
+Set up from Settings > Devices & services > Add integration, or with `dev_shell_server:` in
 configuration.yaml (imported as a config entry). Executes arbitrary code as admin; never
 enable it on an instance where admin accounts are not fully trusted.
 """

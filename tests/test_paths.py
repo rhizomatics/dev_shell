@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-_path = Path(__file__).parent.parent / "custom_components" / "dev_shell" / "paths.py"
+_path = Path(__file__).parent.parent / "custom_components" / "dev_shell_server" / "paths.py"
 _spec = importlib.util.spec_from_file_location("dev_shell_paths", _path)
 paths_mod = importlib.util.module_from_spec(_spec)
 sys.modules["dev_shell_paths"] = paths_mod
@@ -29,15 +29,17 @@ def test_trailing_slash_ignored():
     assert paths_mod.parse_path("/demo/light/kitchen/") == ("demo", "light", "kitchen")
 
 
+def test_partial_paths_are_valid():
+    assert paths_mod.parse_path("/demo") == ("demo",)
+    assert paths_mod.parse_path("demo/light") == ("demo", "light")
+
+
 @pytest.mark.parametrize(
     "path",
     [
         "",
         "/",
-        "demo",
-        "demo/light",
         "demo/light/kitchen/extra",
-        "//light/kitchen",
     ],
 )
 def test_wrong_segment_count_raises(path):

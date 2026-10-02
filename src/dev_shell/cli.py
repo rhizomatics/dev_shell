@@ -66,11 +66,11 @@ async def _dispatch(args: argparse.Namespace) -> int:
             case "exec":
                 return await _exec(client, args)
             case "reset":
-                result = await client.call("dev_shell/reset", session=args.session)
+                result = await client.call("dev_shell_server/reset", session=args.session)
                 _emit(args, result, "reset" if result["reset"] else "no such session")
                 return 0
             case "sessions":
-                result = await client.call("dev_shell/sessions")
+                result = await client.call("dev_shell_server/sessions")
                 _emit(args, result, _format_sessions(result["sessions"]))
                 return 0
             case _:
@@ -90,11 +90,11 @@ async def _exec(client: Client, args: argparse.Namespace) -> int:
     else:
         code = args.code
     if args.reset:
-        await client.call("dev_shell/reset", session=args.session)
+        await client.call("dev_shell_server/reset", session=args.session)
     payload: dict[str, Any] = {"code": code, "session": args.session}
     if args.timeout:
         payload["timeout"] = args.timeout
-    result = await client.call("dev_shell/exec", **payload)
+    result = await client.call("dev_shell_server/exec", **payload)
     if args.json:
         print(json.dumps(result, indent=2))
     else:

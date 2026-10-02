@@ -1,10 +1,18 @@
 """`obj[...]` - a live, read-only lookup over Home Assistant's entities.
 
 Entities only for now; the full integration/domain/area/label tree from the
-README's Object Browser design is a later step. Two lookup forms:
+README's Object Browser design is a later step. Lookup forms:
 
     obj["light.kitchen_lights"]            # plain entity_id
     obj["/demo/light/kitchen_lights"]      # /integration/domain/object_id
+
+A path that doesn't reach all the way to an object_id instead returns an
+ObjTree restricted to that part of the tree, so the object browser's
+directories can be navigated a level at a time:
+
+    alexa = obj["/alexa_devices"]          # restricted to that integration
+    alexa["media_player"]                  # -> restricted to that domain too
+    alexa["media_player/kitchen_show"]     # -> the live entity
 
 Both return the live Entity object - the actual LightEntity/SensorEntity/etc.
 instance a component wrote, not the hass.states.get() State snapshot - since this
@@ -49,22 +57,40 @@ def _get_entity(hass: HomeAssistant, entity_id: str) -> Entity | None:
 
 @dataclass(frozen=True)
 class ObjTree:
-    hass: HomeAssistant
+    """A view of the object tree, optionally restricted to a subtree.
 
-    def __getitem__(self, key: str) -> Entity:
-        if "/" in key:
-            try:
-                entity = self._by_path(key)
-            except ValueError as err:
-                raise KeyError(str(err)) from None
-        else:
+    `integration` and/or `domain` pin this view to that part of the tree -
+    the way `obj["/alexa_devices"]` or `obj["/alexa_devices/media_player"]`
+    does. Indexing a restricted view only needs the remaining path segments,
+    given either as a single "a/b" string or one segment at a time.
+    """
+
+    hass: HomeAssistant
+    integration: str | None = None
+    domain: str | None = None
+
+    def __getitem__(self, key: str) -> Entity | ObjTree:
+        if "/" not in key and self.integration is None:
             entity = _get_entity(self.hass, key)
+            if entity is None:
+                raise KeyError(key)
+            return entity
+        try:
+            parts = parse_path(key)
+        except ValueError as err:
+            raise KeyError(str(err)) from None
+        scope = tuple(p for p in (self.integration, self.domain) if p is not None)
+        full = scope + parts
+        if len(full) > 3:
+            raise KeyError(key)
+        if len(full) < 3:
+            return ObjTree(self.hass, *full)
+        entity = self._entity_at(*full)
         if entity is None:
             raise KeyError(key)
         return entity
 
-    def _by_path(self, path: str) -> Entity | None:
-        integration, domain, object_id = parse_path(path)
+    def _entity_at(self, integration: str, domain: str, object_id: str) -> Entity | None:
         entity_id = f"{domain}.{object_id}"
         entry = er.async_get(self.hass).async_get(entity_id)
         if entry is None or entry.platform != integration:
@@ -72,21 +98,29 @@ class ObjTree:
         return _get_entity(self.hass, entity_id)
 
     def __iter__(self) -> Iterator[str]:
+        scope_len = sum(p is not None for p in (self.integration, self.domain))
         registry = er.async_get(self.hass)
         domain_entities = self.hass.data.get(DATA_DOMAIN_ENTITIES, {})
         for domain, entities in domain_entities.items():
+            if self.domain is not None and domain != self.domain:
+                continue
             for entity_id in entities:
                 entry = registry.async_get(entity_id)
                 if entry is None:
                     continue
+                if self.integration is not None and entry.platform != self.integration:
+                    continue
                 object_id = entity_id.split(".", 1)[1]
-                yield f"/{entry.platform}/{domain}/{object_id}"
+                remaining = (entry.platform, domain, object_id)[scope_len:]
+                yield "/" + "/".join(remaining)
 
     def __len__(self) -> int:
         return sum(1 for _ in self)
 
     def __repr__(self) -> str:
-        return f"<obj: {len(self)} entities>"
+        scope = "/".join(p for p in (self.integration, self.domain) if p is not None)
+        label = f"obj:/{scope}" if scope else "obj"
+        return f"<{label}: {len(self)} entities>"
 
     def keys(self) -> Iterator[str]:
         return iter(self)

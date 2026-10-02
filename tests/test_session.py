@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 # Load session.py directly: importing the package would pull in Home Assistant.
-_path = Path(__file__).parent.parent / "custom_components" / "dev_shell" / "session.py"
+_path = Path(__file__).parent.parent / "custom_components" / "dev_shell_server" / "session.py"
 _spec = importlib.util.spec_from_file_location("dev_shell_session", _path)
 session_mod = importlib.util.module_from_spec(_spec)
 sys.modules["dev_shell_session"] = session_mod

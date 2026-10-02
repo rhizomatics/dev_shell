@@ -1,5 +1,5 @@
 {
-  "domain": "dev_shell",
+  "domain": "dev_shell_server",
   "name": "Home Assistant Developer Shell",
   "codeowners": [],
   "config_flow": true,

@@ -129,7 +129,7 @@ This switch controls trade-off between shell convenience and ability to trial wo
 ## Development
 
 Layout:
-- `custom_components/dev_shell/`: the HACS integration. `session.py` is the execution engine (no HA imports); `websocket_api.py` exposes the admin-only `dev_shell/exec`, `dev_shell/reset` and `dev_shell/sessions` commands.
+- `custom_components/dev_shell_server/`: the HACS integration (named `dev_shell_server` to distinguish it from the CLI below). `session.py` is the execution engine (no HA imports); `websocket_api.py` exposes the admin-only `dev_shell_server/exec`, `dev_shell_server/reset` and `dev_shell_server/sessions` commands.
 - `src/dev_shell/`: the `dev_shell` CLI (`exec`, interactive REPL, `reset`, `sessions`).
 - `dev/`: a throwaway HA config with `demo:` entities, plus run and bootstrap scripts.
 
@@ -137,7 +137,7 @@ Dev instance (devcontainer, or directly on a host with Python 3.14):
 
 ```sh
 dev/setup.sh                 # installs HA into its own venv + the CLI (devcontainer runs this)
-dev/run-ha.sh                # HA on :8123 with custom_components/dev_shell symlinked in
+dev/run-ha.sh                # HA on :8123 with custom_components/dev_shell_server symlinked in
 uv run python dev/bootstrap.py   # onboard (user dev/dev) and write dev/.env with a token
 ```
 
@@ -153,6 +153,6 @@ hass.states.get("light.kitchen_lights").state
 PY
 ```
 
-On a real instance, install via HACS and add **Home Assistant Developer Shell** from Settings → Devices & services → Add integration (or add `dev_shell:` to `configuration.yaml`, which is imported as a config entry), then set `HASS_URL` and `HASS_TOKEN` (an admin long-lived token).
+On a real instance, install via HACS and add **Home Assistant Developer Shell** from Settings → Devices & services → Add integration (or add `dev_shell_server:` to `configuration.yaml`, which is imported as a config entry), then set `HASS_URL` and `HASS_TOKEN` (an admin long-lived token).
 
 Tests: `uv run pytest` covers the engine without needing HA.

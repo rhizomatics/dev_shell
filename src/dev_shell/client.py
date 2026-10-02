@@ -81,8 +81,8 @@ class Client:
                 error = msg.get("error", {})
                 if error.get("code") == "unknown_command":
                     raise DevShellError(
-                        f"{type_} not available: is the dev_shell integration installed "
-                        "and `dev_shell:` in configuration.yaml?"
+                        f"{type_} not available: is the dev_shell_server integration "
+                        "installed and `dev_shell_server:` in configuration.yaml?"
                     )
                 raise DevShellError(f"{type_} failed: {error.get('message', error)}")
             return msg["result"]

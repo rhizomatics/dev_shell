@@ -42,5 +42,5 @@ async def run_repl(client: Client, session_name: str) -> int:
         lines.clear()
         if not source.strip():
             continue
-        result = await client.call("dev_shell/exec", code=source, session=session_name)
+        result = await client.call("dev_shell_server/exec", code=source, session=session_name)
         print_result(result)
