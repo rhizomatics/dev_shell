@@ -1,6 +1,6 @@
 {
   "domain": "dev_shell_server",
-  "name": "Home Assistant Developer Shell",
+  "name": "Developer Shell",
   "codeowners": [],
   "config_flow": true,
   "dependencies": ["websocket_api"],

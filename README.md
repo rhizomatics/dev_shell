@@ -1,8 +1,8 @@
-# Home Assistant Developer Shell
+# Developer Shell for Home Assistant 
 
 <img src="assets/icon.svg" width="64" height="64" align="left" alt="A slice of cherry pie, drawn like a 1990s Visual Basic icon">
 
-Home Assistant environment designed for custom component developers and tinkerers. 
+Home Assistant environment designed for custom component developers and tinkerers. Makes it easy as pie!
 
 Its aims are:
 
@@ -153,6 +153,6 @@ hass.states.get("light.kitchen_lights").state
 PY
 ```
 
-On a real instance, install via HACS and add **Home Assistant Developer Shell** from Settings → Devices & services → Add integration (or add `dev_shell_server:` to `configuration.yaml`, which is imported as a config entry), then set `HASS_URL` and `HASS_TOKEN` (an admin long-lived token).
+On a real instance, install via HACS and add **Developer Shell for Home Assistant** from Settings → Devices & services → Add integration (or add `dev_shell_server:` to `configuration.yaml`, which is imported as a config entry), then set `HASS_URL` and `HASS_TOKEN` (an admin long-lived token).
 
 Tests: `uv run pytest` covers the engine without needing HA.

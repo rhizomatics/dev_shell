@@ -1,1 +1,1 @@
-"""Command line client for the Home Assistant Developer Shell."""
+"""Command line client for the Developer Shell."""

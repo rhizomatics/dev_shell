@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "Home Assistant Developer Shell",
+        "title": "Developer Shell",
         "description": "Lets admin users run arbitrary Python inside this Home Assistant instance over the websocket API. Only enable it if every admin account is fully trusted."
       }
     },
