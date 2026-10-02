@@ -6,3 +6,4 @@ dev/config/*
 !dev/config/configuration.yaml
 .venv-ha/
 throwaway/
+junit/
