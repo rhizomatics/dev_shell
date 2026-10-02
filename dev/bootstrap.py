@@ -45,7 +45,7 @@ def wait_for_ha(timeout=300):
             return
         except urllib.error.HTTPError:
             return  # responding (onboarding finished => 404/401 is fine)
-        except (urllib.error.URLError, ConnectionError, TimeoutError):
+        except urllib.error.URLError, ConnectionError, TimeoutError:
             time.sleep(2)
     sys.exit("Home Assistant did not come up on " + BASE)
 

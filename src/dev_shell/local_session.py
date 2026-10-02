@@ -78,12 +78,19 @@ class LocalSession:
             last_expr = ast.Expression(last_stmt.value)
 
         flags = ast.PyCF_ALLOW_TOP_LEVEL_AWAIT
+        # dont_inherit=True: compile() otherwise inherits this module's own
+        # `from __future__ import annotations`, which would make every
+        # annotation in the user's code a plain string instead of a real value.
         if tree.body:
-            await _run_code(compile(tree, filename, "exec", flags=flags), self.globals_)
+            await _run_code(
+                compile(tree, filename, "exec", flags=flags, dont_inherit=True),
+                self.globals_,
+            )
         if last_expr is None:
             return None
         return await _run_code(
-            compile(last_expr, filename, "eval", flags=flags), self.globals_
+            compile(last_expr, filename, "eval", flags=flags, dont_inherit=True),
+            self.globals_,
         )
 
 

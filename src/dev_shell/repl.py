@@ -41,7 +41,7 @@ async def run_repl(client: Client, session_name: str) -> int:
             # None means incomplete input: keep reading continuation lines.
             if compiler(source, "<dev_shell>", "single") is None:
                 continue
-        except (SyntaxError, OverflowError, ValueError):
+        except SyntaxError, OverflowError, ValueError:
             pass  # send it anyway so the server reports the error consistently
         lines.clear()
         if not source.strip():
@@ -66,7 +66,7 @@ def is_quit_call(source: str) -> bool:
     """
     try:
         (stmt,) = ast.parse(source).body
-    except (SyntaxError, ValueError):
+    except SyntaxError, ValueError:
         return False
     return (
         isinstance(stmt, ast.Expr)

@@ -59,7 +59,7 @@ async def run_api_repl(client: Client, ttl: float) -> int:
             # None means incomplete input: keep reading continuation lines.
             if compiler(source, "<dev_shell>", "single") is None:
                 continue
-        except (SyntaxError, OverflowError, ValueError):
+        except SyntaxError, OverflowError, ValueError:
             pass  # run it anyway so LocalSession reports the error consistently
         lines.clear()
         if not source.strip():

@@ -256,7 +256,7 @@ async def test_help_constructor_drops_self_return(manager):
     # constructor line (it's implied); session_mod._format_signature is exercised
     # directly since crafting a real __new__ -> Self case in exec'd source is awkward.
     class Widget:
-        def __new__(cls) -> "Widget":  # noqa: PYI034 - overwritten with Self below
+        def __new__(cls) -> Widget:  # noqa: PYI034 - overwritten with Self below
             return super().__new__(cls)
 
     import typing

@@ -138,12 +138,20 @@ class Session:
             last_expr = ast.Expression(last_stmt.value)
 
         flags = ast.PyCF_ALLOW_TOP_LEVEL_AWAIT
+        # dont_inherit=True: compile() otherwise inherits this module's own
+        # `from __future__ import annotations`, which would make every
+        # annotation in the user's code a plain string - breaking the
+        # FORWARDREF-based signature rendering in _format_signature below.
         if tree.body:
-            await _run_code(compile(tree, filename, "exec", flags=flags), self.globals_)
+            await _run_code(
+                compile(tree, filename, "exec", flags=flags, dont_inherit=True),
+                self.globals_,
+            )
         if last_expr is None:
             return None
         return await _run_code(
-            compile(last_expr, filename, "eval", flags=flags), self.globals_
+            compile(last_expr, filename, "eval", flags=flags, dont_inherit=True),
+            self.globals_,
         )
 
 
@@ -304,12 +312,7 @@ def _format_signature(
     sig = None
     if _FORWARDREF_FORMAT is not None:
         try:
-            # annotation_format is a real 3.14+ parameter; ty's bundled typeshed
-            # stubs don't know about it yet.
-            sig = inspect.signature(
-                target,
-                annotation_format=_FORWARDREF_FORMAT,  # ty: ignore[unknown-argument]
-            )
+            sig = inspect.signature(target, annotation_format=_FORWARDREF_FORMAT)
         except Exception:  # noqa: BLE001 - fall through to the attempts below
             sig = None
     if sig is None:
@@ -320,7 +323,7 @@ def _format_signature(
             # annotations is still better than losing the method entirely.
             try:
                 sig = inspect.signature(target)
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 return "(...)"
     params = list(sig.parameters.values())
     if drop_self and params and params[0].name == "self":
