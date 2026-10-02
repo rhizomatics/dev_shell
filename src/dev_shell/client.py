@@ -21,7 +21,7 @@ def resolve_url(url: str | None) -> str:
         # Inside a Home Assistant add-on (e.g. Studio Code Server) talk via the supervisor.
         if os.environ.get("SUPERVISOR_TOKEN"):
             return "ws://supervisor/core/websocket"
-        url = "http://localhost:8123"
+        url = "http://homeassistant.local:8123"
     parts = urlsplit(url)
     scheme = {"http": "ws", "https": "wss"}.get(parts.scheme, parts.scheme)
     path = parts.path.rstrip("/")

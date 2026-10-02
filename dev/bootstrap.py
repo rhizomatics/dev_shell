@@ -14,7 +14,7 @@ from pathlib import Path
 
 import websockets
 
-BASE = "http://localhost:8123"
+BASE = "http://homeassistant.local:8123"
 CLIENT_ID = f"{BASE}/"
 USER, PASSWORD = "dev", "dev"
 ENV_FILE = Path(__file__).parent / ".env"

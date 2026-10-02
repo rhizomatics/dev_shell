@@ -10,7 +10,7 @@
   dev_shell exec - <<'EOF' ... EOF                 read the snippet from stdin
   dev_shell reset / dev_shell sessions             manage custom-mode server-side sessions
 
-Connection: HASS_SERVER (default http://localhost:8123), HASS_TOKEN, HASS_SESSION.
+Connection: HASS_SERVER (default http://homeassistant.local:8123), HASS_TOKEN, HASS_SESSION.
 API client mode: --ttl seconds before the cached snapshot is refreshed (default 30).
 Exit status of exec is 1 when the snippet raised, 2 on connection/usage errors.
 """

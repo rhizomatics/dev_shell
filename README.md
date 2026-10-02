@@ -20,8 +20,8 @@ It is an opinionated REPL ([Read-Eval-Print-Loop](https://en.wikipedia.org/wiki/
 
 <!-- termynal -->
 ```bash
-$ uv run --with homeassistant-devshell dev_shell --url http://192.168.1.100:8123 --token=<insert token here>
-Dev Shell (API client mode) connected to ws://192.168.1.100:8123/api/websocket. `obj` only, read-only - no `hass`. Ctrl-D to exit.
+$ uv run --with homeassistant-devshell dev_shell --token=<insert token here>
+Dev Shell (API client mode) connected to ws://homeassistant.local:8123/api/websocket. `obj` only, read-only - no `hass`. Ctrl-D to exit.
 >>> obj["/mqtt/binary_sensor/kitchen_terrace_window_tilt"].state
 'off'
 >>> [o.name for o in obj["/rflink/binary_sensor"].values() if o.state=='unavailable']
@@ -73,6 +73,15 @@ See the [Roadmap](./developer/design/roadmap.md) for where this might go, and yo
 >[!NOTE]
 > It is not intended to ever be a replacement for a Python debugger, although it may complement one. It also does not intend to replicate [PyScript](https://pyscript.net), instead focusing on standard python (PyScript uses MicroPython) even at expense of general usability or home assistance access, and not a general automation script execution service. For most non-developer cases, [homeassistant-cli](https://pypi.org/project/homeassistant-cli/) is a better choice, with pre-packaged access to devices, entities, services etc.
 
+## Quick Start
+
+Use the `api` mode with `uv` (traditional install also available via `pip install homeassistant-devshell`).
+
+If Home Assistant available via `http://homeassistant.local:8123` then you can skip the `--url` argument. You will also need to create a [Long Lived Access Token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) by going to the personal settings on your Home Assistant mobile or desktop app.
+
+```bash
+uv run --with homeassistant-devshell dev_shell --token <<<my long lived access token>>>
+```
 
 ## Using the Shell
 
@@ -188,7 +197,7 @@ obj.show('/unifi/sensor/kitchen_wifi_cpu_utilization')
 
 ## Starting the Shell
 
-Use the `HASS_SERVER` environment variable or the `--url` command line argument if the Home Assistant server is not running locally ( i.e. `http://127.0.0.1:8123`). A [long lived access token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) is needed at `--token` or in `HASS_TOKEN`.
+Use the `HASS_SERVER` environment variable or the `--url` command line argument if the Home Assistant server is not running locally at usual address( i.e. `http://homeassistant.local:8123`). A [long lived access token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) is needed at `--token` or in an `HASS_TOKEN` environment variable.
 
 ### Custom Mode for Real Server
 
