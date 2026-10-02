@@ -201,7 +201,14 @@ Use the `HASS_SERVER` environment variable or the `--url` command line argument 
 
 ### Custom Mode for Real Server
 
-On a real instance, install via HACS and add **Developer Shell for Home Assistant** from Settings → Devices & services → Add integration (or add `dev_shell_server:` to `configuration.yaml`, which is imported as a config entry), then on the local terminal set `HASS_SERVER` and `HASS_TOKEN` (an admin long-lived token).
+On a real instance, install via HACS:
+ - it's not in the default HACS repository, so you'll have to add `https://github.com/rhizomatics/dev_shell` as a Custom Repository from the top-right dot menu first
+ - Search for *dev shell* in the HACS menu and choose *Download*
+ - Restart Home Assistant for it to recognize the new custom component available
+ - From **Settings → Devices & services → Add integration** find **Developer Shell for Home Assistant** in the list and install, there's no further config needed
+   - Alternatively add `dev_shell_server:` to `configuration.yaml`, which is imported as a config entry) 
+ - Run `dev_shell` with the `direct` argument
+
 
 The quickest way to run the shell is using *uv*, which you can do without cloning this repo or making any other downloads.
 
@@ -211,7 +218,7 @@ uv run --with homeassistant-devshell dev_shell
 Get help on the arguments in the usual way,
 
 ```bash
-uv run --with homeassistant-devshell dev_shell --help       
+uv run --with homeassistant-devshell dev_shell --help       ,
 ```
 
 If you do have this repo checked out, you can also use a direct `run` which means you can also tinker locally with `dev_shell` code.
