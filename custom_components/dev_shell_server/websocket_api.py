@@ -36,6 +36,8 @@ def _manager(
         vol.Required("code"): str,
         vol.Optional("session", default=DEFAULT_SESSION): str,
         vol.Optional("timeout"): vol.Coerce(float),
+        vol.Optional("color", default=False): bool,
+        vol.Optional("width", default=88): vol.Coerce(int),
     }
 )
 @websocket_api.async_response
@@ -44,7 +46,9 @@ async def ws_exec(
 ) -> None:
     if (manager := _manager(hass, connection, msg)) is None:
         return
-    result = await manager.get(msg["session"]).run(msg["code"], msg.get("timeout"))
+    result = await manager.get(msg["session"]).run(
+        msg["code"], msg.get("timeout"), color=msg["color"], width=msg["width"]
+    )
     connection.send_result(msg["id"], result.as_dict())
 
 

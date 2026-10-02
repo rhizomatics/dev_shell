@@ -11,8 +11,8 @@ from prompt_toolkit.history import FileHistory
 from prompt_toolkit.lexers import PygmentsLexer
 from pygments.lexers.python import PythonLexer
 
+from .cli import display_options, print_result
 from .client import Client
-from .cli import print_result
 
 HISTORY = Path.home() / ".dev_shell_history"
 
@@ -44,7 +44,9 @@ async def run_repl(client: Client, session_name: str) -> int:
             continue
         if _is_quit_call(source):
             return 0
-        result = await client.call("dev_shell_server/exec", code=source, session=session_name)
+        result = await client.call(
+            "dev_shell_server/exec", code=source, session=session_name, **display_options()
+        )
         print_result(result)
 
 

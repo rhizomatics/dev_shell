@@ -16,6 +16,7 @@ import argparse
 import asyncio
 import json
 import os
+import shutil
 import sys
 from typing import Any
 
@@ -91,15 +92,31 @@ async def _exec(client: Client, args: argparse.Namespace) -> int:
         code = args.code
     if args.reset:
         await client.call("dev_shell_server/reset", session=args.session)
-    payload: dict[str, Any] = {"code": code, "session": args.session}
+    payload: dict[str, Any] = {"code": code, "session": args.session, **display_options()}
     if args.timeout:
         payload["timeout"] = args.timeout
+    if args.json:
+        # Escape codes embedded in a JSON string are just noise for a consumer
+        # that asked for machine-readable output.
+        payload["color"] = False
     result = await client.call("dev_shell_server/exec", **payload)
     if args.json:
         print(json.dumps(result, indent=2))
     else:
         print_result(result)
     return 1 if result["error"] else 0
+
+
+def display_options() -> dict[str, Any]:
+    """Color/width hints for the server to render values and tracebacks with.
+
+    Decided here, not there: the server only sees a websocket, not a terminal,
+    and stdout here might be piped (a script, a redirected log) rather than a
+    person watching it live.
+    """
+    color = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
+    width = shutil.get_terminal_size((88, 24)).columns
+    return {"color": color, "width": width}
 
 
 def print_result(result: dict[str, Any]) -> None:

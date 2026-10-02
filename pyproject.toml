@@ -8,6 +8,7 @@ dependencies = [
     "prompt-toolkit>=3.0",
     "pygments>=2.18",
     "pyyaml>=6.0",
+    "rich>=15.0.0",
     "websockets>=13.0",
 ]
 

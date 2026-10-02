@@ -132,7 +132,7 @@ async def test_help_with_no_args_does_not_hang(manager):
     result = await run(manager, "help()")
     assert result.error is None
     assert "Welcome" in result.stdout
-    assert "help(obj)" in result.stdout
+    assert "help(hass)" in result.stdout
 
 
 async def test_doc_urls_loaded_from_yaml_file():

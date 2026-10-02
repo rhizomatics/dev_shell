@@ -23,6 +23,9 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from rich.console import Console
+from rich.pretty import Pretty
+from rich.traceback import Traceback
 
 MAX_OUTPUT_CHARS = 1_000_000
 
@@ -62,17 +65,29 @@ class Session:
 
     name: str
     globals_: dict[str, Any]
+    protected: dict[str, Any] = field(default_factory=dict)
     created: float = field(default_factory=time.time)
     last_used: float = field(default_factory=time.time)
     executions: int = 0
     _lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
-    async def run(self, source: str, timeout: float | None = None) -> ExecResult:
+    async def run(
+        self,
+        source: str,
+        timeout: float | None = None,
+        *,
+        color: bool = False,
+        width: int = 88,
+    ) -> ExecResult:
         """Execute source in this session, returning captured output and the last value."""
         async with self._lock:
             self.last_used = time.time()
             self.executions += 1
             out = io.StringIO()
+            # hass/obj/open are re-seeded every run, not just at session creation, so a
+            # snippet that does `obj = obj["/mqtt"]["..."]` only shadows them for its own
+            # run - the next command always starts from the real bindings again.
+            self.globals_.update(self.protected)
             self.globals_["print"] = _capturing_print(out)
             self.globals_["help"] = _capturing_help(out)
             result = ExecResult()
@@ -82,12 +97,12 @@ class Session:
                 value = await (asyncio.wait_for(coro, timeout) if timeout else coro)
                 if value is not None:
                     self.globals_["_"] = value
-                    result.value = repr(value)
+                    result.value = _render(Pretty(value), color=color, width=width)
             except asyncio.CancelledError:
                 # Cancellation of the caller must propagate, not be reported as a result.
                 raise
             except BaseException as err:  # noqa: BLE001 - report everything, incl. SystemExit
-                result.error = _format_error(err)
+                result.error = _format_error(err, color=color, width=width)
             finally:
                 result.duration = time.perf_counter() - start
             result.stdout = out.getvalue()
@@ -99,7 +114,11 @@ class Session:
             return result
 
     async def _execute(self, source: str) -> Any:
-        filename = f"<dev_shell-{next(_cell_counter)}>"
+        # Not "<dev_shell-N>": rich.traceback refuses to show source for any
+        # filename starting with "<" (treats it like "<stdin>"), no matter what
+        # linecache holds. An absolute-looking path sidesteps that - rich joins a
+        # relative one onto the cwd before the linecache lookup, which would miss.
+        filename = f"/dev_shell/cell_{next(_cell_counter)}"
         # Register the source so tracebacks can show the offending lines.
         linecache.cache[filename] = (
             len(source),
@@ -122,6 +141,26 @@ class Session:
         return await _run_code(
             compile(last_expr, filename, "eval", flags=flags), self.globals_
         )
+
+
+def _render(renderable: Any, *, color: bool, width: int) -> str:
+    """Render a Rich renderable (a value's pretty repr, a traceback) to text.
+
+    `force_terminal`/`no_color` are set explicitly rather than auto-detected:
+    the real terminal is on the far end of a websocket call, not this process,
+    so the caller (which does know) decides via `color`.
+    """
+    buf = io.StringIO()
+    console = Console(
+        file=buf,
+        force_terminal=color,
+        color_system="truecolor" if color else None,
+        no_color=not color,
+        highlight=color,
+        width=width,
+    )
+    console.print(renderable, end="")
+    return buf.getvalue().rstrip("\n")
 
 
 async def _run_code(code: Any, globals_: dict[str, Any]) -> Any:
@@ -158,7 +197,8 @@ def _capturing_help(out: io.StringIO):
             # live stdin to browse with anyway over this request/response API. Show
             # the same intro banner and stop there instead of entering interact().
             helper.intro()
-            out.write("\nCall help(obj) for details, e.g. help(hass) or help(sys).\n")
+            out.write("\nGet help on any object, with links for known Home Assistant classes\n")
+            out.write("\ne.g. help(hass) or help(obj['/sun/sun']).\n")
             return
         if len(args) > 1:
             helper(*args)  # raises the same TypeError real help() would
@@ -279,19 +319,23 @@ def _format_signature(target: Any, *, drop_self: bool = False, drop_return: tupl
     return re.sub(r"\s*=\s*", "=", text)
 
 
-def _format_error(err: BaseException) -> dict[str, str]:
+def _format_error(err: BaseException, *, color: bool, width: int) -> dict[str, str]:
     tb = err.__traceback__
     # Drop the frames belonging to this module so the traceback starts at user code.
     while tb is not None and tb.tb_frame.f_code.co_filename == __file__:
         tb = tb.tb_next
     if isinstance(err, SyntaxError):
-        lines = traceback.format_exception_only(type(err), err)
+        # No frames worth showing for this one, just the offending line and caret -
+        # a plain rendering already does that job, so it skips the Rich treatment.
+        text = "".join(traceback.format_exception_only(type(err), err))
     else:
-        lines = traceback.format_exception(type(err), err, tb)
+        text = _render(
+            Traceback.from_exception(type(err), err, tb, width=width), color=color, width=width
+        )
     return {
         "type": type(err).__name__,
         "message": str(err),
-        "traceback": "".join(lines),
+        "traceback": text,
     }
 
 
@@ -305,7 +349,7 @@ class SessionManager:
     def get(self, name: str) -> Session:
         if (session := self._sessions.get(name)) is None:
             globals_ = {"__name__": "__dev_shell__", "__builtins__": builtins, **self._bindings}
-            session = self._sessions[name] = Session(name, globals_)
+            session = self._sessions[name] = Session(name, globals_, dict(self._bindings))
         return session
 
     def reset(self, name: str) -> bool:
