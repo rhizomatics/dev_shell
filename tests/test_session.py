@@ -8,8 +8,14 @@ from pathlib import Path
 import pytest
 
 # Load session.py directly: importing the package would pull in Home Assistant.
-_path = Path(__file__).parent.parent / "custom_components" / "dev_shell_server" / "session.py"
+_path = (
+    Path(__file__).parent.parent
+    / "custom_components"
+    / "dev_shell_server"
+    / "session.py"
+)
 _spec = importlib.util.spec_from_file_location("dev_shell_session", _path)
+assert _spec is not None and _spec.loader is not None
 session_mod = importlib.util.module_from_spec(_spec)
 sys.modules["dev_shell_session"] = session_mod
 _spec.loader.exec_module(session_mod)
@@ -53,7 +59,9 @@ async def test_sessions_are_isolated(manager):
 
 
 async def test_print_and_stderr_captured(manager):
-    result = await run(manager, "import sys\nprint('hi')\nprint('err', file=sys.stderr)")
+    result = await run(
+        manager, "import sys\nprint('hi')\nprint('err', file=sys.stderr)"
+    )
     assert result.stdout == "hi\nerr\n"
 
 
@@ -248,7 +256,7 @@ async def test_help_constructor_drops_self_return(manager):
     # constructor line (it's implied); session_mod._format_signature is exercised
     # directly since crafting a real __new__ -> Self case in exec'd source is awkward.
     class Widget:
-        def __new__(cls) -> "Widget":
+        def __new__(cls) -> "Widget":  # noqa: PYI034 - overwritten with Self below
             return super().__new__(cls)
 
     import typing

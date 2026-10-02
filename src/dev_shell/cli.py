@@ -1,17 +1,17 @@
 """dev_shell - run Python against a live Home Assistant.
 
-  dev_shell                                       interactive safe-mode shell (default)
+  dev_shell                                       interactive API client shell (default)
                                                     `obj` only, read-only, no HACS component needed
-  dev_shell repl                                   interactive full-mode shell
+  dev_shell custom                                 interactive custom-component shell
                                                     `hass` + `obj` (same `obj` API, live not cached);
                                                     needs the dev_shell_server component
-  dev_shell exec 'hass.states.get("sun.sun")'      run a snippet (full mode only)
+  dev_shell exec 'hass.states.get("sun.sun")'      run a snippet (custom mode only)
   dev_shell exec -f snippet.py                     run a file
   dev_shell exec - <<'EOF' ... EOF                 read the snippet from stdin
-  dev_shell reset / dev_shell sessions             manage full-mode server-side sessions
+  dev_shell reset / dev_shell sessions             manage custom-mode server-side sessions
 
-Connection: HASS_URL (default http://localhost:8123), HASS_TOKEN, HASS_SESSION.
-Safe mode: --ttl seconds before the cached snapshot is refreshed (default 30).
+Connection: HASS_SERVER (default http://localhost:8123), HASS_TOKEN, HASS_SESSION.
+API client mode: --ttl seconds before the cached snapshot is refreshed (default 30).
 Exit status of exec is 1 when the snippet raised, 2 on connection/usage errors.
 """
 
@@ -41,9 +41,11 @@ def main() -> None:
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="dev_shell", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+        prog="dev_shell",
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--url", default=os.environ.get("HASS_URL"))
+    parser.add_argument("--url", default=os.environ.get("HASS_SERVER"))
     parser.add_argument("--token", default=None, help="defaults to $HASS_TOKEN")
     parser.add_argument(
         "-s", "--session", default=os.environ.get("HASS_SESSION", "default")
@@ -53,11 +55,13 @@ def _parser() -> argparse.ArgumentParser:
         "--ttl",
         type=float,
         default=30.0,
-        help="safe mode: seconds before the cached snapshot is refreshed (default: 30)",
+        help="API client mode: seconds before the cached snapshot is refreshed (default: 30)",
     )
     sub = parser.add_subparsers(dest="command")
 
-    exec_ = sub.add_parser("exec", help="run code and print output and result (full mode only)")
+    exec_ = sub.add_parser(
+        "exec", help="run code and print output and result (custom mode only)"
+    )
     exec_.add_argument("code", nargs="?", help="code to run, or - for stdin")
     exec_.add_argument("-f", "--file", help="run the contents of a file")
     exec_.add_argument("-t", "--timeout", type=float, help="cancel after N seconds")
@@ -66,13 +70,15 @@ def _parser() -> argparse.ArgumentParser:
     )
 
     sub.add_parser(
-        "safe", help="interactive safe-mode shell (the default): obj only, no HACS component needed"
+        "api",
+        help="interactive API client shell (the default): obj only, no HACS component needed",
     )
     sub.add_parser(
-        "repl", help="interactive full-mode shell: hass + obj, needs the dev_shell_server component"
+        "custom",
+        help="interactive custom-component shell: hass + obj, needs the dev_shell_server component",
     )
-    sub.add_parser("reset", help="discard the full-mode session's variables")
-    sub.add_parser("sessions", help="list full-mode sessions on the server")
+    sub.add_parser("reset", help="discard the custom-mode session's variables")
+    sub.add_parser("sessions", help="list custom-mode sessions on the server")
     return parser
 
 
@@ -83,26 +89,29 @@ async def _dispatch(args: argparse.Namespace) -> int:
             case "exec":
                 return await _exec(client, args)
             case "reset":
-                result = await client.call("dev_shell_server/reset", session=args.session)
+                result = await client.call(
+                    "dev_shell_server/reset", session=args.session
+                )
                 _emit(args, result, "reset" if result["reset"] else "no such session")
                 return 0
             case "sessions":
                 result = await client.call("dev_shell_server/sessions")
                 _emit(args, result, _format_sessions(result["sessions"]))
                 return 0
-            case "repl":
+            case "custom":
                 from .repl import run_repl
 
                 return await run_repl(client, args.session)
-            case _:  # "safe", or no subcommand at all - safe mode is the default
-                from .saferepl import run_safe_repl
+            case _:  # "api", or no subcommand at all - API client mode is the default
+                from .apirepl import run_api_repl
 
-                return await run_safe_repl(client, args.ttl)
+                return await run_api_repl(client, args.ttl)
 
 
 async def _exec(client: Client, args: argparse.Namespace) -> int:
     if args.file:
-        with open(args.file, encoding="utf-8") as fp:
+        # One-shot CLI read, not a hot path - a threaded read would be overkill.
+        with open(args.file, encoding="utf-8") as fp:  # noqa: ASYNC230
             code = fp.read()
     elif args.code in (None, "-"):
         if args.code is None and sys.stdin.isatty():
@@ -112,7 +121,11 @@ async def _exec(client: Client, args: argparse.Namespace) -> int:
         code = args.code
     if args.reset:
         await client.call("dev_shell_server/reset", session=args.session)
-    payload: dict[str, Any] = {"code": code, "session": args.session, **display_options()}
+    payload: dict[str, Any] = {
+        "code": code,
+        "session": args.session,
+        **display_options(),
+    }
     if args.timeout:
         payload["timeout"] = args.timeout
     if args.json:

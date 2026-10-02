@@ -1,4 +1,4 @@
-"""Hass Shell: a live Python REPL inside Home Assistant, served over the websocket API.
+"""Dev Shell: a live Python REPL inside Home Assistant, served over the websocket API.
 
 Set up from Settings > Devices & services > Add integration, or with `dev_shell_server:` in
 configuration.yaml (imported as a config entry). Executes arbitrary code as admin; never
@@ -39,11 +39,13 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    hass.data[DOMAIN] = SessionManager(
-        {"hass": hass, "obj": ObjTree(hass), "open": open_target}
-    )
+    hass.data[DOMAIN] = SessionManager({
+        "hass": hass,
+        "obj": ObjTree(hass),
+        "open": open_target,
+    })
     _LOGGER.warning(
-        "Hass Shell is enabled: admin users can execute arbitrary Python in this instance"
+        "Dev Shell is enabled: admin users can execute arbitrary Python in this instance"
     )
     return True
 

@@ -1,11 +1,12 @@
-"""Safe mode's interactive shell: same local line editing/history as repl.py,
-but code runs right here (LocalSession) - no `hass`, no dev_shell_server/exec
-call, no HACS component required on the HA side at all. `obj` is bound the
-same name as full mode, just to a SafeObjTree instead of the live ObjTree, so
-a snippet that only touches `obj` runs unchanged in either mode.
+"""API client mode's interactive shell: same local line editing/history as
+repl.py, but code runs right here (LocalSession) - no `hass`, no
+dev_shell_server/exec call, no HACS component required on the HA side at
+all. `obj` is bound the same name as custom mode, just to an ApiObjTree
+instead of the live ObjTree, so a snippet that only touches `obj` runs
+unchanged in either mode.
 
-The cache refresh happens here, between prompts, not inside SafeObjTree's own
-Mapping methods - see safe_objtree.py's module docstring for why (asyncio
+The cache refresh happens here, between prompts, not inside ApiObjTree's own
+Mapping methods - see api_objtree.py's module docstring for why (asyncio
 reentrancy: this loop is the one safe place that's both async and knows when
 "between commands" is).
 """
@@ -21,32 +22,32 @@ from prompt_toolkit.history import FileHistory
 from prompt_toolkit.lexers import PygmentsLexer
 from pygments.lexers.python import PythonLexer
 
+from .api_objtree import ApiObjTree, Cache
 from .client import Client
 from .local_session import LocalSession
 from .repl import is_quit_call
-from .safe_objtree import Cache, SafeObjTree
 
-HISTORY = Path.home() / ".dev_shell_safe_history"
+HISTORY = Path.home() / ".dev_shell_api_history"
 
 
-async def run_safe_repl(client: Client, ttl: float) -> int:
+async def run_api_repl(client: Client, ttl: float) -> int:
     cache = Cache(client, ttl)
     await cache.refresh()
-    session = LocalSession({"obj": SafeObjTree(cache)})
+    session = LocalSession({"obj": ApiObjTree(cache)})
 
     compiler = codeop.CommandCompiler()
     compiler.compiler.flags |= ast.PyCF_ALLOW_TOP_LEVEL_AWAIT
-    prompt = PromptSession(
+    prompt: PromptSession[str] = PromptSession(
         history=FileHistory(str(HISTORY)), lexer=PygmentsLexer(PythonLexer)
     )
     print(
-        f"Hass Shell (safe mode) connected to {client.url}. "
+        f"Dev Shell (API client mode) connected to {client.url}. "
         "`obj` only, read-only - no `hass`. Ctrl-D to exit."
     )
     lines: list[str] = []
     while True:
         try:
-            line = await prompt.prompt_async("... " if lines else "safe> ")
+            line = await prompt.prompt_async("... " if lines else "api> ")
         except KeyboardInterrupt:
             lines.clear()
             continue

@@ -1,6 +1,6 @@
 {
   "domain": "dev_shell_server",
-  "name": "Developer Shell",
+  "name": "Developer Shell Custom Mode Server",
   "codeowners": [],
   "config_flow": true,
   "dependencies": ["websocket_api"],

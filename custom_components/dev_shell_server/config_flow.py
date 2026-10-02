@@ -1,4 +1,4 @@
-"""Config flow for Hass Shell: a single, option-less entry added from the UI or imported from YAML."""
+"""Config flow for Dev Shell: a single, option-less entry added from the UI or imported from YAML."""
 
 from __future__ import annotations
 

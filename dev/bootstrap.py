@@ -33,7 +33,7 @@ def request(path, data=None, token=None, form=False):
             body = json.dumps(data).encode()
             headers["Content-Type"] = "application/json"
     req = urllib.request.Request(BASE + path, body, headers)
-    with urllib.request.urlopen(req, timeout=10) as resp:
+    with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310 - fixed local dev HA URL
         return json.loads(resp.read() or b"null")
 
 
@@ -54,8 +54,13 @@ def auth_code():
     try:
         result = request(
             "/api/onboarding/users",
-            {"client_id": CLIENT_ID, "name": "Dev", "username": USER,
-             "password": PASSWORD, "language": "en"},
+            {
+                "client_id": CLIENT_ID,
+                "name": "Dev",
+                "username": USER,
+                "password": PASSWORD,
+                "language": "en",
+            },
         )
         return result["auth_code"], True
     except urllib.error.HTTPError as err:
@@ -63,8 +68,11 @@ def auth_code():
             raise
     flow = request(
         "/auth/login_flow",
-        {"client_id": CLIENT_ID, "handler": ["homeassistant", None],
-         "redirect_uri": CLIENT_ID},
+        {
+            "client_id": CLIENT_ID,
+            "handler": ["homeassistant", None],
+            "redirect_uri": CLIENT_ID,
+        },
     )
     result = request(
         f"/auth/login_flow/{flow['flow_id']}",
@@ -92,10 +100,14 @@ async def long_lived_token(access_token):
         await ws.recv()
         await ws.send(json.dumps({"type": "auth", "access_token": access_token}))
         await ws.recv()
-        await ws.send(json.dumps({
-            "id": 1, "type": "auth/long_lived_access_token",
-            "client_name": f"dev-shell-dev-{int(time.time())}", "lifespan": 3650,
-        }))
+        await ws.send(
+            json.dumps({
+                "id": 1,
+                "type": "auth/long_lived_access_token",
+                "client_name": f"dev-shell-dev-{int(time.time())}",
+                "lifespan": 3650,
+            })
+        )
         msg = json.loads(await ws.recv())
         if not msg["success"]:
             sys.exit(f"Could not create token: {msg}")
@@ -113,7 +125,7 @@ def main():
     if new:
         finish_onboarding(tokens["access_token"])
     token = asyncio.run(long_lived_token(tokens["access_token"]))
-    ENV_FILE.write_text(f"HASS_URL={BASE}\nHASS_TOKEN={token}\n")
+    ENV_FILE.write_text(f"HASS_SERVER={BASE}\nHASS_TOKEN={token}\n")
     print(f"Wrote {ENV_FILE} (login: {USER}/{PASSWORD} at {BASE})")
 
 

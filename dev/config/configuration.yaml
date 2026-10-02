@@ -1,4 +1,4 @@
-# Dev instance for Hass Shell. Kept lean (no default_config) so it runs from a plain pip
+# Dev instance for Dev Shell. Kept lean (no default_config) so it runs from a plain pip
 # install; `demo:` provides sample entities to poke at.
 frontend:
 config:

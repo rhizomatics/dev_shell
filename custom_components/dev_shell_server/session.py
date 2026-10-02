@@ -36,7 +36,9 @@ _cell_counter = itertools.count(1)
 # fully-qualified class name so it applies no matter what name the object is bound to.
 # This list only grows, and is useful independently of the code around it, hence the
 # data file rather than a dict literal here.
-_DOC_URLS: dict[str, str] = yaml.safe_load((Path(__file__).parent / "doc_urls.yaml").read_text())
+_DOC_URLS: dict[str, str] = yaml.safe_load(
+    (Path(__file__).parent / "doc_urls.yaml").read_text()
+)
 
 
 @dataclass
@@ -130,8 +132,10 @@ class Session:
 
         # Like the interactive interpreter, echo the value of a trailing expression.
         last_expr = None
-        if tree.body and isinstance(tree.body[-1], ast.Expr):
-            last_expr = ast.Expression(tree.body.pop().value)
+        last_stmt = tree.body[-1] if tree.body else None
+        if isinstance(last_stmt, ast.Expr):
+            tree.body.pop()
+            last_expr = ast.Expression(last_stmt.value)
 
         flags = ast.PyCF_ALLOW_TOP_LEVEL_AWAIT
         if tree.body:
@@ -169,7 +173,7 @@ async def _run_code(code: Any, globals_: dict[str, Any]) -> Any:
     A bare `hass.async_foo()` without await yields a coroutine object, exactly as it
     would in component code (strict mode).
     """
-    result = eval(code, globals_)  # noqa: S307 - executing user code is the point
+    result = eval(code, globals_)  # nosec B307 - the whole point of a dev shell
     if code.co_flags & inspect.CO_COROUTINE:
         result = await result
     return result
@@ -197,7 +201,9 @@ def _capturing_help(out: io.StringIO):
             # live stdin to browse with anyway over this request/response API. Show
             # the same intro banner and stop there instead of entering interact().
             helper.intro()
-            out.write("\nGet help on any object, with links for known Home Assistant classes\n")
+            out.write(
+                "\nGet help on any object, with links for known Home Assistant classes\n"
+            )
             out.write("\ne.g. help(hass) or help(obj['/sun/sun']).\n")
             return
         if len(args) > 1:
@@ -249,7 +255,9 @@ def _class_summary(thing: Any) -> str:
     if doc:
         lines += [doc, ""]
     # A constructor "returning Self" is implied, not useful to state.
-    lines.append(f"{cls.__qualname__}{_format_signature(cls, drop_return=(typing.Self,))}")
+    lines.append(
+        f"{cls.__qualname__}{_format_signature(cls, drop_return=(typing.Self,))}"
+    )
     method_names = sorted(
         name
         for name in dir(cls)
@@ -285,7 +293,9 @@ _DOTTED_NAME = re.compile(r"\b(?:[A-Za-z_]\w*\.)+([A-Za-z_]\w*)\b")
 _FORWARDREF_FORMAT = getattr(getattr(inspect, "Format", None), "FORWARDREF", None)
 
 
-def _format_signature(target: Any, *, drop_self: bool = False, drop_return: tuple = ()) -> str:
+def _format_signature(
+    target: Any, *, drop_self: bool = False, drop_return: tuple = ()
+) -> str:
     """Render target's signature, trimmed down for a quick overview:
     self dropped (when `drop_self`), a void or otherwise uninformative return
     annotation dropped (`drop_return`), type annotations shortened to their bare
@@ -294,7 +304,12 @@ def _format_signature(target: Any, *, drop_self: bool = False, drop_return: tupl
     sig = None
     if _FORWARDREF_FORMAT is not None:
         try:
-            sig = inspect.signature(target, annotation_format=_FORWARDREF_FORMAT)
+            # annotation_format is a real 3.14+ parameter; ty's bundled typeshed
+            # stubs don't know about it yet.
+            sig = inspect.signature(
+                target,
+                annotation_format=_FORWARDREF_FORMAT,  # ty: ignore[unknown-argument]
+            )
         except Exception:  # noqa: BLE001 - fall through to the attempts below
             sig = None
     if sig is None:
@@ -330,7 +345,9 @@ def _format_error(err: BaseException, *, color: bool, width: int) -> dict[str, s
         text = "".join(traceback.format_exception_only(type(err), err))
     else:
         text = _render(
-            Traceback.from_exception(type(err), err, tb, width=width), color=color, width=width
+            Traceback.from_exception(type(err), err, tb, width=width),
+            color=color,
+            width=width,
         )
     return {
         "type": type(err).__name__,
@@ -348,8 +365,14 @@ class SessionManager:
 
     def get(self, name: str) -> Session:
         if (session := self._sessions.get(name)) is None:
-            globals_ = {"__name__": "__dev_shell__", "__builtins__": builtins, **self._bindings}
-            session = self._sessions[name] = Session(name, globals_, dict(self._bindings))
+            globals_ = {
+                "__name__": "__dev_shell__",
+                "__builtins__": builtins,
+                **self._bindings,
+            }
+            session = self._sessions[name] = Session(
+                name, globals_, dict(self._bindings)
+            )
         return session
 
     def reset(self, name: str) -> bool:
@@ -363,7 +386,9 @@ class SessionManager:
                 "last_used": s.last_used,
                 "executions": s.executions,
                 "variables": sorted(
-                    k for k in s.globals_ if not k.startswith("__") and k not in ("print", "help")
+                    k
+                    for k in s.globals_
+                    if not k.startswith("__") and k not in ("print", "help")
                 ),
             }
             for s in self._sessions.values()

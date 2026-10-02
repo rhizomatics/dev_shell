@@ -1,0 +1,74 @@
+site_name: Dev Shell Logger for Home Assistant
+site_url: https://dev-shell.rhizomatics.org.uk
+site_description: Development Python REPL for Home Assistant
+
+repo_name: rhizomatics/dev_shell
+repo_url: https://github.com/rhizomatics/dev_shell
+edit_uri: edit/main/docs/
+docs_dir: docs
+watch:
+  - README.md
+  - CHANGELOG.md
+
+theme:
+  name: materialx
+  highlightjs: true
+  language: en
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - content.action.edit
+    - content.action.view
+    - content.code.copy
+    - content.code.select
+    - content.code.annotate
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.indexes
+    - navigation.top
+    - search.suggest
+    - search
+    - search.share
+    - toc.follow
+    - toc.integrate
+hooks:
+  # heading anchors match GitHub (incl. non-ASCII), so translated README links work
+  - docs_hooks/slugs.py
+
+plugins:
+  - search
+  - autorefs
+  - pagetree
+  - meta-descriptions
+  - tags
+  - htmlproofer:
+      skip_downloads: True
+  - minify:
+      minify_html: true
+  - git-revision-date-localized:
+      enable_creation_date: true
+  - coverage:
+      page_path: developer/coverage
+      html_report_dir: htmlcov
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - pymdownx.blocks.caption
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - toc:
+      permalink: true
+  - sane_lists
+  - pymdownx.snippets:
+      check_paths: true

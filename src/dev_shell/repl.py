@@ -20,8 +20,12 @@ HISTORY = Path.home() / ".dev_shell_history"
 async def run_repl(client: Client, session_name: str) -> int:
     compiler = codeop.CommandCompiler()
     compiler.compiler.flags |= ast.PyCF_ALLOW_TOP_LEVEL_AWAIT
-    prompt = PromptSession(history=FileHistory(str(HISTORY)), lexer=PygmentsLexer(PythonLexer))
-    print(f"Hass Shell connected to {client.url} (session {session_name!r}). Ctrl-D to exit.")
+    prompt: PromptSession[str] = PromptSession(
+        history=FileHistory(str(HISTORY)), lexer=PygmentsLexer(PythonLexer)
+    )
+    print(
+        f"Dev Shell connected to {client.url} (session {session_name!r}). Ctrl-D to exit."
+    )
     lines: list[str] = []
     while True:
         try:
@@ -45,7 +49,10 @@ async def run_repl(client: Client, session_name: str) -> int:
         if is_quit_call(source):
             return 0
         result = await client.call(
-            "dev_shell_server/exec", code=source, session=session_name, **display_options()
+            "dev_shell_server/exec",
+            code=source,
+            session=session_name,
+            **display_options(),
         )
         print_result(result)
 

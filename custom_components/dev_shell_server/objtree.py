@@ -18,9 +18,11 @@ directories can be navigated a level at a time:
 under `/alexa_devices` (one level, like `ls` on a directory), not every entity
 underneath it recursively. `obj.find()` is the flat alternative - every
 (path, entity) pair under a subtree, optionally filtered by
-platform/domain/area/label; `obj.find_names()` is the same search but yields
-just the path strings. `obj.show(path)` renders one entity's registry entry
-plus its live state.
+platform/domain/area/label; `obj.find_paths()` is the same search with just
+the tree path strings (e.g. "/demo/light/kitchen_lights"), and
+`obj.find_names()` with just the HA entity_id strings (e.g.
+"light.kitchen_lights") instead. `obj.show(path)` renders one entity's
+registry entry plus its live state.
 
 Both return the live Entity object - the actual LightEntity/SensorEntity/etc.
 instance a component wrote, not the hass.states.get() State snapshot - since this
@@ -94,11 +96,19 @@ def _require_str(value: Any, what: str = "path") -> str:
     return value
 
 
-class Found(NamedTuple):
-    """One find() match - unpacks as `path, entity`, or access either by name."""
+class _Found(NamedTuple):
+    """Internal only - never returned from find()/find_paths()/find_names(),
+    just the shared (path, entity) pair each of them projects from
+    (.entity, .path, and .entity_id respectively) so the filtering logic in
+    _find() lives in exactly one place. Any attribute other than path/entity
+    falls through to `entity`, so e.g. found.entity_id works without
+    found.entity.entity_id."""
 
     path: str
     entity: Entity
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.entity, name)
 
 
 def _resolve_ids(
@@ -196,7 +206,11 @@ class OrderedValuesView(_OrderedView, ValuesView, Sequence):
     pass
 
 
-class OrderedItemsView(_OrderedView, ItemsView, Sequence):
+class OrderedItemsView(_OrderedView, ItemsView, Sequence):  # type: ignore[misc]  # ty: ignore[invalid-method-override]
+    # Sequence.__contains__(value) vs ItemsView.__contains__(item: tuple) is a
+    # real static Liskov mismatch, but fine at runtime - both just delegate to
+    # tuple(self).__contains__ via _OrderedView/Iterable, deliberately getting
+    # both Set and Sequence behavior at once.
     pass
 
 
@@ -249,14 +263,18 @@ class ObjTree(Mapping[str, "Entity | ObjTree"]):
             raise KeyError(key)
         return entity
 
-    def _entity_at(self, integration: str, domain: str, object_id: str) -> Entity | None:
+    def _entity_at(
+        self, integration: str, domain: str, object_id: str
+    ) -> Entity | None:
         entity_id = f"{domain}.{object_id}"
         entry = er.async_get(self.hass).async_get(entity_id)
         if entry is None or entry.platform != integration:
             return None
         return _get_entity(self.hass, entity_id)
 
-    def _entries(self, prefix: tuple[str, ...]) -> Iterator[tuple[er.RegistryEntry, str, str]]:
+    def _entries(
+        self, prefix: tuple[str, ...]
+    ) -> Iterator[tuple[er.RegistryEntry, str, str]]:
         """Every (registry entry, domain, object_id) whose (platform, domain,
         object_id) matches `prefix` position by position - `prefix` may have
         0-3 elements, a narrower prefix just matching fewer positions. The
@@ -290,28 +308,20 @@ class ObjTree(Mapping[str, "Entity | ObjTree"]):
         }
         yield from sorted(children)
 
-    def find(
+    def _find(
         self,
-        path: str = "/",
+        path: str,
         *,
-        platform: str | list[str] | None = None,
-        domain: str | list[str] | None = None,
-        area: str | list[str] | None = None,
-        label: str | list[str] | None = None,
-    ) -> Iterator[Found]:
-        """Every (path, entity) pair under `path` (relative to this view, "/"
-        meaning this view's whole subtree) - flat, skipping the
-        directory-style one-level-at-a-time grouping .keys()/indexing give
-        you. find_names() is the same search with just the path strings, if
-        that's all you want.
-
-        Skips anything with no live Entity object backing it - same
+        platform: str | list[str] | None,
+        domain: str | list[str] | None,
+        area: str | list[str] | None,
+        label: str | list[str] | None,
+    ) -> Iterator[_Found]:
+        """The real search, shared by find()/find_paths()/find_names() - each
+        just projects a different field from the (path, entity) pairs this
+        yields. Skips anything with no live Entity object backing it - same
         requirement as indexing - so an entity id from here always works if
         passed back into this view.
-
-        No order guarantee, unlike .keys()/iteration - this follows whatever
-        order the entity/domain registries happen to iterate in. Wrap in
-        sorted(...) if you want one.
 
         `platform` matches the registry entry's platform (owning integration)
         directly; `domain` matches the HA domain (e.g. "light"), letting you
@@ -319,7 +329,7 @@ class ObjTree(Mapping[str, "Entity | ObjTree"]):
         each take an id or a display name, and an entity's area falls back to
         its device's when it has none of its own - the same rule the frontend
         uses. Each of the four ORs within itself when given a list, and they
-        AND together.
+        AND together. No order guarantee; wrap in sorted(...) if you want one.
         """
         _require_str(path)
         scope = tuple(p for p in (self.integration, self.domain) if p is not None)
@@ -338,11 +348,15 @@ class ObjTree(Mapping[str, "Entity | ObjTree"]):
             area, "area", areas.async_get_area, areas.async_get_area_by_name, "id"
         )
         label_ids = _resolve_ids(
-            label, "label", labels.async_get_label, labels.async_get_label_by_name, "label_id"
+            label,
+            "label",
+            labels.async_get_label,
+            labels.async_get_label_by_name,
+            "label_id",
         )
         devices = dr.async_get(self.hass)
 
-        def _matches() -> Iterator[Found]:
+        def _matches() -> Iterator[_Found]:
             for entry, dom, object_id in self._entries(prefix):
                 if platforms and entry.platform not in platforms:
                     continue
@@ -355,10 +369,59 @@ class ObjTree(Mapping[str, "Entity | ObjTree"]):
                 entity = _get_entity(self.hass, entry.entity_id)
                 if entity is None:
                     continue
-                full_path = "/" + "/".join((entry.platform, dom, object_id)[len(scope) :])
-                yield Found(full_path, entity)
+                full_path = "/" + "/".join(
+                    (entry.platform, dom, object_id)[len(scope) :]
+                )
+                yield _Found(full_path, entity)
 
         return _matches()
+
+    def find(
+        self,
+        path: str = "/",
+        *,
+        platform: str | list[str] | None = None,
+        domain: str | list[str] | None = None,
+        area: str | list[str] | None = None,
+        label: str | list[str] | None = None,
+        raw: bool = False,
+    ) -> Iterator[Entity] | Iterator[dict[str, Any]]:
+        """Every entity (or raw dict, if raw=True) matching the filters under
+        `path` (relative to this view, "/" meaning this view's whole
+        subtree) - flat, skipping the directory-style one-level-at-a-time
+        grouping .keys()/indexing give you. find_paths()/find_names() are the
+        same search with just the tree-path or entity_id strings, if that's
+        all you want - see _find() for the filters.
+
+        `raw=True` yields the object as received instead of the live Entity -
+        exactly what show(path) would return for that path (the registry
+        entry's fields plus state/state_attributes, cleaned the same way).
+        The dict's own "entity_id" key identifies which entity it came from.
+        """
+        matches = self._find(
+            path, platform=platform, domain=domain, area=area, label=label
+        )
+        if raw:
+            return (self.show(found.path) for found in matches)
+        return (found.entity for found in matches)
+
+    def find_paths(
+        self,
+        path: str = "/",
+        *,
+        platform: str | list[str] | None = None,
+        domain: str | list[str] | None = None,
+        area: str | list[str] | None = None,
+        label: str | list[str] | None = None,
+    ) -> Iterator[str]:
+        """Just the tree-path strings from find() (e.g.
+        "/demo/light/kitchen_lights") - see _find() for the filters."""
+        return (
+            found.path
+            for found in self._find(
+                path, platform=platform, domain=domain, area=area, label=label
+            )
+        )
 
     def find_names(
         self,
@@ -369,11 +432,15 @@ class ObjTree(Mapping[str, "Entity | ObjTree"]):
         area: str | list[str] | None = None,
         label: str | list[str] | None = None,
     ) -> Iterator[str]:
-        """Just the path strings from find() - see that docstring for the
-        filters."""
+        """Just the HA entity_id strings from find() (e.g.
+        "light.kitchen_lights") - see _find() for the filters. Not the same
+        as find_paths(): this is the flat entity_id, not this tree's
+        /integration/domain/object_id path."""
         return (
-            found.path
-            for found in self.find(path, platform=platform, domain=domain, area=area, label=label)
+            found.entity_id
+            for found in self._find(
+                path, platform=platform, domain=domain, area=area, label=label
+            )
         )
 
     def show(self, path: str) -> dict[str, Any]:
@@ -400,6 +467,10 @@ class ObjTree(Mapping[str, "Entity | ObjTree"]):
 
         entry = er.async_get(self.hass).async_get(f"{domain}.{object_id}")
         data: dict[str, Any] = _public_attrs(entry) if entry is not None else {}
+        # Overrides the registry's own (often-None, user-override-only) "name"
+        # field with the live, fully-resolved display name - the direct
+        # equivalent per https://developers.home-assistant.io/docs/core/entity/.
+        data["name"] = entity.name
         data["state"] = entity.state
         data["state_attributes"] = entity.state_attributes
         return _clean(data)
@@ -419,5 +490,11 @@ class ObjTree(Mapping[str, "Entity | ObjTree"]):
     def __repr__(self) -> str:
         scope = "/".join(p for p in (self.integration, self.domain) if p is not None)
         label = f"obj:/{scope}" if scope else "obj"
-        kind = "entities" if self.domain is not None else "domains" if self.integration else "integrations"
+        kind = (
+            "entities"
+            if self.domain is not None
+            else "domains"
+            if self.integration
+            else "integrations"
+        )
         return f"<{label}: {len(self)} {kind}>"

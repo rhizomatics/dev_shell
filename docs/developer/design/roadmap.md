@@ -40,7 +40,7 @@ Physical
  The object browser makes the largely correct assumption that everything useful lives in an integration
 
 ### Enhancements
-- Add button re-using Home Assistant dialogs
+- Add button reusing Home Assistant dialogs
 - Delete, with multi-select, calling regular home-assistant checks
 - Copy and paste, similar to how it works in front end for duping automations etc
 - Filter by area/label/floor/category/platform/domain/free text
@@ -57,8 +57,8 @@ The REPL shell is a full Python REPL shell, implemented as a VSCode NotebookCont
 So I can write code at the command line like:
 
 ```python
-pir=obj["/rflink/binary_sensor/hall_pir"]
-pir.state="on" # non-strict mode, sets entity state with repl as context
+pir = obj["/rflink/binary_sensor/hall_pir"]
+pir.state = "on"  # non-strict mode, sets entity state with repl as context
 ```
 
 The return value of the object is returned to the shell, value printed and available to Python code as `_`. Tracebacks are printed also, as if they were local (in general everything feels like its local)
@@ -89,7 +89,7 @@ This switch controls trade-off between shell convenience and ability to trial wo
   - On demand also for custom components, both this and core can be disabled for space constrained devices, with `inspect.getsource` as backup
 
 ## Other Ideas
-- Safe Mode
+- API Mode
   - API access only, also no need of HACS components
   - TBD: whether actions/services get folded into the object tree, or left separate
 - Other bindings
@@ -127,7 +127,7 @@ This switch controls trade-off between shell convenience and ability to trial wo
 - Basic REPL
   - strict mode only
   - `hass` binding only (entities accessible via usual hass calls)
-  - packaged as CLI with `exec` and interative mode, session name and session reset flag and `HASS_URL`
+  - packaged as CLI with `exec` and interactive mode, session name and session reset flag and `HASS_SERVER`
 - Object browser
   - out of scope
   - so also no `this` or `obj[]`

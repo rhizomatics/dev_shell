@@ -6,7 +6,6 @@ from __future__ import annotations
 from typing import Any
 
 import voluptuous as vol
-
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 
@@ -25,21 +24,21 @@ def _manager(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> SessionManager | None:
     if (manager := hass.data.get(DOMAIN)) is None:
-        connection.send_error(msg["id"], "not_loaded", "Hass Shell integration is not loaded")
+        connection.send_error(
+            msg["id"], "not_loaded", "Dev Shell integration is not loaded"
+        )
     return manager
 
 
 @websocket_api.require_admin
-@websocket_api.websocket_command(
-    {
-        vol.Required("type"): "dev_shell_server/exec",
-        vol.Required("code"): str,
-        vol.Optional("session", default=DEFAULT_SESSION): str,
-        vol.Optional("timeout"): vol.Coerce(float),
-        vol.Optional("color", default=False): bool,
-        vol.Optional("width", default=88): vol.Coerce(int),
-    }
-)
+@websocket_api.websocket_command({
+    vol.Required("type"): "dev_shell_server/exec",
+    vol.Required("code"): str,
+    vol.Optional("session", default=DEFAULT_SESSION): str,
+    vol.Optional("timeout"): vol.Coerce(float),
+    vol.Optional("color", default=False): bool,
+    vol.Optional("width", default=88): vol.Coerce(int),
+})
 @websocket_api.async_response
 async def ws_exec(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
@@ -53,12 +52,10 @@ async def ws_exec(
 
 
 @websocket_api.require_admin
-@websocket_api.websocket_command(
-    {
-        vol.Required("type"): "dev_shell_server/reset",
-        vol.Optional("session", default=DEFAULT_SESSION): str,
-    }
-)
+@websocket_api.websocket_command({
+    vol.Required("type"): "dev_shell_server/reset",
+    vol.Optional("session", default=DEFAULT_SESSION): str,
+})
 @callback
 def ws_reset(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]

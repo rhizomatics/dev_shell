@@ -5,7 +5,7 @@ from __future__ import annotations
 import itertools
 import json
 import os
-from typing import Any
+from typing import Any, Self
 from urllib.parse import urlsplit, urlunsplit
 
 import websockets
@@ -47,7 +47,7 @@ class Client:
         self._ids = itertools.count(1)
         self._ws: Any = None
 
-    async def __aenter__(self) -> Client:
+    async def __aenter__(self) -> Self:
         try:
             self._ws = await websockets.connect(self.url, max_size=None)
         except (OSError, websockets.InvalidURI, websockets.InvalidHandshake) as err:

@@ -1,67 +1,72 @@
 # Developer Shell for Home Assistant 
 
-<img src="assets/icon.svg" width="64" height="64" align="left" alt="A slice of cherry pie, drawn like a 1990s Visual Basic icon">
+<img src="./assets/icon.png" width="128" height="128" align="left" alt="A slice of cherry pie, drawn like a 1990s Visual Basic icon">
 
-Home Assistant environment designed for custom component developers and tinkerers. Makes it easy as pie!
+A Home Assistant environment designed for custom component developers, tinkerers and native Python speakers. Makes it easy as pie!
 
-It is an opinionated shell that aims are to make it easier without any configuration to:
+It is an opinionated REPL ([Read-Eval-Print-Loop](https://en.wikipedia.org/wiki/Read–eval–print_loop)) shell that aims are to make it easier without any configuration to:
 
 - Exploring of the APIs in context of a live working instance
 - Trialling out snippets of code
 - Debugging code (but see note below)
 - Hotfixing issues that don't have built in support to do so from existing components.
 
+If you're not already comfortable using Python tools to manipulate data on the fly, or better REPL shells in other languages, this is a great way to learn, and faster at the keyboard than clicking around Jupyter notebooks.
+
 This is primarily for developers of custom components, and their LLM agents, though may be of interest for other folk tinkering with Home Assistant. It is a potentially sharp tool, so NOT appropriate for general Home Assistant users.
 
-Other features:
+## Features
 
 - Integrated with `rich` for pretty object printouts and stack traces
 - Access to all entities via dictionary like interface, `obj`
 - Usual multi-line editing support and history of Python
 
-All of the above works with standard Home Assistant APIs. 
+All of the above works with standard Home Assistant APIs, referred to as `api` mode.
 
-Dev Shell also has an advanced `direct` mode that taps directly into a live Home Assistant using an optional server component available via [HACS](http://hacs.xyz).
+Dev Shell also has an advanced `custom` mode that taps directly into a live Home Assistant using an optional server component available via [HACS](http://hacs.xyz).
 
-Direct mode adds:
+## Custom Mode
 
-- Access to the core Home Assistant Python API via `hass`
-- Read/write access to objects, e.g. entity state
+This mode requires a custom component to be installed on the target Home Assistant server via HACS, or use the supplied scripts to install on a local devcontainer. It adds:
+
+- Full access to the core Home Assistant Python API via `hass`
+- Read/write access to the actual objects, e.g. entities and their helpers
 - A frisson of danger
 
-
->[!NOTE]
-> It is not intended to ever be a replacement for a Python debugger, although it may complement one. It also does not intend to replicate [PyScript](https://pyscript.net), instead focusing on standard python (PyScript uses MicroPython) even at expense of general usability or home assistance access, and not a general automation script execution service.
-
-See the [Roadmap](docs/developer/design/roadmap.md) for where this might go, and your feedback welcome.
-
-
-## Dev Shell Server
+### Dev Shell Server
 
 A HACS component that taps into the Home Assistant and acts as a session server over web sockets. 
 
-Needed for `direct` mode only, since `safe` mode only uses standard Home Assistant APIs.
+Needed for `custom` mode only, since `api` mode only uses standard Home Assistant APIs.
 
-## Shell
+## Future Developments
+
+See the [Roadmap](./developer/design/roadmap.md) for where this might go, and your feedback welcome.
+
+>[!NOTE]
+> It is not intended to ever be a replacement for a Python debugger, although it may complement one. It also does not intend to replicate [PyScript](https://pyscript.net), instead focusing on standard python (PyScript uses MicroPython) even at expense of general usability or home assistance access, and not a general automation script execution service. For most non-developer cases, [homeassistant-cli](https://pypi.org/project/homeassistant-cli/) is a better choice, with pre-packaged access to devices, entities, services etc.
+
+
+## Using the Shell
 
 The shell is a full Python REPL shell, implemented as a VSCode NotebookController, with multi-line editing, history etc, living inside an asyncio loop that exposes the live Home Assistant instance as
 
 * `obj` - the object tree exposed as a dictionary object and common methods
 
-In `direct` mode it also offers:
+In `custom` mode it also offers:
 
 * `hass` - the `HomeAssistant` class at the root of the Python API
 
 So I can write code at the command line like:
 
 ```python
-pir=obj["/rflink/binary_sensor/hall_pir"]
-pir.state="on" # non-strict mode, sets entity state with repl as context
+pir = obj["/rflink/binary_sensor/hall_pir"]
+pir.state = "on"  # non-strict mode, sets entity state with repl as context
 ```
 
 The return value of the object is returned to the shell, value printed and available to Python code as `_`. Tracebacks are printed also, as if they were local (in general everything feels like its local)
 
-## Object Tree
+## The Object Tree
 
 All of the objects (only entities for now) are arranged in a giant tree, like a file system, exposed as the global variable `objs` and implemented as Python [Mapping](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping) object (which provides the [MappingView](https://docs.python.org/3/library/collections.abc.html#collections.abc.MappingView) views [ItemsView](https://docs.python.org/3/library/collections.abc.html#collections.abc.ItemsView) and [KeysView](https://docs.python.org/3/library/collections.abc.html#collections.abc.KeysView))
 
@@ -123,17 +128,25 @@ Where the dictionary access gives a nested directory view of the object tree, `f
 `find` also has built in filters, to narrow the big list of objects by one or more `platform`,`domain`,`area`,`label` - each of these will take a single string or list of strings, and they can be combined to narrow down the list.
 
 ```python
-{o.entity_id, o.state for o in objs.find(domain="binary_sensor")}
+{(o.entity_id, o.state) for o in obj.find(domain="binary_sensor")}
+```
+
+##### Raw Objects
+
+In API Client mode, `find()` returns a local proxy for the remote class, normalized to look more like the same object you'd get in custom mode. Switching `raw=True` will bypass this and you'll get the object untouched as it was received from the API.
+
+#### `obj.find_paths(..)`
+
+Identical to `obj.find()` except it only returns an iterable of the object paths rather than the objects themselves. Ideal for plugging into some logic that will then call `obj[path]` on each one.
+
+```python
+list(objs.find(area="kitchen"))  # list names of all entities in kitchen
+sorted(objs.find(area=["kitchen", "shed"]))
 ```
 
 #### `obj.find_names(..)`
 
-Identical to `obj.find()` except it only returns an iterable of the object paths rather than the objects themselves.
-
-```python
-list(objs.find(area="kitchen"))  # list names of all entities in kitchen
-sorted(objs.find(area=["kitchen","shed"])) 
-```
+Same as `obj.find_paths()` except it returns the object bare name, as it would appear in Home Assistant, e.g. `sensor.bathroom_humidity`
 
 #### `obj.show(..)`
 
@@ -143,7 +156,32 @@ The `show` function will give a pretty version of an object where it knows how. 
 obj.show('/unifi/sensor/kitchen_wifi_cpu_utilization')
 ```
 
-## Running
+## Starting the Shell
+
+Use the `HASS_SERVER` environment variable or the `--url` command line argument if the Home Assistant server is not running locally ( i.e. `http://127.0.0.1:8123`). A [long lived access token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) is needed at `--token` or in `HASS_TOKEN`.
+
+### Custom Mode for Real Server
+
+On a real instance, install via HACS and add **Developer Shell for Home Assistant** from Settings → Devices & services → Add integration (or add `dev_shell_server:` to `configuration.yaml`, which is imported as a config entry), then on the local terminal set `HASS_SERVER` and `HASS_TOKEN` (an admin long-lived token).
+
+The quickest way to run the shell is using *uv*, which you can do without cloning this repo or making any other downloads.
+
+```bash
+uv run --with homeassistant-devshell dev_shell         
+```
+Get help on the arguments in the usual way,
+
+```bash
+uv run --with homeassistant-devshell dev_shell --help       
+```
+
+If you do have this repo checked out, you can also use a direct `run` which means you can also tinker locally with `dev_shell` code.
+
+```bash
+uv run dev_shell         
+```
+
+### Install Local Home Assistant with the Custom Mode Server
 
 Dev instance (devcontainer, or directly on a host with Python 3.14):
 
@@ -165,6 +203,6 @@ hass.states.get("light.kitchen_lights").state
 PY
 ```
 
-On a real instance, install via HACS and add **Developer Shell for Home Assistant** from Settings → Devices & services → Add integration (or add `dev_shell_server:` to `configuration.yaml`, which is imported as a config entry), then set `HASS_URL` and `HASS_TOKEN` (an admin long-lived token).
+### Running Tests
 
 Tests: `uv run pytest` covers the engine without needing HA.

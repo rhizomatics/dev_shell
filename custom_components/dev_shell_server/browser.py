@@ -17,7 +17,9 @@ from homeassistant.helpers.network import get_url
 def open_target(target: Any) -> str:
     """Open target in a browser and return the URL opened."""
     if not isinstance(target, HomeAssistant):
-        raise TypeError(f"open() doesn't know how to open a {type(target).__name__} yet")
+        raise TypeError(
+            f"open() doesn't know how to open a {type(target).__name__} yet"
+        )
     url = get_url(target)
     webbrowser.open(url)
     return url
