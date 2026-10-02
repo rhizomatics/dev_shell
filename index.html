@@ -1000,12 +1000,18 @@ In the roadmap, there will be a visual Object Browser to view and select entitie
 <h2 id="starting-the-shell">Starting the Shell<a class="headerlink" href="#starting-the-shell" title="Permanent link">&para;</a></h2>
 <p>Use the <code>HASS_SERVER</code> environment variable or the <code>--url</code> command line argument if the Home Assistant server is not running locally at usual address( i.e. <code>http://homeassistant.local:8123</code>). A <a href="https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token">long lived access token</a> is needed at <code>--token</code> or in an <code>HASS_TOKEN</code> environment variable.</p>
 <h3 id="custom-mode-for-real-server">Custom Mode for Real Server<a class="headerlink" href="#custom-mode-for-real-server" title="Permanent link">&para;</a></h3>
-<p>On a real instance, install via HACS and add <strong>Developer Shell for Home Assistant</strong> from Settings → Devices &amp; services → Add integration (or add <code>dev_shell_server:</code> to <code>configuration.yaml</code>, which is imported as a config entry), then on the local terminal set <code>HASS_SERVER</code> and <code>HASS_TOKEN</code> (an admin long-lived token).</p>
+<p>On a real instance, install via HACS:
+ - it's not in the default HACS repository, so you'll have to add <code>https://github.com/rhizomatics/dev_shell</code> as a Custom Repository from the top-right dot menu first
+ - Search for <em>dev shell</em> in the HACS menu and choose <em>Download</em>
+ - Restart Home Assistant for it to recognize the new custom component available
+ - From <strong>Settings → Devices &amp; services → Add integration</strong> find <strong>Developer Shell for Home Assistant</strong> in the list and install, there's no further config needed
+   - Alternatively add <code>dev_shell_server:</code> to <code>configuration.yaml</code>, which is imported as a config entry) 
+ - Run <code>dev_shell</code> with the <code>direct</code> argument</p>
 <p>The quickest way to run the shell is using <em>uv</em>, which you can do without cloning this repo or making any other downloads.</p>
 <p><div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>uv<span class="w"> </span>run<span class="w"> </span>--with<span class="w"> </span>homeassistant-devshell<span class="w"> </span>dev_shell<span class="w">         </span>
 </span></code></pre></div>
 Get help on the arguments in the usual way,</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>uv<span class="w"> </span>run<span class="w"> </span>--with<span class="w"> </span>homeassistant-devshell<span class="w"> </span>dev_shell<span class="w"> </span>--help<span class="w">       </span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>uv<span class="w"> </span>run<span class="w"> </span>--with<span class="w"> </span>homeassistant-devshell<span class="w"> </span>dev_shell<span class="w"> </span>--help<span class="w">       </span>,
 </span></code></pre></div>
 <p>If you do have this repo checked out, you can also use a direct <code>run</code> which means you can also tinker locally with <code>dev_shell</code> code.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>uv<span class="w"> </span>run<span class="w"> </span>dev_shell<span class="w">         </span>
