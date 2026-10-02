@@ -40,7 +40,13 @@ jobs:
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         TEMP_DIR=$(mktemp -d)
         cd $TEMP_DIR
-        git clone --single-branch --branch badges https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git . 2>/dev/null
+        REMOTE_URL="https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+        if ! git clone --single-branch --branch badges "$REMOTE_URL" . 2>/dev/null; then
+          # First run: the badges branch doesn't exist on the remote yet.
+          git init
+          git remote add origin "$REMOTE_URL"
+          git checkout --orphan badges
+        fi
         cp -r ${{ github.workspace }}/badges .
         git add badges
         if git commit -m "Update badges [skip ci]"; then
