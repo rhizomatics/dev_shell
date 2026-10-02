@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.14"
 resolution-markers = [
     "python_full_version >= '3.15'",
@@ -1389,97 +1389,6 @@ wheels = [
 ]
 
 [[package]]
-name = "dev-shell"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "prompt-toolkit" },
-    { name = "pygments" },
-    { name = "pyyaml" },
-    { name = "rich" },
-    { name = "websockets" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "actionlint-py" },
-    { name = "codespell" },
-    { name = "coverage", version = "7.10.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14.2'" },
-    { name = "coverage", version = "7.16.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14.2'" },
-    { name = "genbadge", extra = ["all"] },
-    { name = "homeassistant", version = "2026.2.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14.2'" },
-    { name = "homeassistant", version = "2026.10.0b0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14.2'" },
-    { name = "icdiff" },
-    { name = "mypy" },
-    { name = "pre-commit" },
-    { name = "pytest", version = "9.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14.2'" },
-    { name = "pytest", version = "9.0.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14.2'" },
-    { name = "pytest-asyncio", version = "1.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14.2'" },
-    { name = "pytest-asyncio", version = "1.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14.2'" },
-    { name = "pytest-cov", version = "7.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14.2'" },
-    { name = "pytest-cov", version = "7.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14.2'" },
-    { name = "pytest-homeassistant-custom-component", version = "0.13.316", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14.2'" },
-    { name = "pytest-homeassistant-custom-component", version = "0.13.368", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14.2'" },
-    { name = "pytest-mock" },
-    { name = "pytest-timeout" },
-    { name = "pytest-xdist" },
-    { name = "ruff" },
-]
-docs = [
-    { name = "mkdocs-autorefs" },
-    { name = "mkdocs-coverage" },
-    { name = "mkdocs-git-revision-date-localized-plugin" },
-    { name = "mkdocs-htmlproofer-plugin" },
-    { name = "mkdocs-materialx" },
-    { name = "mkdocs-meta-descriptions-plugin" },
-    { name = "mkdocs-minify-plugin" },
-    { name = "mkdocs-pagetree-plugin" },
-    { name = "properdocs" },
-    { name = "pymdown-extensions" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "prompt-toolkit", specifier = ">=3.0" },
-    { name = "pygments", specifier = ">=2.18" },
-    { name = "pyyaml", specifier = ">=6.0" },
-    { name = "rich", specifier = ">=15.0.0" },
-    { name = "websockets", specifier = ">=13.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "actionlint-py" },
-    { name = "codespell" },
-    { name = "coverage" },
-    { name = "genbadge", extras = ["all"] },
-    { name = "homeassistant" },
-    { name = "icdiff" },
-    { name = "mypy" },
-    { name = "pre-commit", specifier = ">=4.4.0" },
-    { name = "pytest", specifier = ">=9.0.0" },
-    { name = "pytest-asyncio", specifier = ">=0.24" },
-    { name = "pytest-cov", specifier = ">=7.0.0" },
-    { name = "pytest-homeassistant-custom-component" },
-    { name = "pytest-mock", specifier = ">=3.15.0" },
-    { name = "pytest-timeout" },
-    { name = "pytest-xdist" },
-    { name = "ruff", specifier = ">=0.15.0" },
-]
-docs = [
-    { name = "mkdocs-autorefs" },
-    { name = "mkdocs-coverage" },
-    { name = "mkdocs-git-revision-date-localized-plugin" },
-    { name = "mkdocs-htmlproofer-plugin" },
-    { name = "mkdocs-materialx" },
-    { name = "mkdocs-meta-descriptions-plugin" },
-    { name = "mkdocs-minify-plugin" },
-    { name = "mkdocs-pagetree-plugin" },
-    { name = "properdocs" },
-    { name = "pymdown-extensions" },
-]
-
-[[package]]
 name = "distlib"
 version = "0.4.3"
 source = { registry = "https://pypi.org/simple" }
@@ -2135,6 +2044,97 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f7/08/414a5cdad2b84022bfb14095b6754cfce1b963c0c19469c695916aff0aaa/homeassistant-2026.10.0b0.tar.gz", hash = "sha256:584bd0ec56eb23ddec55ae9f5fbe6d2f0f508765823f5c1b11eab83c8a868f94", size = 38265717, upload-time = "2026-09-30T17:50:29.805Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ff/5d/ff4eb51b6924b6bfb73388a4445b32038b7cb303ce1e89252a62a0f4c9ed/homeassistant-2026.10.0b0-py3-none-any.whl", hash = "sha256:7e6a474d392f7541837e83f4e7c08b9d7728271bce590f0742e66289a615eb3e", size = 62137170, upload-time = "2026-09-30T17:50:25.279Z" },
+]
+
+[[package]]
+name = "homeassistant-devshell"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "prompt-toolkit" },
+    { name = "pygments" },
+    { name = "pyyaml" },
+    { name = "rich" },
+    { name = "websockets" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "actionlint-py" },
+    { name = "codespell" },
+    { name = "coverage", version = "7.10.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14.2'" },
+    { name = "coverage", version = "7.16.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14.2'" },
+    { name = "genbadge", extra = ["all"] },
+    { name = "homeassistant", version = "2026.2.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14.2'" },
+    { name = "homeassistant", version = "2026.10.0b0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14.2'" },
+    { name = "icdiff" },
+    { name = "mypy" },
+    { name = "pre-commit" },
+    { name = "pytest", version = "9.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14.2'" },
+    { name = "pytest", version = "9.0.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14.2'" },
+    { name = "pytest-asyncio", version = "1.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14.2'" },
+    { name = "pytest-asyncio", version = "1.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14.2'" },
+    { name = "pytest-cov", version = "7.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14.2'" },
+    { name = "pytest-cov", version = "7.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14.2'" },
+    { name = "pytest-homeassistant-custom-component", version = "0.13.316", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14.2'" },
+    { name = "pytest-homeassistant-custom-component", version = "0.13.368", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14.2'" },
+    { name = "pytest-mock" },
+    { name = "pytest-timeout" },
+    { name = "pytest-xdist" },
+    { name = "ruff" },
+]
+docs = [
+    { name = "mkdocs-autorefs" },
+    { name = "mkdocs-coverage" },
+    { name = "mkdocs-git-revision-date-localized-plugin" },
+    { name = "mkdocs-htmlproofer-plugin" },
+    { name = "mkdocs-materialx" },
+    { name = "mkdocs-meta-descriptions-plugin" },
+    { name = "mkdocs-minify-plugin" },
+    { name = "mkdocs-pagetree-plugin" },
+    { name = "properdocs" },
+    { name = "pymdown-extensions" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "prompt-toolkit", specifier = ">=3.0" },
+    { name = "pygments", specifier = ">=2.18" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "rich", specifier = ">=15.0.0" },
+    { name = "websockets", specifier = ">=13.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "actionlint-py" },
+    { name = "codespell" },
+    { name = "coverage" },
+    { name = "genbadge", extras = ["all"] },
+    { name = "homeassistant" },
+    { name = "icdiff" },
+    { name = "mypy" },
+    { name = "pre-commit", specifier = ">=4.4.0" },
+    { name = "pytest", specifier = ">=9.0.0" },
+    { name = "pytest-asyncio", specifier = ">=0.24" },
+    { name = "pytest-cov", specifier = ">=7.0.0" },
+    { name = "pytest-homeassistant-custom-component" },
+    { name = "pytest-mock", specifier = ">=3.15.0" },
+    { name = "pytest-timeout" },
+    { name = "pytest-xdist" },
+    { name = "ruff", specifier = ">=0.15.0" },
+]
+docs = [
+    { name = "mkdocs-autorefs" },
+    { name = "mkdocs-coverage" },
+    { name = "mkdocs-git-revision-date-localized-plugin" },
+    { name = "mkdocs-htmlproofer-plugin" },
+    { name = "mkdocs-materialx" },
+    { name = "mkdocs-meta-descriptions-plugin" },
+    { name = "mkdocs-minify-plugin" },
+    { name = "mkdocs-pagetree-plugin" },
+    { name = "properdocs" },
+    { name = "pymdown-extensions" },
 ]
 
 [[package]]

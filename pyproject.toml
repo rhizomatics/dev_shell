@@ -1,5 +1,5 @@
 [project]
-name = "dev_shell"
+name = "homeassistant-devshell"
 version = "0.1.0"
 description = "Developer shell for Home Assistant, for REPL style access to running Home Assistant instances"
 readme = "README.md"
@@ -11,7 +11,18 @@ dependencies = [
     "rich>=15.0.0",
     "websockets>=13.0",
 ]
-
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Environment :: Console",
+    "Topic :: Home Automation",
+    "Topic :: Software Development :: Debuggers",
+    "Intended Audience :: Developers",
+    "Typing :: Typed",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.14"
+]
 
 [project.scripts]
 dev_shell = "dev_shell.cli:main"
@@ -49,11 +60,13 @@ docs=[
 ]
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.9.18,<0.13.0"]
+build-backend = "uv_build"
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/dev_shell"]
+[tool.uv.build-backend]
+module-root = "src"
+module-name = "dev_shell"
+
 
 [tool.ruff.lint]
 preview = true
@@ -77,8 +90,22 @@ addopts = [
     "--cov-report=html",
     "--cov-report=term-missing",
     "--cov=custom_components/dev_shell_server",
-    "--cov-fail-under=35",  # TODO: raise back towards 90 once hass-backed tests land
+    "--cov=src",
+    "--cov-fail-under=45",  # TODO: raise back towards 90 once hass-backed tests land
 ]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+
+[tool.coverage.report]
+fail_under=0
+
+[tool.coverage.xml]
+output="cov.xml"
+
+[tool.coverage.html]
+directory="htmlcov"
 
 [tool.mypy]
 mypy_path = "src"
@@ -92,3 +119,10 @@ ignore-words-list="hass,referer"
 [tool.bandit]
 exclude_dirs = ["tests"]
 skips = ["B105"]
+
+[project.urls]
+Homepage="https://dev_shell.rhizomatics.org.uk"
+Repository="https://github.com/rhizomatics/dev_shell"
+Documentation="https://dev_shell.rhizomatics.org.uk"
+Issues="https://github.com/rhizomatics/dev_shell/issues"
+Changelog="https://github.com/rhizomatics/dev_shell/blob/main/CHANGELOG.md"
