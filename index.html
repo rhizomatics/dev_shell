@@ -426,6 +426,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#using-the-shell" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -873,7 +884,7 @@
 <li>Debugging code (but see note below)</li>
 <li>Hotfixing issues that don't have built in support to do so from existing components.</li>
 </ul>
-<div class="termy" data-termynal data-ty-macos data-ty-title="bash"><span data-ty="input" data-ty-prompt="$">uv run --with homeassistant-devshell dev_shell --url http://192.168.1.100:8123 --token=&lt;insert token here&gt;</span><span data-ty>Dev Shell (API client mode) connected to ws://192.168.1.100:8123/api/websocket. `obj` only, read-only - no `hass`. Ctrl-D to exit.</span><span data-ty="input" data-ty-prompt="&gt;&gt;&gt;">obj[&quot;/mqtt/binary_sensor/kitchen_terrace_window_tilt&quot;].state</span><span data-ty>'off'</span><span data-ty="input" data-ty-prompt="&gt;&gt;&gt;">[o.name for o in obj[&quot;/rflink/binary_sensor&quot;].values() if o.state=='unavailable']</span><span data-ty>['Shed Intruder Alarm', 'Panic Keyfob']</span><span data-ty="input" data-ty-prompt="&gt;&gt;&gt;">{(o.entity_id, o.state) for o in obj.find(domain=&quot;binary_sensor&quot;,platform=&quot;mqtt&quot;)}</span><span data-ty>{<br>    ('binary_sensor.terrace_pir_occupancy', 'unavailable'),<br>    ('binary_sensor.scullery_smoke_alarm_battery_low', 'off'),<br>    ('binary_sensor.kitchen_terrace_window_tweaked', 'off'),<br>    ('binary_sensor.scullery_water_detector_water_leak', 'dry'),<br>    ('binary_sensor.boiler_co_detector_battery_low', 'off'),<br>    ('binary_sensor.pantry_sensor_occupancy', 'off')<br>}<br>&gt;&gt;&gt;<br></span></div>
+<div class="termy" data-termynal data-ty-macos data-ty-title="bash"><span data-ty="input" data-ty-prompt="$">uv run --with homeassistant-devshell dev_shell --token=&lt;insert token here&gt;</span><span data-ty>Dev Shell (API client mode) connected to ws://homeassistant.local:8123/api/websocket. `obj` only, read-only - no `hass`. Ctrl-D to exit.</span><span data-ty="input" data-ty-prompt="&gt;&gt;&gt;">obj[&quot;/mqtt/binary_sensor/kitchen_terrace_window_tilt&quot;].state</span><span data-ty>'off'</span><span data-ty="input" data-ty-prompt="&gt;&gt;&gt;">[o.name for o in obj[&quot;/rflink/binary_sensor&quot;].values() if o.state=='unavailable']</span><span data-ty>['Shed Intruder Alarm', 'Panic Keyfob']</span><span data-ty="input" data-ty-prompt="&gt;&gt;&gt;">{(o.entity_id, o.state) for o in obj.find(domain=&quot;binary_sensor&quot;,platform=&quot;mqtt&quot;)}</span><span data-ty>{<br>    ('binary_sensor.terrace_pir_occupancy', 'unavailable'),<br>    ('binary_sensor.scullery_smoke_alarm_battery_low', 'off'),<br>    ('binary_sensor.kitchen_terrace_window_tweaked', 'off'),<br>    ('binary_sensor.scullery_water_detector_water_leak', 'dry'),<br>    ('binary_sensor.boiler_co_detector_battery_low', 'off'),<br>    ('binary_sensor.pantry_sensor_occupancy', 'off')<br>}<br>&gt;&gt;&gt;<br></span></div>
 
 <p>If you're not already comfortable using Python tools to manipulate data on the fly, or better REPL shells in other languages, this is a great way to learn, and faster at the keyboard than clicking around Jupyter notebooks.</p>
 <p>This is primarily for developers of custom components, and their LLM agents, though may be of interest for other folk tinkering with Home Assistant. It is a potentially sharp tool, so NOT appropriate for general Home Assistant users.</p>
@@ -901,6 +912,11 @@
 <p>[!NOTE]
 It is not intended to ever be a replacement for a Python debugger, although it may complement one. It also does not intend to replicate <a href="https://pyscript.net">PyScript</a>, instead focusing on standard python (PyScript uses MicroPython) even at expense of general usability or home assistance access, and not a general automation script execution service. For most non-developer cases, <a href="https://pypi.org/project/homeassistant-cli/">homeassistant-cli</a> is a better choice, with pre-packaged access to devices, entities, services etc.</p>
 </blockquote>
+<h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
+<p>Use the <code>api</code> mode with <code>uv</code> (traditional install also available via <code>pip install homeassistant-devshell</code>).</p>
+<p>If Home Assistant available via <code>http://homeassistant.local:8123</code> then you can skip the <code>--url</code> argument. You will also need to create a <a href="https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token">Long Lived Access Token</a> by going to the personal settings on your Home Assistant mobile or desktop app.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>--with<span class="w"> </span>homeassistant-devshell<span class="w"> </span>dev_shell<span class="w"> </span>--token<span class="w"> </span><span class="o">&lt;&lt;&lt;</span>my<span class="w"> </span>long<span class="w"> </span>lived<span class="w"> </span>access<span class="w"> </span>token&gt;&gt;&gt;
+</span></code></pre></div>
 <h2 id="using-the-shell">Using the Shell<a class="headerlink" href="#using-the-shell" title="Permanent link">&para;</a></h2>
 <p>The shell is a full Python REPL shell, implemented as a VSCode NotebookController, with multi-line editing, history etc, living inside an asyncio loop that exposes the live Home Assistant instance as</p>
 <ul>
@@ -911,8 +927,8 @@ It is not intended to ever be a replacement for a Python debugger, although it m
 <li><code>hass</code> - the <code>HomeAssistant</code> class at the root of the Python API</li>
 </ul>
 <p>So I can write code at the command line like:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">pir</span> <span class="o">=</span> <span class="n">obj</span><span class="p">[</span><span class="s2">"/rflink/binary_sensor/hall_pir"</span><span class="p">]</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">pir</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s2">"on"</span>  <span class="c1"># non-strict mode, sets entity state with repl as context</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">pir</span> <span class="o">=</span> <span class="n">obj</span><span class="p">[</span><span class="s2">"/rflink/binary_sensor/hall_pir"</span><span class="p">]</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">pir</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s2">"on"</span>  <span class="c1"># non-strict mode, sets entity state with repl as context</span>
 </span></code></pre></div>
 <p>The return value of the object is returned to the shell, value printed and available to Python code as <code>_</code>. Tracebacks are printed also, as if they were local (in general everything feels like its local)</p>
 <h2 id="the-object-tree">The Object Tree<a class="headerlink" href="#the-object-tree" title="Permanent link">&para;</a></h2>
@@ -934,30 +950,30 @@ It is not intended to ever be a replacement for a Python debugger, although it m
 <h3 id="obj"><code>obj[]</code><a class="headerlink" href="#obj" title="Permanent link">&para;</a></h3>
 <p>This allows dictionary ('Mapping') access to the object tree.</p>
 <p>In the example tree below, the objects and subtrees of objects can be accessed like:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">obj</span><span class="p">[</span><span class="s2">"/rflink/sensor/shed_temperature"</span><span class="p">]</span><span class="o">.</span><span class="n">state</span>  <span class="c1"># prints out temperature</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">obj</span><span class="p">[</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="s2">"/rflink/sensor/shed_temperature"</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="p">]</span><span class="o">.</span><span class="n">state_attributes</span>  <span class="c1"># prints out additional attributes</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">obj</span><span class="p">[</span><span class="s2">"/rflink"</span><span class="p">]</span>  <span class="c1"># the 'light','binary_sensor' and 'sensor' subtrees for rflink</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">obj</span><span class="p">[</span><span class="s2">"/rflink/sensor"</span><span class="p">]</span>  <span class="c1"># all the sensors for rflink</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="p">[</span><span class="s2">"/rflink/sensor"</span><span class="p">])</span>  <span class="c1"># count of rflink sensors in this example</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">obj</span><span class="p">[</span><span class="s2">"/rflink/sensor/shed_temperature"</span><span class="p">]</span><span class="o">.</span><span class="n">state</span>  <span class="c1"># prints out temperature</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">obj</span><span class="p">[</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="s2">"/rflink/sensor/shed_temperature"</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="p">]</span><span class="o">.</span><span class="n">state_attributes</span>  <span class="c1"># prints out additional attributes</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">obj</span><span class="p">[</span><span class="s2">"/rflink"</span><span class="p">]</span>  <span class="c1"># the 'light','binary_sensor' and 'sensor' subtrees for rflink</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">obj</span><span class="p">[</span><span class="s2">"/rflink/sensor"</span><span class="p">]</span>  <span class="c1"># all the sensors for rflink</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="p">[</span><span class="s2">"/rflink/sensor"</span><span class="p">])</span>  <span class="c1"># count of rflink sensors in this example</span>
 </span></code></pre></div>
 <h5 id="example-tree">Example Tree<a class="headerlink" href="#example-tree" title="Permanent link">&para;</a></h5>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>...
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>- mqtt
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>- rflink
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>  - light
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    - staircase_ceiling
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    - shed
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>  - switch
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    - upstairs_pixie
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>  - binary_sensor
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    - porch_pir
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    - shed_door
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>  - sensor
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    - shed_temperature
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    - kitchen_humidity
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>...
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>...
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>- mqtt
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>- rflink
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  - light
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    - staircase_ceiling
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    - shed
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>  - switch
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    - upstairs_pixie
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>  - binary_sensor
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    - porch_pir
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    - shed_door
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>  - sensor
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    - shed_temperature
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    - kitchen_humidity
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>...
 </span></code></pre></div>
 <blockquote>
 <p>[!NOTE]
@@ -966,48 +982,48 @@ In the roadmap, there will be a visual Object Browser to view and select entitie
 <h4 id="objfind"><code>obj.find('..')</code><a class="headerlink" href="#objfind" title="Permanent link">&para;</a></h4>
 <p>Where the dictionary access gives a nested directory view of the object tree, <code>find</code> provides a flat iteration with no order guarantees, so its fast and simple and can be sorted the usual Python way if needed.</p>
 <p><code>find</code> also has built in filters, to narrow the big list of objects by one or more <code>platform</code>,<code>domain</code>,<code>area</code>,<code>label</code> - each of these will take a single string or list of strings, and they can be combined to narrow down the list.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{(</span><span class="n">o</span><span class="o">.</span><span class="n">entity_id</span><span class="p">,</span> <span class="n">o</span><span class="o">.</span><span class="n">state</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="s2">"binary_sensor"</span><span class="p">)}</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{(</span><span class="n">o</span><span class="o">.</span><span class="n">entity_id</span><span class="p">,</span> <span class="n">o</span><span class="o">.</span><span class="n">state</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="s2">"binary_sensor"</span><span class="p">)}</span>
 </span></code></pre></div>
 <h5 id="raw-objects">Raw Objects<a class="headerlink" href="#raw-objects" title="Permanent link">&para;</a></h5>
 <p>In API Client mode, <code>find()</code> returns a local proxy for the remote class, normalized to look more like the same object you'd get in custom mode. Switching <code>raw=True</code> will bypass this and you'll get the object untouched as it was received from the API.</p>
 <h4 id="objfind_paths"><code>obj.find_paths(..)</code><a class="headerlink" href="#objfind_paths" title="Permanent link">&para;</a></h4>
 <p>Identical to <code>obj.find()</code> except it only returns an iterable of the object paths rather than the objects themselves. Ideal for plugging into some logic that will then call <code>obj[path]</code> on each one.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">list</span><span class="p">(</span><span class="n">objs</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">area</span><span class="o">=</span><span class="s2">"kitchen"</span><span class="p">))</span>  <span class="c1"># list names of all entities in kitchen</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nb">sorted</span><span class="p">(</span><span class="n">objs</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">area</span><span class="o">=</span><span class="p">[</span><span class="s2">"kitchen"</span><span class="p">,</span> <span class="s2">"shed"</span><span class="p">]))</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">list</span><span class="p">(</span><span class="n">objs</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">area</span><span class="o">=</span><span class="s2">"kitchen"</span><span class="p">))</span>  <span class="c1"># list names of all entities in kitchen</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nb">sorted</span><span class="p">(</span><span class="n">objs</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">area</span><span class="o">=</span><span class="p">[</span><span class="s2">"kitchen"</span><span class="p">,</span> <span class="s2">"shed"</span><span class="p">]))</span>
 </span></code></pre></div>
 <h4 id="objfind_names"><code>obj.find_names(..)</code><a class="headerlink" href="#objfind_names" title="Permanent link">&para;</a></h4>
 <p>Same as <code>obj.find_paths()</code> except it returns the object bare name, as it would appear in Home Assistant, e.g. <code>sensor.bathroom_humidity</code></p>
 <h4 id="objshow"><code>obj.show(..)</code><a class="headerlink" href="#objshow" title="Permanent link">&para;</a></h4>
 <p>The <code>show</code> function will give a pretty version of an object where it knows how. For entities this means it combines the <code>RegistryEntry</code> and <code>Entity</code> information, drops some boring internal stuff, filters out all the <code>None</code> values and turns <code>datetime.datetime</code> structures into local date times.</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="l l-Scalar l-Scalar-Plain">obj.show('/unifi/sensor/kitchen_wifi_cpu_utilization')</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="l l-Scalar l-Scalar-Plain">obj.show('/unifi/sensor/kitchen_wifi_cpu_utilization')</span>
 </span></code></pre></div>
 <h2 id="starting-the-shell">Starting the Shell<a class="headerlink" href="#starting-the-shell" title="Permanent link">&para;</a></h2>
-<p>Use the <code>HASS_SERVER</code> environment variable or the <code>--url</code> command line argument if the Home Assistant server is not running locally ( i.e. <code>http://127.0.0.1:8123</code>). A <a href="https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token">long lived access token</a> is needed at <code>--token</code> or in <code>HASS_TOKEN</code>.</p>
+<p>Use the <code>HASS_SERVER</code> environment variable or the <code>--url</code> command line argument if the Home Assistant server is not running locally at usual address( i.e. <code>http://homeassistant.local:8123</code>). A <a href="https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token">long lived access token</a> is needed at <code>--token</code> or in an <code>HASS_TOKEN</code> environment variable.</p>
 <h3 id="custom-mode-for-real-server">Custom Mode for Real Server<a class="headerlink" href="#custom-mode-for-real-server" title="Permanent link">&para;</a></h3>
 <p>On a real instance, install via HACS and add <strong>Developer Shell for Home Assistant</strong> from Settings → Devices &amp; services → Add integration (or add <code>dev_shell_server:</code> to <code>configuration.yaml</code>, which is imported as a config entry), then on the local terminal set <code>HASS_SERVER</code> and <code>HASS_TOKEN</code> (an admin long-lived token).</p>
 <p>The quickest way to run the shell is using <em>uv</em>, which you can do without cloning this repo or making any other downloads.</p>
-<p><div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>uv<span class="w"> </span>run<span class="w"> </span>--with<span class="w"> </span>homeassistant-devshell<span class="w"> </span>dev_shell<span class="w">         </span>
+<p><div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>uv<span class="w"> </span>run<span class="w"> </span>--with<span class="w"> </span>homeassistant-devshell<span class="w"> </span>dev_shell<span class="w">         </span>
 </span></code></pre></div>
 Get help on the arguments in the usual way,</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>uv<span class="w"> </span>run<span class="w"> </span>--with<span class="w"> </span>homeassistant-devshell<span class="w"> </span>dev_shell<span class="w"> </span>--help<span class="w">       </span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>uv<span class="w"> </span>run<span class="w"> </span>--with<span class="w"> </span>homeassistant-devshell<span class="w"> </span>dev_shell<span class="w"> </span>--help<span class="w">       </span>
 </span></code></pre></div>
 <p>If you do have this repo checked out, you can also use a direct <code>run</code> which means you can also tinker locally with <code>dev_shell</code> code.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>uv<span class="w"> </span>run<span class="w"> </span>dev_shell<span class="w">         </span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>uv<span class="w"> </span>run<span class="w"> </span>dev_shell<span class="w">         </span>
 </span></code></pre></div>
 <h3 id="install-local-home-assistant-with-the-custom-mode-server">Install Local Home Assistant with the Custom Mode Server<a class="headerlink" href="#install-local-home-assistant-with-the-custom-mode-server" title="Permanent link">&para;</a></h3>
 <p>Dev instance (devcontainer, or directly on a host with Python 3.14):</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>dev/setup.sh<span class="w">                 </span><span class="c1"># installs HA into its own venv + the CLI (devcontainer runs this)</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>dev/run-ha.sh<span class="w">                </span><span class="c1"># HA on :8123 with custom_components/dev_shell_server symlinked in</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>dev/bootstrap.py<span class="w">   </span><span class="c1"># onboard (user dev/dev) and write dev/.env with a token</span>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>dev/setup.sh<span class="w">                 </span><span class="c1"># installs HA into its own venv + the CLI (devcontainer runs this)</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>dev/run-ha.sh<span class="w">                </span><span class="c1"># HA on :8123 with custom_components/dev_shell_server symlinked in</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>dev/bootstrap.py<span class="w">   </span><span class="c1"># onboard (user dev/dev) and write dev/.env with a token</span>
 </span></code></pre></div>
 <p>Using it (host or container):</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">set</span><span class="w"> </span>-a<span class="p">;</span><span class="w"> </span>.<span class="w"> </span>dev/.env<span class="p">;</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>+a
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>uv<span class="w"> </span>run<span class="w"> </span>dev_shell<span class="w">                                         </span><span class="c1"># interactive</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>uv<span class="w"> </span>run<span class="w"> </span>dev_shell<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s1">'hass.states.get("sun.sun")'</span>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>uv<span class="w"> </span>run<span class="w"> </span>dev_shell<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;'PY'</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="s">await hass.services.async_call("light", "toggle", {"entity_id": "light.kitchen_lights"}, blocking=True)</span>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="s">hass.states.get("light.kitchen_lights").state</span>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="s">PY</span>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nb">set</span><span class="w"> </span>-a<span class="p">;</span><span class="w"> </span>.<span class="w"> </span>dev/.env<span class="p">;</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>+a
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>uv<span class="w"> </span>run<span class="w"> </span>dev_shell<span class="w">                                         </span><span class="c1"># interactive</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>uv<span class="w"> </span>run<span class="w"> </span>dev_shell<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s1">'hass.states.get("sun.sun")'</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>uv<span class="w"> </span>run<span class="w"> </span>dev_shell<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;'PY'</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="s">await hass.services.async_call("light", "toggle", {"entity_id": "light.kitchen_lights"}, blocking=True)</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="s">hass.states.get("light.kitchen_lights").state</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="s">PY</span>
 </span></code></pre></div>
 <h3 id="running-tests">Running Tests<a class="headerlink" href="#running-tests" title="Permanent link">&para;</a></h3>
 <p>Tests: <code>uv run pytest</code> covers the engine without needing HA.</p>
