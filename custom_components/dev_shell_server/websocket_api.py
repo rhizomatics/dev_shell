@@ -31,7 +31,11 @@ def _manager(
 
 
 @websocket_api.require_admin
-@websocket_api.websocket_command({
+# ty resolves vol.Required/vol.Optional's own Marker subclassing too narrowly
+# to see this inline schema dict as a VolDictType - a known voluptuous/
+# static-typing friction point across the HA ecosystem, not specific to this
+# schema (mypy, via homeassistant-stubs, is fine with it as-is).
+@websocket_api.websocket_command({  # ty: ignore[invalid-argument-type]
     vol.Required("type"): "dev_shell_server/exec",
     vol.Required("code"): str,
     vol.Optional("session", default=DEFAULT_SESSION): str,
@@ -52,7 +56,7 @@ async def ws_exec(
 
 
 @websocket_api.require_admin
-@websocket_api.websocket_command({
+@websocket_api.websocket_command({  # ty: ignore[invalid-argument-type]
     vol.Required("type"): "dev_shell_server/reset",
     vol.Optional("session", default=DEFAULT_SESSION): str,
 })
@@ -66,7 +70,9 @@ def ws_reset(
 
 
 @websocket_api.require_admin
-@websocket_api.websocket_command({vol.Required("type"): "dev_shell_server/sessions"})
+@websocket_api.websocket_command(
+    {vol.Required("type"): "dev_shell_server/sessions"}  # ty: ignore[invalid-argument-type]
+)
 @callback
 def ws_sessions(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
