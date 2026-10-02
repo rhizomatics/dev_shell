@@ -75,6 +75,7 @@ This switch controls trade-off between shell convenience and ability to trial wo
 - `off`
   - Subset of methods that don't require arguments can be accessed like properties, even if they aren't defined that way, and very common ones, like `state` are auto-wired to be gettable and settable.
   - `async` methods are automatically awaited 
+  - if method can't be found looks for `async_` instead (could even strip all those off)
   - 'RegistryEntity` and `Entity` merged, `.hass` stripped
 
 ### Enhancements
@@ -90,6 +91,7 @@ This switch controls trade-off between shell convenience and ability to trial wo
 ## Other Ideas
 - Safe Mode
   - API access only, also no need of HACS components
+  - TBD: whether actions/services get folded into the object tree, or left separate
 - Other bindings
   - sql() for the sqlite DB
     - or support for a client-side sql client ui
@@ -104,7 +106,9 @@ This switch controls trade-off between shell convenience and ability to trial wo
 - Notebook support, e.g. Marimo
 - safe(r) mode - remove things like stop
 - Event subscription and visualization
-- LSP?
+- Auto-complete support
+  - `jedi`? an LSP?
+  - will require to augment rather than replace auto-complete for core python
 - Everything runs in the async loop, non async code wrapped as async in HA compatible way. Warn about blocking calls in non-strict
 - Persisting context across invocations
 - Appdaemon support

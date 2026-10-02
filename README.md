@@ -4,7 +4,7 @@
 
 Home Assistant environment designed for custom component developers and tinkerers. Makes it easy as pie!
 
-Its aims are to make it easier to:
+It is an opinionated shell that aims are to make it easier without any configuration to:
 
 - Exploring of the APIs in context of a live working instance
 - Trialling out snippets of code
@@ -13,20 +13,44 @@ Its aims are to make it easier to:
 
 This is primarily for developers of custom components, and their LLM agents, though may be of interest for other folk tinkering with Home Assistant. It is a potentially sharp tool, so NOT appropriate for general Home Assistant users.
 
+Other features:
+
+- Integrated with `rich` for pretty object printouts and stack traces
+- Access to all entities via dictionary like interface, `obj`
+- Usual multi-line editing support and history of Python
+
+All of the above works with standard Home Assistant APIs. 
+
+Dev Shell also has an advanced `direct` mode that taps directly into a live Home Assistant using an optional server component available via [HACS](http://hacs.xyz).
+
+Direct mode adds:
+
+- Access to the core Home Assistant Python API via `hass`
+- Read/write access to objects, e.g. entity state
+- A frisson of danger
+
+
 >[!NOTE]
 > It is not intended to ever be a replacement for a Python debugger, although it may complement one. It also does not intend to replicate [PyScript](https://pyscript.net), instead focusing on standard python (PyScript uses MicroPython) even at expense of general usability or home assistance access, and not a general automation script execution service.
+
+See the [Roadmap](docs/developer/design/roadmap.md) for where this might go, and your feedback welcome.
 
 
 ## Dev Shell Server
 
-A HACS component that taps into the Home Assistant and acts as a session server over web sockets.
+A HACS component that taps into the Home Assistant and acts as a session server over web sockets. 
+
+Needed for `direct` mode only, since `safe` mode only uses standard Home Assistant APIs.
 
 ## Shell
 
 The shell is a full Python REPL shell, implemented as a VSCode NotebookController, with multi-line editing, history etc, living inside an asyncio loop that exposes the live Home Assistant instance as
 
+* `obj` - the object tree exposed as a dictionary object and common methods
+
+In `direct` mode it also offers:
+
 * `hass` - the `HomeAssistant` class at the root of the Python API
-* `obj[]` - the object tree exposed as a dictionary object
 
 So I can write code at the command line like:
 
@@ -36,6 +60,57 @@ pir.state="on" # non-strict mode, sets entity state with repl as context
 ```
 
 The return value of the object is returned to the shell, value printed and available to Python code as `_`. Tracebacks are printed also, as if they were local (in general everything feels like its local)
+
+## Object Tree
+
+All of the objects (only entities for now) are arranged in a giant tree, like a file system, exposed as the global variable `objs` and implemented as Python [Mapping](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping) object (which provides the [MappingView](https://docs.python.org/3/library/collections.abc.html#collections.abc.MappingView) views [ItemsView](https://docs.python.org/3/library/collections.abc.html#collections.abc.ItemsView) and [KeysView](https://docs.python.org/3/library/collections.abc.html#collections.abc.KeysView))
+
+`objs` offers:
+
+- Dictionary style access, using `[]`
+  - Raises `KeyError` if entity or sub-path doesn't exist
+  - Each level of the tree returns a sub-tree
+  - `keys()`,`values()`,`items()` of the sub-tree shows only that level
+  - An `OrderedView` is used rather than plain `MappingView` so can be accessed like a `list` and items are alphabetically organized
+- `find()`
+  - Returns a flat iterable of the entire tree
+  - Optionally restrict by `platform`,`area`,`label`
+- `show()`
+  - Dump the most useful info on an object to console
+
+All the usual Python tricks can of course also be used, iterators, comprehensions, classes, lambdas or a simple `len()`.
+
+### Example
+
+```
+...
+- mqtt
+- rflink
+  - light
+    - staircase_ceiling
+    - shed
+  - switch
+    - upstairs_pixie
+  - binary_sensor
+    - porch_pir
+    - shed_door
+  - sensor
+    - shed_temperature
+    - kitchen_humidity
+...
+```
+
+In this example, the objects and subtrees of objects can be accessed like:
+
+```python
+obj["/rflink/sensor/shed_temperature"].state. # prints out temperature
+obj["/rflink"]        # the 'light','binary_sensor' and 'sensor' subtrees for rflink
+obj["/rflink/sensor"] # all the sensors for rflink
+len(obj["/rflink/sensor"]) # count of rflink sensors in this example
+```
+
+>[!NOTE]
+>In the roadmap, there will be a visual Object Browser to view and select entities. For now, it is accessible only via Python code. It also may extend beyond entities, to things like areas, users, categories and devices.
 
 ## Running
 
