@@ -11,7 +11,7 @@
 ![GitHub](https://img.shields.io/github/license/rhizomatics/dev_shell)
 ![GitHub last commit](https://img.shields.io/github/last-commit/rhizomatics/dev_shell)
 
-<img src="https://rhizomatics.github.io/dev_shell/assets/icon.png" width="128" height="128" align="left" alt="A slice of cherry pie, drawn like a 1990s Visual Basic icon">
+<img src="https://dev-shell.rhizomatics.org.uk/assets/icon.png" width="128" height="128" align="left" alt="A slice of cherry pie, drawn like a 1990s Visual Basic icon">
 
 A Home Assistant environment designed for custom component developers, tinkerers and native Python speakers. Makes it easy as pie!
 
