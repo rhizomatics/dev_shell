@@ -7,5 +7,5 @@ Dev Shell is a Python REPL for developers of Home Assistant custom components. I
 
 ## Start here
 
-- [Home](https://dev-shell.rhizomatics.org.uk/index.md): Overview of what Dev Shell does, api vs custom mode, and getting started
+- [Developer Shell for Home Assistant](https://dev-shell.rhizomatics.org.uk/index.md): Overview of what Dev Shell does, api vs custom mode, and getting started
 

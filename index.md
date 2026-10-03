@@ -1,7 +1,5 @@
 # Developer Shell for Home Assistant
 
-\[!
-
 A Home Assistant environment designed for custom component developers, tinkerers and native Python speakers. Makes it easy as pie!
 
 It is an opinionated REPL ([Read-Eval-Print-Loop](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop)) shell that aims are to make it easier without any configuration to:
