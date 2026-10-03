@@ -59,6 +59,7 @@ docs=[
     "mkdocs-meta-descriptions-plugin",
     "mkdocs-git-revision-date-localized-plugin",
     "mkdocs-htmlproofer-plugin",
+    "mkdocs-llmstxt>=0.5.0,<0.6.0",
 ]
 
 [build-system]
@@ -124,8 +125,8 @@ exclude_dirs = ["tests"]
 skips = ["B105"]
 
 [project.urls]
-Homepage="https://dev_shell.rhizomatics.org.uk"
+Homepage="https://dev-shell.rhizomatics.org.uk"
 Repository="https://github.com/rhizomatics/dev_shell"
-Documentation="https://dev_shell.rhizomatics.org.uk"
+Documentation="https://dev-shell.rhizomatics.org.uk"
 Issues="https://github.com/rhizomatics/dev_shell/issues"
 Changelog="https://github.com/rhizomatics/dev_shell/blob/main/CHANGELOG.md"
