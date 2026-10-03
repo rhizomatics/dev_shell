@@ -52,6 +52,7 @@ repos:
           - prompt_toolkit
           - websockets
           - types-PyYAML
+          - types-Pygments
           - pytest_unordered
           - pytest_mock
           - pytest-homeassistant-custom-component
