@@ -1,6 +1,6 @@
-site_name: Dev Shell Logger for Home Assistant
-site_url: https://dev-shell.rhizomatics.org.uk
-site_description: Development Python REPL for Home Assistant
+site_name: Dev Shell for Home Assistant
+site_url: https://dev_shell.rhizomatics.org.uk
+site_description: Python REPL Shell for Home Assistant Developers
 
 repo_name: rhizomatics/dev_shell
 repo_url: https://github.com/rhizomatics/dev_shell
