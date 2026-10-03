@@ -1,7 +1,6 @@
 # Developer Shell for Home Assistant 
 
 [![Rhizomatics Open Source](https://img.shields.io/badge/rhizomatics%20open%20source-lightseagreen)](https://github.com/rhizomatics)
-
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/rhizomatics/dev_shell/python-package.yml)
 [![PyPI](https://img.shields.io/pypi/v/homeassistant-devshell)](https://pypi.org/project/homeassistant-devshell/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/homeassistant-devshell)](https://www.python.org/downloads/)
