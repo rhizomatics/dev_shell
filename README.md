@@ -1,8 +1,6 @@
-![Dev Shell](https://dev-shell.rhizomatics.org.uk/dev/assets/images/dark_icon.png){ align=left }
-
 # Developer Shell for Home Assistant 
 
-[![Rhizomatics Open Source](https://img.shields.io/badge/rhizomatics%20open%20source-lightseagreen)](https://github.com/rhizomatics) [!
+[![Rhizomatics Open Source](https://img.shields.io/badge/rhizomatics%20open%20source-lightseagreen)](https://github.com/rhizomatics)
 
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/rhizomatics/dev_shell/python-package.yml)
 [![PyPI](https://img.shields.io/pypi/v/homeassistant-devshell)](https://pypi.org/project/homeassistant-devshell/)
