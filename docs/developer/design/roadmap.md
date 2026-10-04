@@ -88,7 +88,13 @@ This switch controls trade-off between shell convenience and ability to trial wo
 - Auto clone the source of current HA instance and keep tag aligned with release
   - On demand also for custom components, both this and core can be disabled for space constrained devices, with `inspect.getsource` as backup
 
+## Improvements
+- Make the main package more unique and HA specific than `dev_shell`
+- Allow it to be set up easily inside any python code (async compatibility)?
+
 ## Other Ideas
+- iPython support
+- VSCode extension
 - API Mode
   - API access only, also no need of HACS components
   - TBD: whether actions/services get folded into the object tree, or left separate
