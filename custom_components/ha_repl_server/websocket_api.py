@@ -8,6 +8,7 @@ from typing import Any, cast
 import probatio as vol
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.loader import async_get_integration
 
 from .const import DEFAULT_SESSION, DOMAIN
 from .session import SessionManager
@@ -18,6 +19,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_exec)
     websocket_api.async_register_command(hass, ws_reset)
     websocket_api.async_register_command(hass, ws_sessions)
+    websocket_api.async_register_command(hass, ws_info)
 
 
 def _manager(
@@ -99,3 +101,19 @@ def ws_sessions(
     if (manager := _manager(hass, connection, msg)) is None:
         return
     connection.send_result(msg["id"], {"sessions": manager.describe()})
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    cast(Any, {vol.Required("type"): "ha_repl_server/info"})
+)
+@websocket_api.async_response
+async def ws_info(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """The server-side component's own version - compared against the
+    client's own package version in the live-mode shell's startup banner,
+    since the two are versioned and deployed independently (PyPI package vs
+    HACS component) and can drift out of sync."""
+    integration = await async_get_integration(hass, DOMAIN)
+    connection.send_result(msg["id"], {"version": integration.version})

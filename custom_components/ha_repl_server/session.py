@@ -15,16 +15,22 @@ import linecache
 import pydoc
 import re
 import sys
+import textwrap
 import time
 import traceback
 import typing
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 import yaml
-from rich.console import Console
+from pygments import lex
+from pygments.lexers.python import PythonLexer
+from rich.console import Console, Group
 from rich.pretty import Pretty
+from rich.syntax import Syntax
+from rich.text import Text
 from rich.traceback import Traceback
 
 MAX_OUTPUT_CHARS = 1_000_000
@@ -92,7 +98,7 @@ class Session:
             # run - the next command always starts from the real bindings again.
             self.globals_.update(self.protected)
             self.globals_["print"] = _capturing_print(out)
-            self.globals_["help"] = _capturing_help(out)
+            self.globals_["help"] = _capturing_help(out, color=color, width=width)
             self.globals_["_maybe_await"] = _maybe_await
             self.globals_["unawait"] = unawait
             result = ExecResult()
@@ -102,7 +108,15 @@ class Session:
                 value = await (asyncio.wait_for(coro, timeout) if timeout else coro)
                 if value is not None:
                     self.globals_["_"] = value
-                    result.value = _render(Pretty(value), color=color, width=width)
+                    # A value that already knows how to render itself as a
+                    # rich renderable (e.g. the Table from sql(...).show())
+                    # is shown as-is instead of being wrapped in Pretty's
+                    # generic repr-style rendering, which would just dump
+                    # its attributes instead of drawing the table.
+                    renderable = (
+                        value if hasattr(value, "__rich_console__") else Pretty(value)
+                    )
+                    result.value = _render(renderable, color=color, width=width)
             except asyncio.CancelledError:
                 # Cancellation of the caller must propagate, not be reported as a result.
                 raise
@@ -267,7 +281,7 @@ def _capturing_print(out: io.StringIO):
     return shell_print
 
 
-def _capturing_help(out: io.StringIO):
+def _capturing_help(out: io.StringIO, *, color: bool, width: int):
     # A fresh Helper per call, output redirected into the same buffer as print().
     helper = pydoc.Helper(input=io.StringIO(), output=out)
 
@@ -289,7 +303,7 @@ def _capturing_help(out: io.StringIO):
             return
         (thing,) = args
         if _is_summarisable(thing):
-            out.write(_class_summary(thing))
+            out.write(_class_summary(thing, color=color, width=width))
         else:
             helper(thing)
         url = _doc_url(thing)
@@ -315,7 +329,53 @@ def _is_summarisable(obj: Any) -> bool:
     )
 
 
-def _class_summary(thing: Any) -> str:
+_SIGNATURE_LEXER = PythonLexer()
+# rich.syntax.Syntax itself renders as a block (its own padding/background
+# handling, one truecolor SGR sequence per token even with
+# background_color="default") - fine stacked one-at-a-time in a real
+# terminal, but composed many-to-a-page inside a Group it came out jumbled
+# for a class with lots of methods. Lexing with pygments directly and
+# building a plain Text keeps this a single clean inline run per line, no
+# block rendering involved, and ansi_dark's named 16-colour styles
+# (`bright_cyan` etc.) over Syntax's default truecolor theme travel through
+# a websocket/terminal pair more predictably.
+_SIGNATURE_THEME = Syntax.get_theme("ansi_dark")
+
+
+def _signature_line(line: str, *, width: int) -> Text:
+    """A class/method signature as a one-line syntax-highlighted Text
+    (pygments' Python lexer tokenizes it fine even though, as a bare
+    "name(args) -> ret" fragment, it isn't valid standalone Python) - so
+    type annotations, defaults and operators get real highlighting instead
+    of being one flat-coloured string.
+
+    Home Assistant's own methods lean hard on generics (Callable[[Unpack[
+    _Ts]], ...]), so a real signature routinely runs past any reasonable
+    width - wrapped here with a hanging indent *before* lexing (so the
+    inserted newlines/spaces are just more whitespace tokens to pygments)
+    rather than left to Rich's own word-wrap, which breaks at the console
+    width with no indent at all and reads as a jumble of unrelated lines
+    once there are dozens of methods back to back.
+    """
+    wrapped = "\n".join(
+        textwrap.wrap(
+            line,
+            width=max(width, 20),
+            subsequent_indent="      ",
+            break_long_words=False,
+            break_on_hyphens=False,
+        )
+    )
+    tokens = list(lex(wrapped, _SIGNATURE_LEXER))
+    while tokens and not tokens[-1][1].strip():
+        tokens.pop()  # pygments always appends a trailing "\n" token
+    text = Text(no_wrap=True)
+    for token_type, value in tokens:
+        text.append(value, style=_SIGNATURE_THEME.get_style_for_token(token_type))
+    return text
+
+
+def _class_summary(thing: Any, *, color: bool, width: int) -> str:
     """A class's full pydoc page repeats its docstring once per method, which
     balloons for a class like HomeAssistant with hundreds of methods. A method's
     own docstring is one `help(hass.the_method)` away, so here we only show the
@@ -328,25 +388,24 @@ def _class_summary(thing: Any) -> str:
         if inspect.isclass(thing)
         else f"Help on {cls.__qualname__} object in module {cls.__module__}:"
     )
-    lines = [header, ""]
+    parts: list[Any] = [Text(header, style="bold"), Text("")]
     doc = inspect.getdoc(cls)
     if doc:
-        lines += [doc, ""]
+        parts += [Text(doc), Text("")]
     # A constructor "returning Self" is implied, not useful to state.
-    lines.append(
-        f"{cls.__qualname__}{_format_signature(cls, drop_return=(typing.Self,))}"
-    )
+    ctor_sig = f"{cls.__qualname__}{_format_signature(cls, drop_return=(typing.Self,))}"
+    parts.append(_signature_line(ctor_sig, width=width))
     method_names = sorted(
         name
         for name in dir(cls)
         if not name.startswith("_") and _is_plain_method(getattr(cls, name, None))
     )
     if method_names:
-        lines += ["", "Methods:"]
+        parts += [Text(""), Text("Methods:", style="bold underline")]
         for name in method_names:
             sig = _format_signature(getattr(cls, name), drop_self=True)
-            lines.append(f"  {name}{sig}")
-    return "\n".join(lines) + "\n"
+            parts.append(_signature_line(f"  {name}{sig}", width=width))
+    return _render(Group(*parts), color=color, width=width)
 
 
 def _is_plain_method(obj: Any) -> bool:
@@ -429,6 +488,18 @@ def _format_error(err: BaseException, *, color: bool, width: int) -> dict[str, s
     }
 
 
+@dataclass(frozen=True)
+class PerSession:
+    """Wraps a zero-arg factory for a binding that needs its own instance in
+    every session - e.g. sql's mutable `.limit`, which would otherwise leak
+    between sessions since `hass`/`obj` and friends are deliberately one
+    shared instance for all of them. SessionManager.get() calls the factory
+    once, the first time each session is created.
+    """
+
+    factory: Callable[[], Any]
+
+
 class SessionManager:
     """Holds sessions by name; a session lives until reset or process restart."""
 
@@ -438,14 +509,16 @@ class SessionManager:
 
     def get(self, name: str) -> Session:
         if (session := self._sessions.get(name)) is None:
+            resolved = {
+                k: (v.factory() if isinstance(v, PerSession) else v)
+                for k, v in self._bindings.items()
+            }
             globals_ = {
                 "__name__": "__ha_repl__",
                 "__builtins__": builtins,
-                **self._bindings,
+                **resolved,
             }
-            session = self._sessions[name] = Session(
-                name, globals_, dict(self._bindings)
-            )
+            session = self._sessions[name] = Session(name, globals_, resolved)
         return session
 
     def reset(self, name: str) -> bool:

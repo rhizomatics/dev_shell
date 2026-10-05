@@ -8,11 +8,11 @@ objtree.py against a live `hass`) get it from here instead.
 
 from __future__ import annotations
 
-import pytest
-
 pytest_plugins = "pytest_homeassistant_custom_component"
 
-
-@pytest.fixture(autouse=True)
-def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
-    """Custom integrations are disabled by default in the test harness."""
+# Deliberately not autouse: enable_custom_integrations (from the test harness)
+# itself depends on `hass`, so forcing it on every test - including ones using
+# recorder_mock, which asserts `hass` hasn't been built yet when it runs -
+# would break recorder-backed tests that never touch custom-integration
+# loading at all (only test_init.py's config_entries.async_setup() does).
+# That test requests `enable_custom_integrations` directly instead.

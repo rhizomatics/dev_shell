@@ -11,6 +11,14 @@ connect_hass_api() would otherwise make a real network call mid-test -
 which pytest-homeassistant-custom-component's socket blocking turns into a
 failure instead of the deterministic HassApiUnavailable path these tests
 expect.
+
+`recorder_mock` is listed first in each test's own parameters (not just
+relied on via conftest.py) because it needs to prepare the database before
+`hass` itself is built; `recorder` is now a declared manifest dependency
+(for sql()), so config_entries.async_setup() needs a working one.
+`enable_custom_integrations` has no such ordering requirement (it depends on
+`hass` itself), so it's requested directly rather than via an autouse
+fixture - see conftest.py for why that matters here specifically.
 """
 
 from __future__ import annotations
@@ -21,6 +29,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ha_repl_server.const import DOMAIN
 from custom_components.ha_repl_server.objtree import ObjTree
+from custom_components.ha_repl_server.sql import DEFAULT_ROW_LIMIT, SqlTool
 
 
 @pytest.fixture(autouse=True)
@@ -30,7 +39,9 @@ def _no_real_hass_api_env(monkeypatch):
     monkeypatch.delenv("HASS_TOKEN", raising=False)
 
 
-async def test_setup_and_unload_entry(hass: HomeAssistant) -> None:
+async def test_setup_and_unload_entry(
+    recorder_mock, hass: HomeAssistant, enable_custom_integrations: None
+) -> None:
     entry = MockConfigEntry(domain=DOMAIN, data={})
     entry.add_to_hass(hass)
 
@@ -41,6 +52,8 @@ async def test_setup_and_unload_entry(hass: HomeAssistant) -> None:
     session = manager.get("default")
     assert session.globals_["hass"] is hass
     assert isinstance(session.globals_["obj"], ObjTree)
+    assert isinstance(session.globals_["sql"], SqlTool)
+    assert session.globals_["sql"].limit == DEFAULT_ROW_LIMIT
     # No $HASS_SERVER/$HASS_TOKEN (nor a supervisor) here - connect_hass_api()
     # can't reach anything, so this only warns, it doesn't fail setup.
     assert session.globals_["hass_api"] is None
@@ -50,8 +63,30 @@ async def test_setup_and_unload_entry(hass: HomeAssistant) -> None:
     assert DOMAIN not in hass.data
 
 
+async def test_sql_limit_is_isolated_per_session(
+    recorder_mock, hass: HomeAssistant, enable_custom_integrations: None
+) -> None:
+    entry = MockConfigEntry(domain=DOMAIN, data={})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    manager = hass.data[DOMAIN]
+    one, two = manager.get("one"), manager.get("two")
+    assert one.globals_["sql"] is not two.globals_["sql"]
+
+    one.globals_["sql"].limit = 5000
+    assert two.globals_["sql"].limit == DEFAULT_ROW_LIMIT
+
+    assert await hass.config_entries.async_unload(entry.entry_id)
+
+
 async def test_setup_entry_connects_hass_api_when_configured(
-    hass: HomeAssistant, monkeypatch, niquests_mock
+    recorder_mock,
+    hass: HomeAssistant,
+    enable_custom_integrations: None,
+    monkeypatch,
+    niquests_mock,
 ) -> None:
     monkeypatch.setenv("HASS_SERVER", "http://ha.example:8123")
     monkeypatch.setenv("HASS_TOKEN", "sometoken")

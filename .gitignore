@@ -9,6 +9,8 @@ node_modules/
 package-lock.json
 .devcontainer/.venv
 junit/
+.real-env
+.env
 
 .venv/
 .DS_Store

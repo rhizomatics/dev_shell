@@ -49,6 +49,8 @@ repos:
           - homeassistant-stubs
           - pytest
           - rich
+          - nanoarrow
+          - sqlparse
           - types-PyYAML
           - prompt_toolkit
           - niquests[ws]

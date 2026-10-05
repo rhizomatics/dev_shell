@@ -1,5 +1,19 @@
 # What's New
 
+# 0.6.0
+- Live Mode now has direct SQL query access
+ - New `sql` global var, with `sql.tables` to show choice of tables
+   - `sql('select data_id,shared_data from event_data')`
+   - Tabular `show()` on results using `rich`
+   - Zero-copy export to polars or pandas dataframes (optional dependencies)
+ - Goes through Home Assistant's *Recorder* integration for maximum compatibility with Home Assistant and with any of the DB types used (e.g. sqlite, MySQL, PostgreSQL)
+ - Uses `arrow` format for client/server communication for efficiency and compatibility. 
+   - Direct integration into `polars` or `pandas` without relying on these libs
+   - `nanofeather` used for lightest Arrow implementation
+- `custom` mode is now `live` mode
+- Version of REPL client shown at start up, and of server if in live mode
+- `help()` response now uses `rich` formatting
+
 ## 0.5.1
 - Re lock `uv` for release, no code change
 

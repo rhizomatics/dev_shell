@@ -6,6 +6,7 @@ rather than pulling in the separate `websockets` library for this one job."""
 from __future__ import annotations
 
 import functools
+import importlib.metadata
 import itertools
 import json
 import os
@@ -18,6 +19,18 @@ import niquests
 
 class HaReplError(Exception):
     """Connection, auth or command failure (not an error in the user's code)."""
+
+
+@functools.cache
+def client_version() -> str:
+    """This package's own installed version, for the shells' startup banner
+    - "dev" if run from a checkout that was never pip/uv installed, rather
+    than raising over a cosmetic detail.
+    """
+    try:
+        return importlib.metadata.version("homeassistant-repl")
+    except importlib.metadata.PackageNotFoundError:
+        return "dev"
 
 
 @functools.cache

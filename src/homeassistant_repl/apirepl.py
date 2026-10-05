@@ -25,7 +25,7 @@ from prompt_toolkit.lexers import PygmentsLexer
 from pygments.lexers.python import PythonLexer
 
 from .api_objtree import ApiObjTree, Cache
-from .client import Client, HaReplError
+from .client import Client, HaReplError, client_version
 from .local_session import LocalSession
 from .repl import is_quit_call
 from .rest import hass_api
@@ -52,7 +52,7 @@ async def run_api_repl(client: Client, ttl: float, *, auto_await: bool = True) -
         history=FileHistory(str(HISTORY)), lexer=PygmentsLexer(PythonLexer)
     )
     print(
-        f"Home Assistant REPL (API client mode) connected to {client.url}. "
+        f"API connected to {client.url}. Client v{client_version()}. "
         "`obj` (read-only) and `hass_api` (REST client) - no `hass`. Ctrl-D to exit."
     )
     lines: list[str] = []

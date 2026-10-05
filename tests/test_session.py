@@ -341,6 +341,20 @@ async def test_help_on_class_is_condensed(manager):
     assert "Point(x, y)" in result.stdout
 
 
+async def test_per_session_binding_gets_a_fresh_instance_each_session():
+    manager = session_mod.SessionManager({
+        "thing": session_mod.PerSession(lambda: {"calls": 0})
+    })
+    one = manager.get("one").globals_["thing"]
+    two = manager.get("two").globals_["thing"]
+    assert one is not two
+    one["calls"] += 1
+    assert two["calls"] == 0
+    # The factory runs once per session, not once per get() - re-fetching
+    # "one" returns the same (now-mutated) instance, not a fresh one.
+    assert manager.get("one").globals_["thing"]["calls"] == 1
+
+
 async def test_help_on_method_keeps_its_docstring(manager):
     # Drilling into one specific method still gets the full pydoc treatment.
     code = (

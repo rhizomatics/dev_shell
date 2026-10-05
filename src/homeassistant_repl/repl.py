@@ -12,7 +12,7 @@ from prompt_toolkit.lexers import PygmentsLexer
 from pygments.lexers.python import PythonLexer
 
 from .cli import display_options, print_result
-from .client import Client
+from .client import Client, HaReplError, client_version
 
 HISTORY = Path.home() / ".ha_repl_history"
 
@@ -25,8 +25,15 @@ async def run_repl(
     prompt: PromptSession[str] = PromptSession(
         history=FileHistory(str(HISTORY)), lexer=PygmentsLexer(PythonLexer)
     )
+    try:
+        info = await client.call("ha_repl_server/info")
+        server = f"Live Server v{info['version']}"
+    except HaReplError:
+        # An older server predating this command - not fatal, just less to show.
+        server = "Live Server"
     print(
-        f"Home Assistant REPL connected to {client.url} (session {session_name!r}). Ctrl-D to exit."
+        f"Live client v{client_version()} connected to {server} at HA API "
+        f"{client.url} (session {session_name!r}). Ctrl-D to exit."
     )
     lines: list[str] = []
     while True:

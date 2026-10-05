@@ -7,7 +7,13 @@ from pathlib import Path
 
 import pytest
 
-from homeassistant_repl.client import HaReplError, _dotenv, resolve_token, resolve_url
+from homeassistant_repl.client import (
+    HaReplError,
+    _dotenv,
+    client_version,
+    resolve_token,
+    resolve_url,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -83,3 +89,10 @@ def test_dotenv_ignores_comments_blank_lines_export_and_quotes(tmp_path, monkeyp
     )
     assert resolve_token(None) == "quoted-token"
     assert resolve_url(None) == "ws://quoted.example:8123/api/websocket"
+
+
+def test_client_version_reads_installed_package_version():
+    # Installed via this checkout (uv sync), so this should be the real
+    # thing, not the "dev" not-installed fallback.
+    assert client_version() != "dev"
+    assert client_version()[0].isdigit()

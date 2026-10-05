@@ -3,11 +3,17 @@
   "name": "Home Assistant REPL Live Server",
   "codeowners": [],
   "config_flow": true,
-  "dependencies": ["websocket_api"],
+  "dependencies": ["websocket_api", "recorder"],
   "documentation": "https://github.com/",
   "integration_type": "service",
   "iot_class": "local_push",
-  "requirements": ["homeassistant-api>=6.1.0"],
+  "requirements": [
+    "homeassistant-api>=6.1.0",
+    "nanoarrow>=0.9.0",
+    "sqlparse>=0.5.0",
+    "pygments>=2.18",
+    "rich>=15.0.0"
+  ],
   "single_config_entry": true,
-  "version": "0.2.0"
+  "version": "0.6.0"
 }
