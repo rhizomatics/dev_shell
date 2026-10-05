@@ -1,5 +1,5 @@
 site_name: Home Assistant REPL
-site_url: https://homeassistant-repl.rhizomatics.org.uk
+site_url: https://homeassistant_repl.rhizomatics.org.uk
 site_description: Python REPL Shell for Home Assistant Developers
 
 repo_name: rhizomatics/homeassistant-repl

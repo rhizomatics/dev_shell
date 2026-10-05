@@ -133,8 +133,8 @@ exclude_dirs = ["tests"]
 skips = ["B105"]
 
 [project.urls]
-Homepage="https://homeassistant-repl.rhizomatics.org.uk"
+Homepage="https://homeassistant_repl.rhizomatics.org.uk"
 Repository="https://github.com/rhizomatics/homeassistant-repl"
-Documentation="https://homeassistant-repl.rhizomatics.org.uk"
+Documentation="https://homeassistant_repl.rhizomatics.org.uk"
 Issues="https://github.com/rhizomatics/homeassistant-repl/issues"
 Changelog="https://github.com/rhizomatics/homeassistant-repl/blob/main/CHANGELOG.md"
