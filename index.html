@@ -270,6 +270,25 @@
   
   
     <li class="md-tabs__item">
+      <a href="live_mode/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Live Mode
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
       <a href="obj_tree/" class="md-tabs__link">
         
   
@@ -518,23 +537,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Starting the Shell">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#live-mode-for-real-server" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Live Mode for Real Server
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -598,6 +600,33 @@
     
   
     What's New
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="live_mode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Live Mode
   
 
     
@@ -692,10 +721,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
             
   
   
@@ -713,8 +742,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -763,6 +792,8 @@
       
         
       
+        
+      
     
     
     
@@ -778,10 +809,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_2" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7_2" >
         
           
-          <label class="md-nav__link" for="__nav_6_2" id="__nav_6_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
             
   
   
@@ -799,8 +830,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -809,6 +840,34 @@
 
           </label>
           <ul class="md-nav__list">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="developer/design/design_principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -975,22 +1034,11 @@
 <p>See also <a href="alternative_integration/">Alternative Integration</a> options for how to use this in your own plain python shell, ipython, Marimo or similar.</p>
 <h2 id="starting-the-shell">Starting the Shell<a class="headerlink" href="#starting-the-shell" title="Permanent link">&para;</a></h2>
 <p>Use the <code>HASS_SERVER</code> environment variable, exported or in a local <code>.env</code> file, or the <code>--server</code> command line argument if the Home Assistant server is not running locally at usual address( i.e. <code>http://homeassistant.local:8123</code>). A <a href="https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token">long lived access token</a> is needed at <code>--token</code> or in an <code>HASS_TOKEN</code> environment variable.</p>
-<h3 id="live-mode-for-real-server">Live Mode for Real Server<a class="headerlink" href="#live-mode-for-real-server" title="Permanent link">&para;</a></h3>
-<p>On a real instance, install via HACS:
- - it's not in the default HACS repository, so you'll have to add <code>https://github.com/rhizomatics/homeassistant-repl</code> as a Custom Repository from the top-right dot menu first
- - Search for <em>Home Assistant REPL</em> in the HACS menu and choose <em>Download</em>
- - Restart Home Assistant for it to recognize the new custom component available
- - From <strong>Settings → Devices &amp; services → Add integration</strong> find <strong>Home Assistant REPL Server</strong> in the list and install, there's no further config needed
-   - Alternatively add <code>ha_repl_server:</code> to <code>configuration.yaml</code>, which is imported as a config entry) 
- - Run <code>ha-repl</code> with the <code>live</code> argument</p>
 <p>The quickest way to run the shell is using <em>uv</em>, which you can do without cloning this repo or making any other downloads.</p>
 <p><div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>uv<span class="w"> </span>run<span class="w"> </span>--with<span class="w"> </span>homeassistant-repl<span class="w"> </span>ha-repl<span class="w">         </span>
 </span></code></pre></div>
 Get help on the arguments in the usual way,</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>uv<span class="w"> </span>run<span class="w"> </span>--with<span class="w"> </span>homeassistant-repl<span class="w"> </span>ha-repl<span class="w"> </span>--help<span class="w">       </span>,
-</span></code></pre></div>
-<p>If you do have this repo checked out, you can also use a direct <code>run</code> which means you can also tinker locally with <code>homeassistant_repl</code> code.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w">         </span>
 </span></code></pre></div>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <p>All modes require a <a href="https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token">Long Lived Access Token</a> which can be provided via <code>HASS_TOKEN</code> enivironment variable, a <code>HASS_TOKEN=xxxx</code> line in an <code>.env</code> file, or the <code>--token</code> argument on <code>ha-repl</code>.</p>

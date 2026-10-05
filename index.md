@@ -108,17 +108,6 @@ See also [Alternative Integration](https://homeassistant-repl.rhizomatics.org.uk
 
 Use the `HASS_SERVER` environment variable, exported or in a local `.env` file, or the `--server` command line argument if the Home Assistant server is not running locally at usual address( i.e. `http://homeassistant.local:8123`). A [long lived access token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) is needed at `--token` or in an `HASS_TOKEN` environment variable.
 
-### Live Mode for Real Server
-
-On a real instance, install via HACS:
-
-- it's not in the default HACS repository, so you'll have to add `https://github.com/rhizomatics/homeassistant-repl` as a Custom Repository from the top-right dot menu first
-- Search for *Home Assistant REPL* in the HACS menu and choose *Download*
-- Restart Home Assistant for it to recognize the new custom component available
-- From **Settings → Devices & services → Add integration** find **Home Assistant REPL Server** in the list and install, there's no further config needed
-- Alternatively add `ha_repl_server:` to `configuration.yaml`, which is imported as a config entry)
-- Run `ha-repl` with the `live` argument
-
 The quickest way to run the shell is using *uv*, which you can do without cloning this repo or making any other downloads.
 
 ```bash
@@ -129,12 +118,6 @@ Get help on the arguments in the usual way,
 
 ```bash
 uv run --with homeassistant-repl ha-repl --help       ,
-```
-
-If you do have this repo checked out, you can also use a direct `run` which means you can also tinker locally with `homeassistant_repl` code.
-
-```bash
-uv run ha-repl
 ```
 
 ## Configuration

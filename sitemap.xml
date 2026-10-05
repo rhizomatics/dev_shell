@@ -16,12 +16,22 @@
         <changefreq>daily</changefreq>
     </url>
     <url>
+        <loc>https://homeassistant-repl.rhizomatics.org.uk/live_mode/</loc>
+        <lastmod>2026-10-05</lastmod>
+        <changefreq>daily</changefreq>
+    </url>
+    <url>
         <loc>https://homeassistant-repl.rhizomatics.org.uk/obj_tree/</loc>
         <lastmod>2026-10-05</lastmod>
         <changefreq>daily</changefreq>
     </url>
     <url>
         <loc>https://homeassistant-repl.rhizomatics.org.uk/sql/</loc>
+        <lastmod>2026-10-05</lastmod>
+        <changefreq>daily</changefreq>
+    </url>
+    <url>
+        <loc>https://homeassistant-repl.rhizomatics.org.uk/developer/design/design_principles/</loc>
         <lastmod>2026-10-05</lastmod>
         <changefreq>daily</changefreq>
     </url>
