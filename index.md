@@ -52,7 +52,7 @@ Needed for `custom` mode only, since `api` mode only uses standard Home Assistan
 
 ## Future Developments
 
-See the [Roadmap](https://homeassistant_repl.rhizomatics.org.uk/developer/design/roadmap/index.md) for where this might go, and your feedback welcome.
+See the [Roadmap](https://homeassistant-repl.rhizomatics.org.uk/developer/design/roadmap/index.md) for where this might go, and your feedback welcome.
 
 > [!NOTE] It is not intended to ever be a replacement for a Python debugger, although it may complement one. It also does not intend to replicate [PyScript](https://pyscript.net), instead focusing on standard python (PyScript uses MicroPython) even at expense of general usability or home assistance access, and not a general automation script execution service. For most non-developer cases, [homeassistant-cli](https://pypi.org/project/homeassistant-cli/) is a better choice, with pre-packaged access to devices, entities, services etc.
 
@@ -85,7 +85,7 @@ pir.state = "on"  # non-strict mode, sets entity state with repl as context
 
 The return value of the object is returned to the shell, value printed and available to Python code as `_`. Tracebacks are printed also, as if they were local (in general everything feels like its local)
 
-See also [Alternative Integration](https://homeassistant_repl.rhizomatics.org.uk/alternative_integration/index.md) options.
+See also [Alternative Integration](https://homeassistant-repl.rhizomatics.org.uk/alternative_integration/index.md) options.
 
 ## The Object Tree
 

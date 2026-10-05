@@ -7,5 +7,5 @@ Home Assistant REPL is a Python shell for developers of Home Assistant custom co
 
 ## Start here
 
-- [Home Assistant REPL](https://homeassistant_repl.rhizomatics.org.uk/index.md): Overview of what Home Assistant REPL does, api vs custom mode, and getting started
+- [Home Assistant REPL](https://homeassistant-repl.rhizomatics.org.uk/index.md): Overview of what Home Assistant REPL does, api vs custom mode, and getting started
 

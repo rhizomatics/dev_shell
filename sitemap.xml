@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-        <loc>https://homeassistant_repl.rhizomatics.org.uk/</loc>
+        <loc>https://homeassistant-repl.rhizomatics.org.uk/</loc>
         <lastmod>2026-10-05</lastmod>
         <changefreq>daily</changefreq>
     </url>
     <url>
-        <loc>https://homeassistant_repl.rhizomatics.org.uk/alternative_integration/</loc>
+        <loc>https://homeassistant-repl.rhizomatics.org.uk/alternative_integration/</loc>
         <lastmod>2026-10-05</lastmod>
         <changefreq>daily</changefreq>
     </url>
     <url>
-        <loc>https://homeassistant_repl.rhizomatics.org.uk/changelog/</loc>
+        <loc>https://homeassistant-repl.rhizomatics.org.uk/changelog/</loc>
         <lastmod>2026-10-05</lastmod>
         <changefreq>daily</changefreq>
     </url>
     <url>
-        <loc>https://homeassistant_repl.rhizomatics.org.uk/developer/design/roadmap/</loc>
+        <loc>https://homeassistant-repl.rhizomatics.org.uk/developer/design/roadmap/</loc>
         <lastmod>2026-10-05</lastmod>
         <changefreq>daily</changefreq>
     </url>
     <url>
-        <loc>https://homeassistant_repl.rhizomatics.org.uk/developer/coverage/</loc>
+        <loc>https://homeassistant-repl.rhizomatics.org.uk/developer/coverage/</loc>
         <lastmod>2026-10-05</lastmod>
         <changefreq>daily</changefreq>
     </url>
