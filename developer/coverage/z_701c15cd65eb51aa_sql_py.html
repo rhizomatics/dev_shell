@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_701c15cd65eb51aa_websocket_api_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.15.4">coverage.py v7.15.4</a>,
-            created at 2026-10-05 22:46 +0000
+            created at 2026-10-05 23:06 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -330,7 +330,7 @@
     <p class="pln"><span class="n"><a id="t246" href="#t246">246</a></span><span class="t"><span class="str">        does (e.g. a bare `entity_id` that several tables share).</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t247" href="#t247">247</a></span><span class="t"><span class="str">        &quot;&quot;&quot;</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t248" href="#t248">248</a></span><span class="t">        <span class="nam">names</span> <span class="op">=</span> <span class="nam">set</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">columns</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t249" href="#t249">249</a></span><span class="t">        <span class="nam">matches</span> <span class="op">=</span> <span class="op">[</span><span class="nam">t</span> <span class="key">for</span> <span class="nam">t</span> <span class="key">in</span> <span class="nam">_current_tables</span><span class="op">(</span><span class="op">)</span> <span class="key">if</span> <span class="nam">names</span> <span class="op">&lt;=</span> <span class="nam">set</span><span class="op">(</span><span class="nam">t</span><span class="op">.</span><span class="nam">column_names</span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t249" href="#t249">249</a></span><span class="t">        <span class="nam">matches</span> <span class="op">=</span> <span class="op">[</span><span class="nam">t</span> <span class="key">for</span> <span class="nam">t</span> <span class="key">in</span> <span class="nam">current_tables</span><span class="op">(</span><span class="op">)</span> <span class="key">if</span> <span class="nam">names</span> <span class="op">&lt;=</span> <span class="nam">set</span><span class="op">(</span><span class="nam">t</span><span class="op">.</span><span class="nam">column_names</span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t250" href="#t250">250</a></span><span class="t">        <span class="key">return</span> <span class="nam">matches</span><span class="op">[</span><span class="num">0</span><span class="op">]</span> <span class="key">if</span> <span class="nam">len</span><span class="op">(</span><span class="nam">matches</span><span class="op">)</span> <span class="op">==</span> <span class="num">1</span> <span class="key">else</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t251" href="#t251">251</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t252" href="#t252">252</a></span><span class="t">    <span class="key">def</span> <span class="nam">project</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">columns</span><span class="op">:</span> <span class="nam">list</span><span class="op">[</span><span class="nam">str</span><span class="op">]</span><span class="op">)</span> <span class="op">-&gt;</span> <span class="nam">SqlResult</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -542,7 +542,7 @@
     <p class="pln"><span class="n"><a id="t458" href="#t458">458</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t459" href="#t459">459</a></span><span class="t">    <span class="op">@</span><span class="nam">property</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t460" href="#t460">460</a></span><span class="t">    <span class="key">def</span> <span class="nam">tables</span><span class="op">(</span><span class="nam">self</span><span class="op">)</span> <span class="op">-&gt;</span> <span class="nam">list</span><span class="op">[</span><span class="nam">SqlTable</span><span class="op">]</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t461" href="#t461">461</a></span><span class="t">        <span class="key">return</span> <span class="nam">_current_tables</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t461" href="#t461">461</a></span><span class="t">        <span class="key">return</span> <span class="nam">current_tables</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t462" href="#t462">462</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t463" href="#t463">463</a></span><span class="t">    <span class="key">def</span> <span class="nam">__repr__</span><span class="op">(</span><span class="nam">self</span><span class="op">)</span> <span class="op">-&gt;</span> <span class="nam">str</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t464" href="#t464">464</a></span><span class="t">        <span class="key">return</span> <span class="op">(</span>&nbsp;</span><span class="r"></span></p>
@@ -552,7 +552,7 @@
     <p class="pln"><span class="n"><a id="t468" href="#t468">468</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t469" href="#t469">469</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t470" href="#t470">470</a></span><span class="t"><span class="op">@</span><span class="nam">functools</span><span class="op">.</span><span class="nam">cache</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t471" href="#t471">471</a></span><span class="t"><span class="key">def</span> <span class="nam">_current_tables</span><span class="op">(</span><span class="op">)</span> <span class="op">-&gt;</span> <span class="nam">list</span><span class="op">[</span><span class="nam">SqlTable</span><span class="op">]</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t471" href="#t471">471</a></span><span class="t"><span class="key">def</span> <span class="nam">current_tables</span><span class="op">(</span><span class="op">)</span> <span class="op">-&gt;</span> <span class="nam">list</span><span class="op">[</span><span class="nam">SqlTable</span><span class="op">]</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t472" href="#t472">472</a></span><span class="t">    <span class="str">&quot;&quot;&quot;The recorder&#x27;s own current (non-deprecated) tables, wrapped as</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t473" href="#t473">473</a></span><span class="t"><span class="str">    SqlTable - from homeassistant.components.recorder.db_schema, the same</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t474" href="#t474">474</a></span><span class="t"><span class="str">    source _recorder_arrow_types() reads above, not a live reflection of</span>&nbsp;</span><span class="r"></span></p>
@@ -579,7 +579,7 @@
             <a class="nav" href="z_701c15cd65eb51aa_websocket_api_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.15.4">coverage.py v7.15.4</a>,
-            created at 2026-10-05 22:46 +0000
+            created at 2026-10-05 23:06 +0000
         </p>
     </div>
 </footer>

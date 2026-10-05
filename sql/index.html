@@ -906,6 +906,7 @@
 <h1 id="sql-access">SQL Access<a class="headerlink" href="#sql-access" title="Permanent link">&para;</a></h1>
 <p>Home Assistant has an internal SQL database front-ended by the <a href="https://www.home-assistant.io/integrations/recorder/">Recorder</a> integration. It holds, history, activity, long term statistics and more. Underneath it can by Sqlite (most common), MariaDB, MySQL or PostgreSQL.</p>
 <p>When in <code>live</code> mode, the <code>ha-cli</code> exposes an <code>sql</code> variable, which allows access to this database, via the Recorder interface. </p>
+<p><code>sql</code> and its results are local objects. A query is sent to Home Assistant, the rows come back as one download, and everything after that - <code>show()</code>, slicing, dataframes, CSV export - works on that local copy, with whatever libraries you have installed locally. Nothing extra needs installing in Home Assistant.</p>
 <div class="admonition info">
 <p class="admonition-title">Info</p>
 <p>Data is serialized as Apache Arrow using the <code>nanofeather</code> library - this provides column-oriented data for good compression, zero-copy reuse into dataframes and good compatibility with popular data libraries like <code>polars</code> and <code>pandas</code>.</p>
@@ -960,11 +961,11 @@
 </tr>
 <tr>
 <td><code>table</code></td>
-<td>The <code>SqlTable</code> object describing this table</td>
+<td>The <code>Table</code> object describing this table, or <code>None</code> if the columns don't identify a single table</td>
 </tr>
 <tr>
 <td><code>columns</code></td>
-<td>List of <code>Column</code> objects describing each column</td>
+<td>The data itself: a <code>dict</code> of Arrow arrays, one per column, by name</td>
 </tr>
 <tr>
 <td><code>column_names</code></td>
@@ -984,11 +985,15 @@
 </tr>
 <tr>
 <td><code>export_csv()</code></td>
-<td>Write the results to a CSV file, by default named after the table</td>
+<td>Write the results to a local CSV file, by default named after the table (<code>result.csv</code> if there isn't one)</td>
 </tr>
 <tr>
 <td><code>arrow()</code></td>
-<td>Raw Arrow data</td>
+<td>The result as an Arrow array, for Arrow-aware libraries, e.g. <code>polars.from_arrow(r.arrow())</code></td>
+</tr>
+<tr>
+<td><code>arrow_ipc()</code></td>
+<td>The result as Arrow IPC stream bytes, e.g. to save to a file</td>
 </tr>
 <tr>
 <td><code>to_dicts()</code></td>
