@@ -17,7 +17,9 @@ from .client import Client
 HISTORY = Path.home() / ".ha_repl_history"
 
 
-async def run_repl(client: Client, session_name: str) -> int:
+async def run_repl(
+    client: Client, session_name: str, *, auto_await: bool = True
+) -> int:
     compiler = codeop.CommandCompiler()
     compiler.compiler.flags |= ast.PyCF_ALLOW_TOP_LEVEL_AWAIT
     prompt: PromptSession[str] = PromptSession(
@@ -52,6 +54,7 @@ async def run_repl(client: Client, session_name: str) -> int:
             "ha_repl_server/exec",
             code=source,
             session=session_name,
+            auto_await=auto_await,
             **display_options(),
         )
         print_result(result)

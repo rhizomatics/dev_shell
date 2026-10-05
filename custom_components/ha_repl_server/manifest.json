@@ -7,7 +7,7 @@
   "documentation": "https://github.com/",
   "integration_type": "service",
   "iot_class": "local_push",
-  "requirements": [],
+  "requirements": ["homeassistant-api>=6.1.0"],
   "single_config_entry": true,
   "version": "0.2.0"
 }

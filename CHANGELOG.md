@@ -1,5 +1,14 @@
 # What's New
 
+## 0.3.0
+- Integrated [homeassistant-api](https://github.com/HomeAssistant-API/HomeAssistantAPI) client object as `api` variable for pure REST/WS API access
+  - `api.get_state(entity_id="binary_sensor.kitchen_pir")`
+  - `api` has its own `AsyncEntity` class which differs from the `ApiEntity` used by the core REPL
+     - reason is that `ApiEntity` is designed to offer a subset of the real entity and allow easier prototyping of custom component code whereas `AsyncEntity` is the `homeassistant-api` package way of working purely with API data
+- Auto await will do the `await` for you with coroutines if you forget.
+  - Can be switched off with `--no-auto-await`
+- Replaced use of `websockets` with `niquests[ws]`
+
 ## 0.2.0
 - Renamed to `Home Assistant REPL` and cli tool to `ha_repl` to make it clearer what it does and avoid confusion in package name space or terminal with other dev shells.
 ## 0.1.2

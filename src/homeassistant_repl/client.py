@@ -1,4 +1,7 @@
-"""Minimal Home Assistant websocket API client."""
+"""Minimal Home Assistant websocket API client - built on niquests' websocket
+extension (a GET against a ws(s):// URL upgrades in place and hands back the
+extension on the response), the same HTTP stack `rest.py`'s REST client uses,
+rather than pulling in the separate `websockets` library for this one job."""
 
 from __future__ import annotations
 
@@ -10,7 +13,7 @@ from pathlib import Path
 from typing import Any, Self
 from urllib.parse import urlsplit, urlunsplit
 
-import websockets
+import niquests
 
 
 class HaReplError(Exception):
@@ -42,22 +45,42 @@ def _dotenv() -> dict[str, str]:
     return values
 
 
+def _default_url() -> str:
+    return (
+        os.environ.get("HASS_SERVER")
+        or _dotenv().get("HASS_SERVER")
+        or "http://homeassistant.local:8123"
+    )
+
+
 def resolve_url(url: str | None) -> str:
     """Accept http(s)://host:8123 or ws(s)://... and return the websocket endpoint."""
     if not url:
         # Inside a Home Assistant add-on (e.g. Studio Code Server) talk via the supervisor.
         if os.environ.get("SUPERVISOR_TOKEN"):
             return "ws://supervisor/core/websocket"
-        url = (
-            os.environ.get("HASS_SERVER")
-            or _dotenv().get("HASS_SERVER")
-            or "http://homeassistant.local:8123"
-        )
+        url = _default_url()
     parts = urlsplit(url)
     scheme = {"http": "ws", "https": "wss"}.get(parts.scheme, parts.scheme)
     path = parts.path.rstrip("/")
     if not path.endswith("/websocket"):
         path += "/api/websocket"
+    return urlunsplit((scheme, parts.netloc, path, "", ""))
+
+
+def resolve_rest_url(url: str | None) -> str:
+    """Accept http(s)://host:8123, ws(s)://... or an existing Client.url, and
+    return the REST API base (scheme normalised to http(s), path ending in
+    `/api`) that homeassistant_api.AsyncClient expects."""
+    if not url:
+        if os.environ.get("SUPERVISOR_TOKEN"):
+            return "http://supervisor/core/api"
+        url = _default_url()
+    parts = urlsplit(url)
+    scheme = {"ws": "http", "wss": "https"}.get(parts.scheme, parts.scheme)
+    path = parts.path.rstrip("/").removesuffix("/websocket")
+    if not path.endswith("/api"):
+        path += "/api"
     return urlunsplit((scheme, parts.netloc, path, "", ""))
 
 
@@ -81,7 +104,16 @@ class Client:
         self.url = url
         self._token = token
         self._ids = itertools.count(1)
-        self._ws: Any = None
+        self._session: Any = None  # set by open() - AsyncSession
+        self._ws: Any = (
+            None  # set by open() - the extension: send_payload()/next_payload()/close()
+        )
+
+    @property
+    def token(self) -> str:
+        """The resolved access token - also what a REST call (see rest.py's
+        `api()`) against the same instance should authenticate with."""
+        return self._token
 
     async def __aenter__(self) -> Self:
         return await self.open()
@@ -93,14 +125,21 @@ class Client:
         """Connect and authenticate - what `async with Client(...)` does,
         exposed directly for callers that want to keep the connection open
         past the enclosing scope (e.g. `connect()` in __init__.py)."""
+        self._session = niquests.AsyncSession()
         try:
-            self._ws = await websockets.connect(self.url, max_size=None)
-        except (OSError, websockets.InvalidURI, websockets.InvalidHandshake) as err:
+            resp = await self._session.get(self.url)
+            resp.raise_for_status()
+        except niquests.exceptions.RequestException as err:
             raise HaReplError(f"Cannot connect to {self.url}: {err}") from err
+        if resp.extension is None:
+            raise HaReplError(f"Server did not upgrade to WebSocket: {self.url}")
+        self._ws = resp.extension
         msg = await self._recv()
         if msg.get("type") != "auth_required":
             raise HaReplError(f"Unexpected greeting: {msg}")
-        await self._ws.send(json.dumps({"type": "auth", "access_token": self._token}))
+        await self._ws.send_payload(
+            json.dumps({"type": "auth", "access_token": self._token})
+        )
         msg = await self._recv()
         if msg.get("type") != "auth_ok":
             raise HaReplError(f"Authentication failed: {msg.get('message', msg)}")
@@ -108,16 +147,22 @@ class Client:
 
     async def close(self) -> None:
         await self._ws.close()
+        await self._session.close()
 
     async def _recv(self) -> dict[str, Any]:
         try:
-            return json.loads(await self._ws.recv())
-        except websockets.ConnectionClosed as err:
+            payload = await self._ws.next_payload()
+        except niquests.exceptions.RequestException as err:
             raise HaReplError(f"Connection closed: {err}") from err
+        if payload is None:
+            raise HaReplError("Connection closed")
+        return json.loads(payload)
 
     async def call(self, type_: str, **payload: Any) -> Any:
         msg_id = next(self._ids)
-        await self._ws.send(json.dumps({"id": msg_id, "type": type_, **payload}))
+        await self._ws.send_payload(
+            json.dumps({"id": msg_id, "type": type_, **payload})
+        )
         while True:
             msg = await self._recv()
             if msg.get("id") != msg_id or msg.get("type") != "result":

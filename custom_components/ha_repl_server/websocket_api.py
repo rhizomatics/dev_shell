@@ -42,6 +42,7 @@ def _manager(
     vol.Optional("timeout"): vol.Coerce(float),
     vol.Optional("color", default=False): bool,
     vol.Optional("width", default=88): vol.Coerce(int),
+    vol.Optional("auto_await", default=True): bool,
 })
 @websocket_api.async_response
 async def ws_exec(
@@ -50,7 +51,11 @@ async def ws_exec(
     if (manager := _manager(hass, connection, msg)) is None:
         return
     result = await manager.get(msg["session"]).run(
-        msg["code"], msg.get("timeout"), color=msg["color"], width=msg["width"]
+        msg["code"],
+        msg.get("timeout"),
+        color=msg["color"],
+        width=msg["width"],
+        auto_await=msg["auto_await"],
     )
     connection.send_result(msg["id"], result.as_dict())
 

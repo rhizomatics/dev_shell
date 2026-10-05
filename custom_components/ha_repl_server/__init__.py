@@ -18,6 +18,7 @@ from . import websocket_api
 from .browser import open_target
 from .const import DOMAIN
 from .objtree import ObjTree
+from .rest import ApiUnavailable, connect_api
 from .session import SessionManager
 
 _LOGGER = logging.getLogger(__name__)
@@ -39,10 +40,16 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    try:
+        api = await connect_api()
+    except ApiUnavailable as err:
+        _LOGGER.warning("Home Assistant REPL: `api` unavailable: %s", err)
+        api = None
     hass.data[DOMAIN] = SessionManager({
         "hass": hass,
         "obj": ObjTree(hass),
         "open": open_target,
+        "api": api,
     })
     _LOGGER.warning(
         "Home Assistant REPL is enabled: admin users can execute arbitrary Python in this instance"

@@ -67,11 +67,54 @@ async def test_top_level_await(manager):
     assert (await run(manager, code)).value == "7"
 
 
-async def test_unawaited_coroutine_is_not_awaited(manager):
-    # Strict mode: forgetting await behaves as in component code.
-    result = await run(manager, "import asyncio\nc = asyncio.sleep(0)\nc")
+async def test_unawaited_coroutine_is_awaited_automatically(manager):
+    # Forgetting `await` finishes the call instead of handing back an
+    # unawaited coroutine object - the shell's job, not asyncio's.
+    result = await run(manager, "import asyncio\nc = asyncio.sleep(0, result=9)\nc")
+    assert result.value == "9"
+
+
+async def test_unawaited_coroutine_in_attribute_chain_is_awaited(manager):
+    code = (
+        "class Thing:\n"
+        "    domain = 'light'\n"
+        "async def get_thing():\n"
+        "    return Thing()\n"
+        "get_thing().domain"
+    )
+    assert (await run(manager, code)).value == "'light'"
+
+
+async def test_unawaited_coroutine_in_comprehension_is_awaited(manager):
+    code = "async def double(n):\n    return n * 2\n[double(i) for i in range(3)]"
+    assert (await run(manager, code)).value == "[0, 2, 4]"
+
+
+async def test_auto_await_false_restores_strict_mode(manager):
+    # Opt-out (ha-repl --no-auto-await): forgetting await behaves exactly as
+    # it would in component code.
+    result = await run(
+        manager, "import asyncio\nc = asyncio.sleep(0, result=9)\nc", auto_await=False
+    )
     assert result.value.startswith("<coroutine object sleep")
-    await run(manager, "c.close()")
+    await run(manager, "c.close()", auto_await=False)
+
+
+async def test_auto_await_does_not_rewrite_nested_function_bodies(manager):
+    # If the rewrite accidentally descended into this plain (sync) nested
+    # def's body, wrapping the inner call in `await` would be a SyntaxError
+    # ("await outside async function") - it must stay a plain, unawaited
+    # call there, auto-awaited only once it surfaces from `wrapper()` itself.
+    code = (
+        "async def helper():\n"
+        "    return 1\n"
+        "def wrapper():\n"
+        "    return helper()\n"
+        "wrapper()"
+    )
+    result = await run(manager, code)
+    assert result.error is None
+    assert result.value == "1"
 
 
 async def test_function_definitions_and_closures(manager):
@@ -115,6 +158,7 @@ async def test_describe(manager):
     assert "foo" in info["variables"]
     assert "print" not in info["variables"]
     assert "help" not in info["variables"]
+    assert "_maybe_await" not in info["variables"]
 
 
 async def test_help_on_module_is_captured_not_printed(manager, capsys):

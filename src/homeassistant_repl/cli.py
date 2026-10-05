@@ -58,6 +58,12 @@ def _parser() -> argparse.ArgumentParser:
         default=30.0,
         help="API client mode: seconds before the cached snapshot is refreshed (default: 30)",
     )
+    parser.add_argument(
+        "--no-auto-await",
+        action="store_true",
+        help="don't automatically await a call you forgot to `await` - "
+        "report it as an unawaited coroutine instead, as plain Python would",
+    )
     sub = parser.add_subparsers(dest="command")
 
     exec_ = sub.add_parser(
@@ -100,11 +106,15 @@ async def _dispatch(args: argparse.Namespace) -> int:
             case "custom":
                 from .repl import run_repl
 
-                return await run_repl(client, args.session)
+                return await run_repl(
+                    client, args.session, auto_await=not args.no_auto_await
+                )
             case _:  # "api", or no subcommand at all - API client mode is the default
                 from .apirepl import run_api_repl
 
-                return await run_api_repl(client, args.ttl)
+                return await run_api_repl(
+                    client, args.ttl, auto_await=not args.no_auto_await
+                )
 
 
 async def _exec(client: Client, args: argparse.Namespace) -> int:
@@ -123,6 +133,7 @@ async def _exec(client: Client, args: argparse.Namespace) -> int:
     payload: dict[str, Any] = {
         "code": code,
         "session": args.session,
+        "auto_await": not args.no_auto_await,
         **display_options(),
     }
     if args.timeout:

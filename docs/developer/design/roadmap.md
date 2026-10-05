@@ -98,6 +98,7 @@ This switch controls trade-off between shell convenience and ability to trial wo
 ## Other Ideas
 - iPython support [DONE]
 - VSCode extension
+- http caching, using `niquests-cache`
 - API Mode
   - API access only, also no need of HACS components [DONE]
   - TBD: whether actions/services get folded into the object tree, or left separate

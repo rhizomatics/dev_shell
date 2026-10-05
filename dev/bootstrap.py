@@ -12,7 +12,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-import websockets
+import niquests
 
 BASE = "http://homeassistant.local:8123"
 CLIENT_ID = f"{BASE}/"
@@ -96,11 +96,15 @@ def finish_onboarding(token):
 
 
 async def long_lived_token(access_token):
-    async with websockets.connect(BASE.replace("http", "ws") + "/api/websocket") as ws:
-        await ws.recv()
-        await ws.send(json.dumps({"type": "auth", "access_token": access_token}))
-        await ws.recv()
-        await ws.send(
+    async with niquests.AsyncSession() as session:
+        resp = await session.get(BASE.replace("http", "ws") + "/api/websocket")
+        ws = resp.extension
+        await ws.next_payload()
+        await ws.send_payload(
+            json.dumps({"type": "auth", "access_token": access_token})
+        )
+        await ws.next_payload()
+        await ws.send_payload(
             json.dumps({
                 "id": 1,
                 "type": "auth/long_lived_access_token",
@@ -108,7 +112,7 @@ async def long_lived_token(access_token):
                 "lifespan": 3650,
             })
         )
-        msg = json.loads(await ws.recv())
+        msg = json.loads(await ws.next_payload())
         if not msg["success"]:
             sys.exit(f"Could not create token: {msg}")
         return msg["result"]

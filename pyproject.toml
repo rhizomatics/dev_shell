@@ -5,11 +5,12 @@ description = "Home Assistant REPL - the powerful developer shell for custom com
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "homeassistant-api>=6.1.0",
+    "niquests[ws]>=3.21.0",
     "prompt-toolkit>=3.0",
     "pygments>=2.18",
     "pyyaml>=6.0",
     "rich>=15.0.0",
-    "websockets>=13.0",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -46,6 +47,7 @@ dev = [
     "actionlint-py",
     "codespell",
     "mypy",
+    "niquests-mock>=0.5.1,<0.6.0",
 ]
 docs=[
     "properdocs",

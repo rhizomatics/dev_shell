@@ -80,6 +80,7 @@ class Session:
         *,
         color: bool = False,
         width: int = 88,
+        auto_await: bool = True,
     ) -> ExecResult:
         """Execute source in this session, returning captured output and the last value."""
         async with self._lock:
@@ -92,10 +93,11 @@ class Session:
             self.globals_.update(self.protected)
             self.globals_["print"] = _capturing_print(out)
             self.globals_["help"] = _capturing_help(out)
+            self.globals_["_maybe_await"] = _maybe_await
             result = ExecResult()
             start = time.perf_counter()
             try:
-                coro = self._execute(source)
+                coro = self._execute(source, auto_await=auto_await)
                 value = await (asyncio.wait_for(coro, timeout) if timeout else coro)
                 if value is not None:
                     self.globals_["_"] = value
@@ -115,7 +117,7 @@ class Session:
                     result.truncated = True
             return result
 
-    async def _execute(self, source: str) -> Any:
+    async def _execute(self, source: str, *, auto_await: bool = True) -> Any:
         # Not "<ha_repl-N>": rich.traceback refuses to show source for any
         # filename starting with "<" (treats it like "<stdin>"), no matter what
         # linecache holds. An absolute-looking path sidesteps that - rich joins a
@@ -129,6 +131,9 @@ class Session:
             filename,
         )
         tree = ast.parse(source, filename, "exec")
+        if auto_await:
+            tree = _AutoAwait().visit(tree)
+            ast.fix_missing_locations(tree)
 
         # Like the interactive interpreter, echo the value of a trailing expression.
         last_expr = None
@@ -146,12 +151,14 @@ class Session:
             await _run_code(
                 compile(tree, filename, "exec", flags=flags, dont_inherit=True),
                 self.globals_,
+                auto_await=auto_await,
             )
         if last_expr is None:
             return None
         return await _run_code(
             compile(last_expr, filename, "eval", flags=flags, dont_inherit=True),
             self.globals_,
+            auto_await=auto_await,
         )
 
 
@@ -175,14 +182,60 @@ def _render(renderable: Any, *, color: bool, width: int) -> str:
     return buf.getvalue().rstrip("\n")
 
 
-async def _run_code(code: Any, globals_: dict[str, Any]) -> Any:
-    """Evaluate code; only await when the code itself used top-level await.
+async def _maybe_await(value: Any) -> Any:
+    """Finish a coroutine (or other awaitable) the user forgot to `await`;
+    anything else passes straight through. Used both by the AST rewrite below
+    (an unawaited call nested inside a larger expression) and _run_code's own
+    check (a bare reference to one created earlier, e.g. `c = f(); c`)."""
+    return await value if inspect.isawaitable(value) else value
 
-    A bare `hass.async_foo()` without await yields a coroutine object, exactly as it
-    would in component code (strict mode).
+
+class _AutoAwait(ast.NodeTransformer):
+    """Rewrites every call not already explicitly awaited to go through
+    _maybe_await() first, so `hass.async_foo()` works whether or not the
+    user remembered `await` - including nested inside attribute access
+    (`hass.async_foo().attr`), a comprehension, or an argument list. Leaves
+    nested (synchronous) function/lambda bodies alone: `await` there is a
+    SyntaxError, and those calls run later, not as part of this statement
+    anyway. Opt out with `auto_await=False` on the exec call (strict mode:
+    forgetting await behaves exactly as in component code).
+    """
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:
+        return node
+
+    def visit_Lambda(self, node: ast.Lambda) -> ast.Lambda:
+        return node
+
+    def visit_Await(self, node: ast.Await) -> ast.Await:
+        # Already explicit: don't double-await this call, but still rewrite
+        # anything nested inside its own arguments.
+        if isinstance(node.value, ast.Call):
+            node.value.func = self.visit(node.value.func)
+            node.value.args = [self.visit(a) for a in node.value.args]
+            node.value.keywords = [self.visit(k) for k in node.value.keywords]
+        else:
+            node.value = self.visit(node.value)
+        return node
+
+    def visit_Call(self, node: ast.Call) -> ast.Await:
+        self.generic_visit(node)
+        wrapped = ast.Call(
+            func=ast.Name(id="_maybe_await", ctx=ast.Load()), args=[node], keywords=[]
+        )
+        return ast.Await(value=wrapped)
+
+
+async def _run_code(code: Any, globals_: dict[str, Any], *, auto_await: bool) -> Any:
+    """Evaluate code, awaiting both the top-level-await wrapper (when the
+    code itself used it, including the _AutoAwait rewrite's own awaits) and,
+    as a backstop, a bare reference to an already-existing coroutine that
+    rewrite can't see (e.g. `c = f(); c` across two statements).
     """
     result = eval(code, globals_)  # nosec B307 - the whole point of a dev shell
     if code.co_flags & inspect.CO_COROUTINE:
+        result = await result
+    if auto_await and inspect.isawaitable(result):
         result = await result
     return result
 
@@ -391,7 +444,8 @@ class SessionManager:
                 "variables": sorted(
                     k
                     for k in s.globals_
-                    if not k.startswith("__") and k not in ("print", "help")
+                    if not k.startswith("__")
+                    and k not in ("print", "help", "_maybe_await")
                 ),
             }
             for s in self._sessions.values()
