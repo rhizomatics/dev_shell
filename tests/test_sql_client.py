@@ -73,7 +73,7 @@ def test_from_arrow_carries_truncated_out_of_band():
 def test_arrow_round_trips_back_through_from_arrow():
     result = _result(a=[1, 2, 3])
 
-    data = result.arrow()
+    data = result.arrow_ipc()
 
     assert SqlResult.from_arrow(data).to_dicts() == result.to_dicts()
 
@@ -284,7 +284,29 @@ def test_export_csv_default_path_is_named_after_the_table(tmp_path, monkeypatch)
     assert result.export_csv().name == "states.csv"
 
 
-def test_bare_result_renders_as_its_table():
-    result = SqlResult.from_arrow(_server_arrow_bytes(id=[1]))
+def test_arrow_is_a_struct_array_other_libraries_can_import():
+    result = _result(a=[1, 2], b=["x", "y"])
 
-    assert result.__rich__().row_count == 1
+    array = result.arrow()
+
+    assert hasattr(array, "__arrow_c_array__")
+    assert hasattr(array, "__arrow_c_stream__")
+    assert [f.name for f in array.schema.fields] == ["a", "b"]
+    assert array.to_pylist() == [{"a": 1, "b": "x"}, {"a": 2, "b": "y"}]
+
+
+def test_arrow_feeds_polars_from_arrow():
+    pl = pytest.importorskip("polars")
+    result = _result(a=[1, 2], b=["x", "y"])
+
+    df = pl.from_arrow(result.arrow())
+
+    assert df.to_dicts() == [{"a": 1, "b": "x"}, {"a": 2, "b": "y"}]
+
+
+def test_result_has_no_rich_rendering_of_its_own():
+    # Only show() draws a table; a bare result at the prompt is its repr.
+    result = _result(id=[1])
+
+    assert not hasattr(result, "__rich__")
+    assert repr(result) == "<SqlResult 1 rows x 1 cols [id]>"

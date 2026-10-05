@@ -45,7 +45,8 @@ The results can also be sliced like a Python list, so `[:10]` for the first 10 r
 | `project()`    | Create a new result object with a limited set of columns based on this one |
 | `sample()`     | Randomly sample selected quantity of rows out of the result set |
 | `export_csv()` | Write the results to a local CSV file, by default named after the table (`result.csv` if there isn't one) |
-| `arrow()`      | Raw Arrow data |
+| `arrow()`      | The result as an Arrow array, for Arrow-aware libraries, e.g. `polars.from_arrow(r.arrow())` |
+| `arrow_ipc()`  | The result as Arrow IPC stream bytes, e.g. to save to a file |
 | `to_dicts()`   | Extract a `list` of `dict` objects from the results |
 | `to_pandas()`  | Turn the results into a *pandas* dataframe, if pandas installed |
 | `to_polars()`  | Turn the results into a *polars* dataframe, if polars installed |

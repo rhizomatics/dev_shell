@@ -114,22 +114,31 @@ class SqlResult:
         table = matches[0] if len(matches) == 1 else None
         return cls(columns, len(batch), truncated, table)
 
-    def arrow(self) -> bytes:
-        """Re-serialize back to the same Arrow IPC stream format
-        `from_arrow()` reads - round-tripping, or handing this result to
-        any other `pyarrow.ipc.open_stream()`/`polars.read_ipc_stream()`
-        /etc.-compatible reader.
+    def arrow(self) -> Any:
+        """The whole result as one Arrow struct array (a `nanoarrow.Array`,
+        one field per column), without copying. It implements the Arrow
+        PyCapsule interface, so Arrow-aware libraries take it directly:
+        `polars.from_arrow(r.arrow())`, `pyarrow.table(r.arrow())`,
+        `pandas.DataFrame.from_arrow(r.arrow())`.
         """
         schema = na.struct({name: arr.schema for name, arr in self.columns.items()})
-        batch = na.c_array_from_buffers(
-            schema,
-            length=self.rowcount,
-            buffers=[],
-            children=list(self.columns.values()),
+        return na.Array(
+            na.c_array_from_buffers(
+                schema,
+                length=self.rowcount,
+                buffers=[],
+                children=list(self.columns.values()),
+            )
         )
+
+    def arrow_ipc(self) -> bytes:
+        """The result serialized as an Arrow IPC stream - the format
+        `from_arrow()` reads, and what `polars.read_ipc_stream()` or
+        `pyarrow.ipc.open_stream()` expect, e.g. to save to a file.
+        """
         buf = io.BytesIO()
         with StreamWriter.from_writable(buf) as writer:
-            writer.write_stream(batch)
+            writer.write_stream(self.arrow())
         return buf.getvalue()
 
     def to_dicts(self) -> list[dict[str, Any]]:
@@ -202,11 +211,6 @@ class SqlResult:
                 break
             table.add_row(*("" if v is None else str(v) for v in row))
         return table
-
-    def __rich__(self) -> Table:
-        """What the shell prints for a bare `sql(...)` / `result` at the
-        prompt - the same table show() gives with its defaults."""
-        return self.show()
 
     def project(self, columns: list[str]) -> SqlResult:
         """A new SqlResult with just these columns (same rows, same

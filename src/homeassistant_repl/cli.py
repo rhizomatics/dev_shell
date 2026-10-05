@@ -21,19 +21,13 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import base64
 import json
 import os
 import shutil
 import sys
 from typing import Any
 
-from rich.console import Console
-
 from .client import Client, HaReplError, resolve_token, resolve_url
-from .sql import SqlResult
-
-_console = Console()
 
 
 def main() -> None:
@@ -175,14 +169,7 @@ def print_result(result: dict[str, Any]) -> None:
         sys.stdout.write(result["stdout"])
         if not result["stdout"].endswith("\n"):
             sys.stdout.write("\n")
-    if result.get("arrow"):
-        # The trailing expression downloaded its own data server-side
-        # (sql() today) rather than being rendered there - render *that*,
-        # locally, instead of result["value"]'s plain repr() fallback.
-        data = base64.b64decode(result["arrow"])
-        sql_result = SqlResult.from_arrow(data, truncated=result["arrow_truncated"])
-        _console.print(sql_result.show())
-    elif result["value"] is not None:
+    if result["value"] is not None:
         print(result["value"])
     if result["error"]:
         sys.stderr.write(result["error"]["traceback"])
