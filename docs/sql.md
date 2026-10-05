@@ -19,6 +19,8 @@ For example this will show the size of the `statistics` table.
 >>> sql('select count(*) from statistics').show()
 ```
 
+![select count](assets/screenshots/select_count.png)
+
 ### Result Objects
 
 On the result object, `show()` will display data in tabular form at the command, using the `rich` library's table support. The result will have both its rows and columns automatically limited, so it doesn't look like a mess or lock up the console. Use `max_rows` or `max_cols` to override this, or `columns` to set the list of columns specifically.
