@@ -48,7 +48,7 @@ This mode requires a custom component to be installed on the target Home Assista
 
 ### HA REPL Server
 
-A HACS component that taps into the Home Assistant and acts as a session server over web sockets.
+A HACS component that taps into the Home Assistant and acts as a session server over web sockets. It has been designed for HomeAssistant 2026.8 or greater.
 
 Needed for `custom` mode only, since `api` mode only uses standard Home Assistant APIs.
 
