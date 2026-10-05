@@ -62,7 +62,7 @@ See the [Roadmap](https://homeassistant-repl.rhizomatics.org.uk/developer/design
 
 Use the `api` mode with `uv` (traditional install also available via `pip install homeassistant-repl`).
 
-If Home Assistant available via `http://homeassistant.local:8123` then you can skip the `--url` argument. You will also need to create a [Long Lived Access Token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) by going to the personal settings on your Home Assistant mobile or desktop app.
+If Home Assistant available via `http://homeassistant.local:8123` then you can skip the `--server` argument. You will also need to create a [Long Lived Access Token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) by going to the personal settings on your Home Assistant mobile or desktop app.
 
 ```bash
 uv run --with homeassistant-repl ha-repl --token <<<my long lived access token>>>
@@ -193,7 +193,7 @@ obj.show('/unifi/sensor/kitchen_wifi_cpu_utilization')
 
 ## Starting the Shell
 
-Use the `HASS_SERVER` environment variable, exported or in a local `.env` file, or the `--url` command line argument if the Home Assistant server is not running locally at usual address( i.e. `http://homeassistant.local:8123`). A [long lived access token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) is needed at `--token` or in an `HASS_TOKEN` environment variable.
+Use the `HASS_SERVER` environment variable, exported or in a local `.env` file, or the `--server` command line argument if the Home Assistant server is not running locally at usual address( i.e. `http://homeassistant.local:8123`). A [long lived access token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) is needed at `--token` or in an `HASS_TOKEN` environment variable.
 
 ### Custom Mode for Real Server
 
@@ -223,3 +223,11 @@ If you do have this repo checked out, you can also use a direct `run` which mean
 ```bash
 uv run ha-repl
 ```
+
+## Configuration
+
+All modes require a [Long Lived Access Token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token)which can be provided via `HASS_TOKEN` enivironment variable, a `HASS_TOKEN=xxxx` line in an `.env` file, or the `--token` argument on `ha-repl`.
+
+The URL will default to `http://homeassistant.local:8123` or can be set using the `HASS_SERVER` enivironment variable, a `HASS_SERVER=xxxx` line in an `.env` file, or the `--server` argument on `ha-repl`.
+
+Note, although `homeassistant-api` itself has different env vars, when used within `ha-repl` it will be set up automatically using the same server and token as the main shell.

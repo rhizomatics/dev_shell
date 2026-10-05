@@ -605,6 +605,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -948,7 +959,7 @@ It is not intended to ever be a replacement for a Python debugger, although it m
 </blockquote>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <p>Use the <code>api</code> mode with <code>uv</code> (traditional install also available via <code>pip install homeassistant-repl</code>).</p>
-<p>If Home Assistant available via <code>http://homeassistant.local:8123</code> then you can skip the <code>--url</code> argument. You will also need to create a <a href="https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token">Long Lived Access Token</a> by going to the personal settings on your Home Assistant mobile or desktop app.</p>
+<p>If Home Assistant available via <code>http://homeassistant.local:8123</code> then you can skip the <code>--server</code> argument. You will also need to create a <a href="https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token">Long Lived Access Token</a> by going to the personal settings on your Home Assistant mobile or desktop app.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>--with<span class="w"> </span>homeassistant-repl<span class="w"> </span>ha-repl<span class="w"> </span>--token<span class="w"> </span><span class="o">&lt;&lt;&lt;</span>my<span class="w"> </span>long<span class="w"> </span>lived<span class="w"> </span>access<span class="w"> </span>token&gt;&gt;&gt;
 </span></code></pre></div>
 <h2 id="using-the-shell">Using the Shell<a class="headerlink" href="#using-the-shell" title="Permanent link">&para;</a></h2>
@@ -1042,7 +1053,7 @@ In the roadmap, there will be a visual Object Browser to view and select entitie
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="l l-Scalar l-Scalar-Plain">obj.show('/unifi/sensor/kitchen_wifi_cpu_utilization')</span>
 </span></code></pre></div>
 <h2 id="starting-the-shell">Starting the Shell<a class="headerlink" href="#starting-the-shell" title="Permanent link">&para;</a></h2>
-<p>Use the <code>HASS_SERVER</code> environment variable, exported or in a local <code>.env</code> file, or the <code>--url</code> command line argument if the Home Assistant server is not running locally at usual address( i.e. <code>http://homeassistant.local:8123</code>). A <a href="https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token">long lived access token</a> is needed at <code>--token</code> or in an <code>HASS_TOKEN</code> environment variable.</p>
+<p>Use the <code>HASS_SERVER</code> environment variable, exported or in a local <code>.env</code> file, or the <code>--server</code> command line argument if the Home Assistant server is not running locally at usual address( i.e. <code>http://homeassistant.local:8123</code>). A <a href="https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token">long lived access token</a> is needed at <code>--token</code> or in an <code>HASS_TOKEN</code> environment variable.</p>
 <h3 id="custom-mode-for-real-server">Custom Mode for Real Server<a class="headerlink" href="#custom-mode-for-real-server" title="Permanent link">&para;</a></h3>
 <p>On a real instance, install via HACS:
  - it's not in the default HACS repository, so you'll have to add <code>https://github.com/rhizomatics/homeassistant-repl</code> as a Custom Repository from the top-right dot menu first
@@ -1060,6 +1071,10 @@ Get help on the arguments in the usual way,</p>
 <p>If you do have this repo checked out, you can also use a direct <code>run</code> which means you can also tinker locally with <code>homeassistant_repl</code> code.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w">         </span>
 </span></code></pre></div>
+<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
+<p>All modes require a <a href="https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token">Long Lived Access Token</a>which can be provided via <code>HASS_TOKEN</code> enivironment variable, a <code>HASS_TOKEN=xxxx</code> line in an <code>.env</code> file, or the <code>--token</code> argument on <code>ha-repl</code>.</p>
+<p>The URL will default to <code>http://homeassistant.local:8123</code> or can be set using the <code>HASS_SERVER</code> enivironment variable, a <code>HASS_SERVER=xxxx</code> line in an <code>.env</code> file, or the <code>--server</code> argument on <code>ha-repl</code>.</p>
+<p>Note, although <code>homeassistant-api</code> itself has different env vars, when used within <code>ha-repl</code> it will be set up automatically using the same server and token as the main shell.</p>
 <style data-termynal-inline="true">
  :root {
    --color-bg: #252a33;
