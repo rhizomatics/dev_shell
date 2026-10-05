@@ -52,6 +52,7 @@ repos:
           - types-PyYAML
           - prompt_toolkit
           - niquests[ws]
+          - homeassistant_api
           - types-PyYAML
           - types-Pygments
           - pytest_unordered

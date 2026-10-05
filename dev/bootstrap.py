@@ -99,6 +99,8 @@ async def long_lived_token(access_token):
     async with niquests.AsyncSession() as session:
         resp = await session.get(BASE.replace("http", "ws") + "/api/websocket")
         ws = resp.extension
+        if ws is None:
+            raise OSError("Unable to use websockets")
         await ws.next_payload()
         await ws.send_payload(
             json.dumps({"type": "auth", "access_token": access_token})
