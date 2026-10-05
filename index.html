@@ -923,6 +923,8 @@
 <li>Integrated with <code>rich</code> for pretty object printouts and stack traces</li>
 <li>Access to all entities via dictionary like interface, <code>obj</code></li>
 <li>Usual multi-line editing support and history of Python</li>
+<li>Integrated with <a href="https://pypi.org/project/HomeAssistant-API/">homeassistant-api</a> as <code>api</code> object, available in both modes</li>
+<li>Auto-awaits coroutines for easy shell use (can be switched off or overridden)</li>
 <li>Dedicated shell that can be run without installation with <code>uv</code></li>
 <li>Usable from inside <code>ipython</code> shell, Marimo notebooks or plain <code>python -m asyncio</code></li>
 </ul>
@@ -953,8 +955,9 @@ It is not intended to ever be a replacement for a Python debugger, although it m
 <p>The shell is a full Python REPL shell, with multi-line editing, history etc, living inside an asyncio loop that exposes the live Home Assistant instance as:</p>
 <ul>
 <li><code>obj</code> - the object tree exposed as a dictionary object and common methods</li>
+<li><code>api</code> - the Home Assistant web socket / REST API exposed using the <a href="https://pypi.org/project/HomeAssistant-API/">homeassistant-api</a> library</li>
 </ul>
-<p>In <code>custom</code> mode it also offers:</p>
+<p>In <code>custom</code> mode it offers, in addition to what <code>api</code> mode offers:</p>
 <ul>
 <li><code>hass</code> - the <code>HomeAssistant</code> class at the root of the Python API</li>
 </ul>
@@ -963,7 +966,11 @@ It is not intended to ever be a replacement for a Python debugger, although it m
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">pir</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s2">"on"</span>  <span class="c1"># non-strict mode, sets entity state with repl as context</span>
 </span></code></pre></div>
 <p>The return value of the object is returned to the shell, value printed and available to Python code as <code>_</code>. Tracebacks are printed also, as if they were local (in general everything feels like its local)</p>
-<p>See also <a href="alternative_integration/">Alternative Integration</a> options.</p>
+<blockquote>
+<p>[!NOTE]
+The <code>api</code> object returns <code>AsyncEntity</code> objects rather than <code>ApiEntity</code> objects - this is because it comes from a separate project, <a href="https://pypi.org/project/HomeAssistant-API/">homeassistant-api</a> that is focused solely on API development, whereas the <code>ApiEntity</code> class is designed for custom code development, being a subset of the real <code>Entity</code> in HomeAssistant, that you'd also get in <code>direct</code> mode.</p>
+</blockquote>
+<p>See also <a href="alternative_integration/">Alternative Integration</a> options for how to use this in your own plain python shell, ipython, Marimo or similar.</p>
 <h2 id="the-object-tree">The Object Tree<a class="headerlink" href="#the-object-tree" title="Permanent link">&para;</a></h2>
 <p>All of the objects (only entities for now) are arranged in a giant tree, like a file system, exposed as the global variable <code>objs</code> and implemented as Python <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a> object (which provides the <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.MappingView">MappingView</a> views <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.ItemsView">ItemsView</a> and <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.KeysView">KeysView</a>)</p>
 <p><code>objs</code> offers:</p>

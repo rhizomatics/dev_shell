@@ -441,7 +441,18 @@
   <a href="#ipython-example" class="md-nav__link">
     <span class="md-ellipsis">
       
-        iPython example
+        iPython Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#marimo-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Marimo Example
       
     </span>
   </a>
@@ -753,11 +764,13 @@
 </span></code></pre></div>
 <p><code>obj</code> behaves identically to the one bound in the REPL - everything under The Object Tree below applies. <code>connect()</code> only gets you <code>api</code> mode (read-only, no <code>hass</code>); <code>custom</code> mode's live object tree requires the <code>ha_repl_server</code> HACS component and talks to it over the same underlying <code>Client</code>, but isn't exposed as a standalone importable helper.</p>
 <p>By default the cached snapshot is reused for 30 seconds (<code>ttl=</code> to change that) and the websocket connection is left open for the life of the process; call <code>await obj.cache.refresh()</code> for a fresh snapshot on demand, or <code>await obj.cache.client.close()</code> when you're done with it if that matters for your script.</p>
-<h2 id="ipython-example">iPython example<a class="headerlink" href="#ipython-example" title="Permanent link">&para;</a></h2>
+<h2 id="ipython-example">iPython Example<a class="headerlink" href="#ipython-example" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>$<span class="w"> </span>ipython
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>&gt;&gt;&gt;<span class="w"> </span>import<span class="w"> </span>homeassistant_repl
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>&gt;&gt;&gt;<span class="w"> </span><span class="nv">obj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>await<span class="w"> </span>homeassistant_repl.connect<span class="o">()</span>
 </span></code></pre></div>
+<h2 id="marimo-example">Marimo Example<a class="headerlink" href="#marimo-example" title="Permanent link">&para;</a></h2>
+<p><img alt="Example Marimo Import and Usage" src="../assets/screenshots/marimo.png" /></p>
 <h2 id="install-local-home-assistant-with-the-custom-mode-server">Install Local Home Assistant with the Custom Mode Server<a class="headerlink" href="#install-local-home-assistant-with-the-custom-mode-server" title="Permanent link">&para;</a></h2>
 <p>Dev instance (devcontainer, or directly on a host with Python 3.14):</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>dev/setup.sh<span class="w">                 </span><span class="c1"># installs HA into its own venv + the CLI (devcontainer runs this)</span>
