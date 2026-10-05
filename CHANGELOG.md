@@ -1,5 +1,8 @@
 # What's New
 
+## 0.5.1
+- Re lock `uv` for release, no code change
+
 ## 0.5.0
 - `obj` will take a plain entity name now as well as a path
   - For example, `obj("binary_sensor.kitchen_pir")`
