@@ -14,7 +14,7 @@
       
       
       
-        <link rel="next" href="changelog/">
+        <link rel="next" href="alternative_integration/">
       
       
         
@@ -220,6 +220,25 @@
     
   
   Developer Shell for Home Assistant
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="alternative_integration/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Alternative Integration
 
       </a>
     </li>
@@ -581,28 +600,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#install-local-home-assistant-with-the-custom-mode-server" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Install Local Home Assistant with the Custom Mode Server
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#running-tests" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Running Tests
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -612,6 +609,33 @@
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="alternative_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alternative Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -671,10 +695,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
             
   
   
@@ -692,8 +716,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -757,10 +781,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_2" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_2" >
         
           
-          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
             
   
   
@@ -778,8 +802,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -924,7 +948,7 @@ It is not intended to ever be a replacement for a Python debugger, although it m
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>--with<span class="w"> </span>homeassistant-devshell<span class="w"> </span>dev_shell<span class="w"> </span>--token<span class="w"> </span><span class="o">&lt;&lt;&lt;</span>my<span class="w"> </span>long<span class="w"> </span>lived<span class="w"> </span>access<span class="w"> </span>token&gt;&gt;&gt;
 </span></code></pre></div>
 <h2 id="using-the-shell">Using the Shell<a class="headerlink" href="#using-the-shell" title="Permanent link">&para;</a></h2>
-<p>The shell is a full Python REPL shell, implemented as a VSCode NotebookController, with multi-line editing, history etc, living inside an asyncio loop that exposes the live Home Assistant instance as</p>
+<p>The shell is a full Python REPL shell, implemented as a VSCode NotebookController, with multi-line editing, history etc, living inside an asyncio loop that exposes the live Home Assistant instance as:</p>
 <ul>
 <li><code>obj</code> - the object tree exposed as a dictionary object and common methods</li>
 </ul>
@@ -937,6 +961,7 @@ It is not intended to ever be a replacement for a Python debugger, although it m
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">pir</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s2">"on"</span>  <span class="c1"># non-strict mode, sets entity state with repl as context</span>
 </span></code></pre></div>
 <p>The return value of the object is returned to the shell, value printed and available to Python code as <code>_</code>. Tracebacks are printed also, as if they were local (in general everything feels like its local)</p>
+<p>See also <a href="alternative_integration/">Alternative Integration</a> options.</p>
 <h2 id="the-object-tree">The Object Tree<a class="headerlink" href="#the-object-tree" title="Permanent link">&para;</a></h2>
 <p>All of the objects (only entities for now) are arranged in a giant tree, like a file system, exposed as the global variable <code>objs</code> and implemented as Python <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a> object (which provides the <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.MappingView">MappingView</a> views <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.ItemsView">ItemsView</a> and <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.KeysView">KeysView</a>)</p>
 <p><code>objs</code> offers:</p>
@@ -1004,7 +1029,7 @@ In the roadmap, there will be a visual Object Browser to view and select entitie
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="l l-Scalar l-Scalar-Plain">obj.show('/unifi/sensor/kitchen_wifi_cpu_utilization')</span>
 </span></code></pre></div>
 <h2 id="starting-the-shell">Starting the Shell<a class="headerlink" href="#starting-the-shell" title="Permanent link">&para;</a></h2>
-<p>Use the <code>HASS_SERVER</code> environment variable or the <code>--url</code> command line argument if the Home Assistant server is not running locally at usual address( i.e. <code>http://homeassistant.local:8123</code>). A <a href="https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token">long lived access token</a> is needed at <code>--token</code> or in an <code>HASS_TOKEN</code> environment variable.</p>
+<p>Use the <code>HASS_SERVER</code> environment variable, exported or in a local <code>.env</code> file, or the <code>--url</code> command line argument if the Home Assistant server is not running locally at usual address( i.e. <code>http://homeassistant.local:8123</code>). A <a href="https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token">long lived access token</a> is needed at <code>--token</code> or in an <code>HASS_TOKEN</code> environment variable.</p>
 <h3 id="custom-mode-for-real-server">Custom Mode for Real Server<a class="headerlink" href="#custom-mode-for-real-server" title="Permanent link">&para;</a></h3>
 <p>On a real instance, install via HACS:
  - it's not in the default HACS repository, so you'll have to add <code>https://github.com/rhizomatics/dev_shell</code> as a Custom Repository from the top-right dot menu first
@@ -1022,23 +1047,6 @@ Get help on the arguments in the usual way,</p>
 <p>If you do have this repo checked out, you can also use a direct <code>run</code> which means you can also tinker locally with <code>dev_shell</code> code.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>uv<span class="w"> </span>run<span class="w"> </span>dev_shell<span class="w">         </span>
 </span></code></pre></div>
-<h3 id="install-local-home-assistant-with-the-custom-mode-server">Install Local Home Assistant with the Custom Mode Server<a class="headerlink" href="#install-local-home-assistant-with-the-custom-mode-server" title="Permanent link">&para;</a></h3>
-<p>Dev instance (devcontainer, or directly on a host with Python 3.14):</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>dev/setup.sh<span class="w">                 </span><span class="c1"># installs HA into its own venv + the CLI (devcontainer runs this)</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>dev/run-ha.sh<span class="w">                </span><span class="c1"># HA on :8123 with custom_components/dev_shell_server symlinked in</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>dev/bootstrap.py<span class="w">   </span><span class="c1"># onboard (user dev/dev) and write dev/.env with a token</span>
-</span></code></pre></div>
-<p>Using it (host or container):</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nb">set</span><span class="w"> </span>-a<span class="p">;</span><span class="w"> </span>.<span class="w"> </span>dev/.env<span class="p">;</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>+a
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>uv<span class="w"> </span>run<span class="w"> </span>dev_shell<span class="w">                                         </span><span class="c1"># interactive</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>uv<span class="w"> </span>run<span class="w"> </span>dev_shell<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s1">'hass.states.get("sun.sun")'</span>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>uv<span class="w"> </span>run<span class="w"> </span>dev_shell<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;'PY'</span>
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="s">await hass.services.async_call("light", "toggle", {"entity_id": "light.kitchen_lights"}, blocking=True)</span>
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="s">hass.states.get("light.kitchen_lights").state</span>
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="s">PY</span>
-</span></code></pre></div>
-<h3 id="running-tests">Running Tests<a class="headerlink" href="#running-tests" title="Permanent link">&para;</a></h3>
-<p>Tests: <code>uv run pytest</code> covers the engine without needing HA.</p>
 <style data-termynal-inline="true">
  :root {
    --color-bg: #252a33;
