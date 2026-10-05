@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://dev-shell.rhizomatics.org.uk/sitemap.xml
+Sitemap: https://homeassistant-repl.rhizomatics.org.uk/sitemap.xml
