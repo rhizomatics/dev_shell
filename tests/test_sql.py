@@ -247,6 +247,47 @@ async def test_sql_result_show_columns_kwarg_overrides_the_default():
     assert "cols" not in str(table.caption)
 
 
+async def test_sql_result_show_defaults_to_first_thirty_rows():
+    import nanoarrow as na
+
+    column = na.array(list(range(40)), schema=na.int64())
+    result = SqlResult({"n": column}, 40, truncated=False)
+
+    table = result.show()
+    assert len(list(table.columns[0].cells)) == 30
+    assert "showing first 30 rows" in str(table.caption)
+
+
+async def test_sql_result_show_max_rows_overrides_the_default():
+    import nanoarrow as na
+
+    column = na.array(list(range(40)), schema=na.int64())
+    result = SqlResult({"n": column}, 40, truncated=False)
+
+    table = result.show(max_rows=None)
+    assert len(list(table.columns[0].cells)) == 40
+    assert "showing" not in str(table.caption)
+
+    table = result.show(max_rows=5)
+    assert len(list(table.columns[0].cells)) == 5
+    assert "showing first 5 rows" in str(table.caption)
+
+
+async def test_sql_result_show_max_cols_overrides_the_default():
+    import nanoarrow as na
+
+    columns = {f"c{i}": na.array([1], schema=na.int64()) for i in range(8)}
+    result = SqlResult(columns, 1, truncated=False)
+
+    table = result.show(max_cols=None)
+    assert [str(c.header) for c in table.columns] == [f"c{i}" for i in range(8)]
+    assert "cols" not in str(table.caption)
+
+    table = result.show(max_cols=3)
+    assert [str(c.header) for c in table.columns] == ["c0", "c1", "c2"]
+    assert "3/8 cols" in str(table.caption)
+
+
 def test_table_repr_shows_just_name_and_columns():
     m = sa.MetaData()
     t = sa.Table("states", m, sa.Column("state_id", sa.BigInteger, primary_key=True))

@@ -40,6 +40,7 @@ from homeassistant.core import HomeAssistant
 from rich.table import Table
 
 DEFAULT_ROW_LIMIT = 1000
+DEFAULT_SHOW_ROWS = 30
 DEFAULT_SHOW_COLUMNS = 6
 _FETCH_CHUNK_SIZE = 200
 
@@ -191,7 +192,13 @@ class SqlResult:
         matches = [t for t in _current_tables() if names <= set(t.c.keys())]
         return matches[0] if len(matches) == 1 else None
 
-    def show(self, columns: list[str] | None = None) -> Table:
+    def show(
+        self,
+        columns: list[str] | None = None,
+        *,
+        max_rows: int | None = DEFAULT_SHOW_ROWS,
+        max_cols: int | None = DEFAULT_SHOW_COLUMNS,
+    ) -> Table:
         """A rich Table rendering of this result - the trailing-expression
         equivalent of obj.show(): meant to be the trailing expression at the
         REPL so the usual echo renders it, not printed directly here. Every
@@ -200,26 +207,43 @@ class SqlResult:
         rather than re-implementing per-type formatting rich's own Pretty
         already does better for the arrow-free single-value case.
 
-        `columns` narrows (and/or reorders) which of this result's columns
-        get shown; left to default, a wide result is cut down to its first
-        `DEFAULT_SHOW_COLUMNS` (pass `columns=` explicitly for more, or to
-        pick a different set) so a `select *` doesn't blow out the width of
-        whatever's rendering this (REPL, notebook, ...).
+        Left to the defaults, a wide/long result is cut down to its first
+        `max_cols` columns and `max_rows` rows - raise either (or pass None
+        for no cap) so a `select *` doesn't blow out whatever's rendering
+        this (REPL, notebook, ...) by default. `columns` narrows (and/or
+        reorders) to a specific set of columns instead, overriding
+        `max_cols` entirely.
         """
         all_names = self.column_names
         if columns is not None:
             names = columns
-            columns_truncated = False
+            cols_truncated = False
+        elif max_cols is not None and len(all_names) > max_cols:
+            names = all_names[:max_cols]
+            cols_truncated = True
         else:
-            names = all_names[:DEFAULT_SHOW_COLUMNS]
-            columns_truncated = len(all_names) > DEFAULT_SHOW_COLUMNS
+            names = all_names
+            cols_truncated = False
+
+        if max_rows is not None and self.row_count > max_rows:
+            row_cap = max_rows
+            rows_truncated = True
+        else:
+            row_cap = self.row_count
+            rows_truncated = False
+
         caption = f"{self.row_count} row{'' if self.row_count == 1 else 's'}"
         if self.truncated:
             caption += " (truncated)"
-        if columns_truncated:
+        if cols_truncated:
             caption += f" ({len(names)}/{len(all_names)} cols)"
+        if rows_truncated:
+            caption += f" (showing first {row_cap} rows)"
+
         table = Table(*names, caption=caption)
-        for row in self._rows(names):
+        for i, row in enumerate(self._rows(names)):
+            if i >= row_cap:
+                break
             table.add_row(*("" if v is None else str(v) for v in row))
         return table
 

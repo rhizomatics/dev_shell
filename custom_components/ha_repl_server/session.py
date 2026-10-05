@@ -175,6 +175,23 @@ class Session:
         )
 
 
+def warm_rich_unicode_data() -> None:
+    """Rich's first `Console.print()` anywhere in the process lazily
+    `import_module()`s a sizeable unicode cell-width table - cheap once
+    cached (it's behind rich's own @cache), but as a plain import that
+    otherwise happens deep inside a user's first live command, it runs
+    straight on the event loop: long enough for HA's blocking-call
+    detector to flag it, and in practice long enough to stall the loop's
+    other coroutines - including the websocket connection's own
+    keepalive, which can make a client see that as a dropped connection.
+    Call once, in the executor, at integration setup - every session's
+    later _render() then just hits the warmed cache.
+    """
+    import rich._unicode_data
+
+    rich._unicode_data.load()
+
+
 def _render(renderable: Any, *, color: bool, width: int) -> str:
     """Render a Rich renderable (a value's pretty repr, a traceback) to text.
 

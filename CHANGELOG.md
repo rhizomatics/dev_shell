@@ -13,6 +13,7 @@
 - `custom` mode is now `live` mode
 - Version of REPL client shown at start up, and of server if in live mode
 - `help()` response now uses `rich` formatting
+- Fix for `rich` lazy import breaking connection
 
 ## 0.5.1
 - Re lock `uv` for release, no code change

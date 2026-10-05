@@ -18,7 +18,7 @@ from . import websocket_api
 from .const import DOMAIN
 from .objtree import ObjTree
 from .rest import HassApiUnavailable, connect_hass_api
-from .session import PerSession, SessionManager
+from .session import PerSession, SessionManager, warm_rich_unicode_data
 from .sql import SqlTool
 
 _LOGGER = logging.getLogger(__name__)
@@ -40,6 +40,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    await hass.async_add_executor_job(warm_rich_unicode_data)
     try:
         hass_api = await connect_hass_api()
     except HassApiUnavailable as err:
