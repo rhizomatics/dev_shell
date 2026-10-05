@@ -6,13 +6,15 @@ bytes one produces and the other reads - see sql.py's own module docstring.
 
 from __future__ import annotations
 
+import base64
 from pathlib import Path
 
 import nanoarrow as na
 import pytest
 from rich.table import Table
 
-from homeassistant_repl.sql import SqlResult
+from homeassistant_repl.client import HaReplError
+from homeassistant_repl.sql import SqlColumn, SqlError, SqlResult, SqlTable, SqlTool
 
 
 def _server_arrow_bytes(**columns: list) -> bytes:
@@ -185,3 +187,104 @@ def test_to_pandas_builds_a_dataframe():
 
     assert isinstance(df, pd.DataFrame)
     assert list(df["a"]) == [1, 2, 3]
+
+
+class _FakeClient:
+    """Stands in for the websocket Client: canned replies per command."""
+
+    def __init__(self, arrow: bytes = b"", error: Exception | None = None) -> None:
+        self.arrow = arrow
+        self.error = error
+        self.calls: list[tuple[str, dict]] = []
+
+    async def call(self, type_: str, **payload):
+        self.calls.append((type_, payload))
+        if type_ == "ha_repl_server/sql_tables":
+            return {
+                "tables": [
+                    {
+                        "name": "t",
+                        "columns": [
+                            {"name": "id", "type": "INTEGER"},
+                            {"name": "name", "type": "VARCHAR(255)"},
+                        ],
+                    },
+                    {"name": "other", "columns": [{"name": "zzz", "type": "TEXT"}]},
+                ]
+            }
+        if self.error is not None:
+            raise self.error
+        return {
+            "arrow": base64.b64encode(self.arrow).decode("ascii"),
+            "truncated": True,
+        }
+
+
+async def test_sqltool_connect_downloads_tables():
+    tool = await SqlTool.connect(_FakeClient())
+
+    assert [t.name for t in tool.tables] == ["t", "other"]
+    assert tool.tables[0].column_names() == ["id", "name"]
+    assert repr(tool.tables[0].columns()[1]) == "Column('name', VARCHAR(255))"
+    assert repr(tool.tables[0]) == "Table('t', columns=['id', 'name'])"
+
+
+async def test_sqltool_call_returns_a_local_result_with_its_table():
+    client = _FakeClient(_server_arrow_bytes(id=[1, 2], name=["a", "b"]))
+    tool = await SqlTool.connect(client)
+
+    result = await tool("select * from t")
+
+    assert isinstance(result, SqlResult)
+    assert list(result) == [[1, "a"], [2, "b"]]
+    assert result.truncated is True
+    assert result.table is tool.tables[0]
+    assert result[:1].table is tool.tables[0]
+    assert client.calls[-1] == (
+        "ha_repl_server/sql",
+        {"query": "select * from t", "max_rows": 1000},
+    )
+
+
+async def test_sqltool_max_rows_default_and_per_call_override():
+    client = _FakeClient(_server_arrow_bytes(id=[1]))
+    tool = await SqlTool.connect(client)
+
+    tool.max_rows = 5
+    await tool("select 1")
+    await tool("select 1", max_rows=None)
+
+    assert [c[1]["max_rows"] for c in client.calls[1:]] == [5, None]
+
+
+async def test_sqltool_turns_a_server_sql_error_into_sqlerror():
+    error = HaReplError(
+        "ha_repl_server/sql failed: only SELECT queries are allowed",
+        code="sql_error",
+        detail="only SELECT queries are allowed",
+    )
+    tool = await SqlTool.connect(_FakeClient(error=error))
+
+    with pytest.raises(SqlError, match=r"^only SELECT queries are allowed$"):
+        await tool("delete from t")
+
+
+async def test_sqltool_leaves_other_failures_alone():
+    tool = await SqlTool.connect(_FakeClient(error=HaReplError("Connection closed")))
+
+    with pytest.raises(HaReplError, match="Connection closed"):
+        await tool("select 1")
+
+
+def test_export_csv_default_path_is_named_after_the_table(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    table = SqlTable("states", (SqlColumn("id", "INTEGER"),))
+    result = SqlResult.from_arrow(_server_arrow_bytes(id=[1]), tables=[table])
+
+    assert result.export_csv().name == "states.csv"
+
+
+def test_bare_result_renders_as_its_table():
+    result = SqlResult.from_arrow(_server_arrow_bytes(id=[1]))
+
+    assert result.__rich__().row_count == 1

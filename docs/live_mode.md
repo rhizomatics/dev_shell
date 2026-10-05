@@ -31,6 +31,36 @@ Also, `sql` gives you query access to the primary HomeAssistant database.
 
 Get help on the arguments in the usual way.
 
+## What Runs Where
+
+The live shell is an ordinary Python session on your own machine. Import whatever you have installed, define functions, keep dataframes around - none of that touches Home Assistant.
+
+| Name | Where it lives |
+| ---- | -------------- |
+| `sql` | Local. Sends the query to Home Assistant, downloads the result as Arrow data, and gives you a local result object - see [SQL Access](sql.md) |
+| `hass_api` | Local. A REST API client |
+| `hass`, `obj` | Inside Home Assistant |
+
+Since `hass` and `obj` only exist inside Home Assistant, any command that uses one of them is sent there whole and run there, with its output sent back as text. A variable assigned by such a command stays there too, and later commands that use it follow it:
+
+```python
+>>> import polars as pl                      # local
+>>> df = sql("select * from states").to_polars()   # local, on downloaded data
+>>> s = hass.states.get("sun.sun")           # runs inside Home Assistant
+>>> s.state                                  # so does this - `s` lives there
+'below_horizon'
+```
+
+Local values can be used in a command that runs inside Home Assistant when they are plain data (strings, numbers, and lists or dicts of them) - they are copied over first. Modules you imported locally are imported there under the same name. Anything else local, such as a dataframe or a function, can't cross; the shell says so rather than running the command. Nothing is copied back the other way.
+
+```python
+>>> eid = "sun.sun"                          # local
+>>> hass.states.get(eid).state               # `eid` is copied over first
+'below_horizon'
+```
+
+If a name exists on both sides, the local one is used. `ha-repl exec` is unchanged: the whole snippet runs inside Home Assistant.
+
 
 ## Running from a clone/fork of this repo
 

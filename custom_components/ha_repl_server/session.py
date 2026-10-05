@@ -171,7 +171,12 @@ class Session:
         linecache.cache[filename] = (
             len(source),
             None,
-            source.splitlines(keepends=True),
+            # Always newline-terminated: rich's traceback rendering fails
+            # ("substring not found") on a source with no newline in it at
+            # all, i.e. any one-line command.
+            (source if source.endswith("\n") else source + "\n").splitlines(
+                keepends=True
+            ),
             filename,
         )
         tree = ast.parse(source, filename, "exec")
@@ -603,6 +608,13 @@ class SessionManager:
             }
             session = self._sessions[name] = Session(name, globals_, resolved)
         return session
+
+    def has_binding(self, name: str) -> bool:
+        """Whether this name is bound into sessions at all (e.g. "sql" is
+        left out when the integration's expose_sql option is off) - for the
+        websocket commands that serve a binding's data directly rather than
+        through exec, to honour the same switch."""
+        return name in self._bindings
 
     def reset(self, name: str) -> bool:
         return self._sessions.pop(name, None) is not None

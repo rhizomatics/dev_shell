@@ -2,8 +2,9 @@
 
   ha-repl                                         interactive API client shell (default)
                                                     `obj` only, read-only, no HACS component needed
-  ha-repl live.                                   interactive custom-component shell
-                                                    `hass` + `obj` (same `obj` API, live not cached);
+  ha-repl live                                    interactive custom-component shell
+                                                    local Python with `sql` + `hass_api`; anything
+                                                    using `hass`/`obj` runs inside Home Assistant;
                                                     needs the ha_repl_server component
   ha-repl exec 'hass.states.get("sun.sun")'       run a snippet (live mode only)
   ha-repl exec -f snippet.py                      run a file
@@ -88,7 +89,8 @@ def _parser() -> argparse.ArgumentParser:
     )
     sub.add_parser(
         "live",
-        help="interactive custom-component shell: hass + obj, needs the ha_repl_server component",
+        help="interactive custom-component shell: local Python + sql, with hass + obj "
+        "run inside Home Assistant; needs the ha_repl_server component",
     )
     sub.add_parser("reset", help="discard the live-mode session's variables")
     sub.add_parser("sessions", help="list live-mode sessions on the server")

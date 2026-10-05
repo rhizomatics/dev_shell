@@ -246,7 +246,7 @@ class SqlResult:
         does (e.g. a bare `entity_id` that several tables share).
         """
         names = set(self.columns)
-        matches = [t for t in _current_tables() if names <= set(t.column_names())]
+        matches = [t for t in current_tables() if names <= set(t.column_names())]
         return matches[0] if len(matches) == 1 else None
 
     def project(self, columns: list[str]) -> SqlResult:
@@ -458,7 +458,7 @@ class SqlTool:
 
     @property
     def tables(self) -> list[SqlTable]:
-        return _current_tables()
+        return current_tables()
 
     def __repr__(self) -> str:
         return (
@@ -468,7 +468,7 @@ class SqlTool:
 
 
 @functools.cache
-def _current_tables() -> list[SqlTable]:
+def current_tables() -> list[SqlTable]:
     """The recorder's own current (non-deprecated) tables, wrapped as
     SqlTable - from homeassistant.components.recorder.db_schema, the same
     source _recorder_arrow_types() reads above, not a live reflection of

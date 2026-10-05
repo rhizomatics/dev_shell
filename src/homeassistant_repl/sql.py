@@ -21,11 +21,12 @@ copy, no further round trip to Home Assistant.
 
 from __future__ import annotations
 
+import base64
 import csv
 import io
 import random
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -33,8 +34,46 @@ import nanoarrow as na
 from nanoarrow.ipc import StreamWriter
 from rich.table import Table
 
+from .client import HaReplError
+
+DEFAULT_MAX_ROWS = 1000
 DEFAULT_SHOW_ROWS = 30
 DEFAULT_SHOW_COLUMNS = 6
+
+
+class SqlError(Exception):
+    """A rejected or failed query - not a bug in the shell itself."""
+
+
+@dataclass(frozen=True)
+class SqlColumn:
+    """One column of a recorder table: its name and SQL type, as text."""
+
+    name: str
+    type: str
+
+    def __repr__(self) -> str:
+        return f"Column({self.name!r}, {self.type})"
+
+
+@dataclass(frozen=True)
+class SqlTable:
+    """A recorder table, as described by the server - plain data, not a
+    live handle on anything."""
+
+    name: str
+    _columns: tuple[SqlColumn, ...]
+
+    def column_names(self) -> list[str]:
+        """Just the names, in schema order."""
+        return [column.name for column in self._columns]
+
+    def columns(self) -> list[SqlColumn]:
+        """Name and type of each column, in schema order."""
+        return list(self._columns)
+
+    def __repr__(self) -> str:
+        return f"Table({self.name!r}, columns={self.column_names()!r})"
 
 
 @dataclass
@@ -48,9 +87,19 @@ class SqlResult:
     columns: dict[str, Any]
     rowcount: int
     truncated: bool
+    table: SqlTable | None = None
+    """The recorder table these columns come from, when exactly one table
+    has them all - None for a join, an aggregate, or a result that didn't
+    come from `sql` in the first place."""
 
     @classmethod
-    def from_arrow(cls, data: bytes, *, truncated: bool = False) -> SqlResult:
+    def from_arrow(
+        cls,
+        data: bytes,
+        *,
+        truncated: bool = False,
+        tables: list[SqlTable] | None = None,
+    ) -> SqlResult:
         """Rebuild a SqlResult from `.arrow()`'s bytes (the one shared
         contract with the server-side SqlResult that produced them) - a
         single Arrow IPC stream holding one struct-typed batch, one named
@@ -61,7 +110,9 @@ class SqlResult:
         batch = na.ArrayStream.from_readable(data).read_all()
         names = [field.name for field in batch.schema.fields]
         columns = dict(zip(names, batch.iter_children(), strict=True))
-        return cls(columns, len(batch), truncated)
+        matches = [t for t in tables or () if set(names) <= set(t.column_names())]
+        table = matches[0] if len(matches) == 1 else None
+        return cls(columns, len(batch), truncated, table)
 
     def arrow(self) -> bytes:
         """Re-serialize back to the same Arrow IPC stream format
@@ -152,6 +203,11 @@ class SqlResult:
             table.add_row(*("" if v is None else str(v) for v in row))
         return table
 
+    def __rich__(self) -> Table:
+        """What the shell prints for a bare `sql(...)` / `result` at the
+        prompt - the same table show() gives with its defaults."""
+        return self.show()
+
     def project(self, columns: list[str]) -> SqlResult:
         """A new SqlResult with just these columns (same rows, same
         underlying arrays - no data is copied).
@@ -160,6 +216,7 @@ class SqlResult:
             {name: self.columns[name] for name in columns},
             self.rowcount,
             self.truncated,
+            self.table,
         )
 
     def __getitem__(self, key: slice) -> SqlResult:
@@ -175,7 +232,7 @@ class SqlResult:
             for name, arr in self.columns.items()
         }
         rowcount = len(range(*key.indices(self.rowcount)))
-        return SqlResult(columns, rowcount, self.truncated)
+        return SqlResult(columns, rowcount, self.truncated, self.table)
 
     def __len__(self) -> int:
         return self.rowcount
@@ -193,14 +250,18 @@ class SqlResult:
             )
             for name, arr in self.columns.items()
         }
-        return SqlResult(columns, len(chosen), self.truncated)
+        return SqlResult(columns, len(chosen), self.truncated, self.table)
 
-    def export_csv(self, path: str | Path = "result.csv", **kwargs: Any) -> Path:
+    def export_csv(self, path: str | Path | None = None, **kwargs: Any) -> Path:
         """Write this result to a CSV file at `path` (your own machine,
         not Home Assistant's) - a header row, then every row with each
-        cell through str(). `kwargs` go straight to csv.writer (dialect,
-        delimiter, ...). The path actually written to is returned.
+        cell through str(). Without a `path` it's named after `.table`
+        ("states.csv"), or "result.csv" when there isn't one. `kwargs` go
+        straight to csv.writer (dialect, delimiter, ...). The path actually
+        written to is returned.
         """
+        if path is None:
+            path = f"{self.table.name if self.table else 'result'}.csv"
         path = Path(path)
         with path.open("w", newline="", encoding="utf-8") as fp:
             writer = csv.writer(fp, **kwargs)
@@ -221,3 +282,67 @@ class SqlResult:
         suffix = " (truncated)" if self.truncated else ""
         cols = ", ".join(self.columns)
         return f"<SqlResult {self.rowcount} rows x {len(self.columns)} cols [{cols}]{suffix}>"
+
+
+_MAX_ROWS_UNSET: Any = object()
+
+
+@dataclass
+class SqlTool:
+    """Live mode's `sql`: a local object, not a name on the Home Assistant
+    side. Calling it sends the query over the websocket, downloads the
+    whole (`max_rows`-capped) result as Arrow and hands back a local
+    SqlResult - so `sql(...).show()`, `.to_polars()` and anything else you
+    do with the result runs in this process, with whatever you've
+    installed here.
+
+    `.max_rows` is this shell's default row cap (set it to change the
+    default for every call after, or to None to remove it entirely) and
+    `.tables` the recorder's tables, to explore the schema without a query.
+    """
+
+    client: Any
+    max_rows: int | None = DEFAULT_MAX_ROWS
+    tables: list[SqlTable] = field(default_factory=list)
+
+    @classmethod
+    async def connect(cls, client: Any) -> SqlTool:
+        """A SqlTool with `.tables` already downloaded. Raises HaReplError
+        if the server has no sql to offer (switched off in the
+        integration's options, or a server too old to have the command)."""
+        reply = await client.call("ha_repl_server/sql_tables")
+        tables = [
+            SqlTable(
+                t["name"], tuple(SqlColumn(c["name"], c["type"]) for c in t["columns"])
+            )
+            for t in reply["tables"]
+        ]
+        return cls(client, tables=tables)
+
+    async def __call__(
+        self, query: str, *, max_rows: int | None = _MAX_ROWS_UNSET
+    ) -> SqlResult:
+        """Run a single read-only SELECT against Home Assistant's Recorder
+        database. At most `max_rows` rows are fetched (default: this
+        object's own `.max_rows`) - pass None for no cap at all."""
+        try:
+            reply = await self.client.call(
+                "ha_repl_server/sql",
+                query=query,
+                max_rows=self.max_rows if max_rows is _MAX_ROWS_UNSET else max_rows,
+            )
+        except HaReplError as err:
+            if err.code != "sql_error":
+                raise
+            raise SqlError(err.detail) from None
+        return SqlResult.from_arrow(
+            base64.b64decode(reply["arrow"]),
+            truncated=reply["truncated"],
+            tables=self.tables,
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"<sql(query, max_rows=...) - default max_rows={self.max_rows!r}; "
+            "see sql.tables>"
+        )

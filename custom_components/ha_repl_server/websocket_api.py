@@ -1,8 +1,10 @@
 """Websocket commands: ha_repl_server/exec, ha_repl_server/reset,
-ha_repl_server/sessions (all admin only)."""
+ha_repl_server/sessions, ha_repl_server/info, ha_repl_server/sql and
+ha_repl_server/sql_tables (all admin only)."""
 
 from __future__ import annotations
 
+import base64
 from typing import Any, cast
 
 import probatio as vol
@@ -12,6 +14,7 @@ from homeassistant.loader import async_get_integration
 
 from .const import DEFAULT_SESSION, DOMAIN
 from .session import SessionManager
+from .sql import DEFAULT_MAX_ROWS, SqlError, current_tables, sql
 
 
 @callback
@@ -20,6 +23,8 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_reset)
     websocket_api.async_register_command(hass, ws_sessions)
     websocket_api.async_register_command(hass, ws_info)
+    websocket_api.async_register_command(hass, ws_sql)
+    websocket_api.async_register_command(hass, ws_sql_tables)
 
 
 def _manager(
@@ -117,3 +122,86 @@ async def ws_info(
     HACS component) and can drift out of sync."""
     integration = await async_get_integration(hass, DOMAIN)
     connection.send_result(msg["id"], {"version": integration.version})
+
+
+def _sql_manager(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> SessionManager | None:
+    """_manager(), plus the integration's own expose_sql switch - these
+    commands are the same `sql` a session would otherwise be bound, just
+    reached without exec, so turning that off has to turn these off too."""
+    if (manager := _manager(hass, connection, msg)) is None:
+        return None
+    if not manager.has_binding("sql"):
+        connection.send_error(
+            msg["id"],
+            "sql_disabled",
+            "sql is switched off in this integration's options",
+        )
+        return None
+    return manager
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    cast(
+        Any,
+        {
+            vol.Required("type"): "ha_repl_server/sql",
+            vol.Required("query"): str,
+            vol.Optional("max_rows", default=DEFAULT_MAX_ROWS): vol.Any(
+                None, vol.Coerce(int)
+            ),
+        },
+    )
+)
+@websocket_api.async_response
+async def ws_sql(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Run one query and send the result back as Arrow IPC bytes (base64,
+    since the websocket API is JSON) - the client's own `sql` is a local
+    object calling this, not code exec'd here, so everything past the
+    download (show(), dataframes, CSV) happens on the client's machine."""
+    if _sql_manager(hass, connection, msg) is None:
+        return
+    try:
+        result = await sql(hass, msg["query"], max_rows=msg["max_rows"])
+    except SqlError as err:
+        connection.send_error(msg["id"], "sql_error", str(err))
+        return
+    except Exception as err:  # noqa: BLE001 - a bad query is the caller's to see, whatever the driver raised
+        connection.send_error(msg["id"], "sql_error", f"{type(err).__name__}: {err}")
+        return
+    connection.send_result(
+        msg["id"],
+        {
+            "arrow": base64.b64encode(result.arrow()).decode("ascii"),
+            "truncated": result.truncated,
+        },
+    )
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    cast(Any, {vol.Required("type"): "ha_repl_server/sql_tables"})
+)
+@callback
+def ws_sql_tables(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """The recorder's tables and their columns, as plain data for the
+    client's own `sql.tables`."""
+    if _sql_manager(hass, connection, msg) is None:
+        return
+    tables = [
+        {
+            "name": table.name,
+            "columns": [
+                {"name": column.name, "type": str(column.type)}
+                for column in table.columns()
+            ],
+        }
+        for table in current_tables()
+    ]
+    connection.send_result(msg["id"], {"tables": tables})

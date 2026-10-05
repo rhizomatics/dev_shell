@@ -5,6 +5,7 @@ rather than pulling in the separate `websockets` library for this one job."""
 
 from __future__ import annotations
 
+import asyncio
 import functools
 import importlib.metadata
 import itertools
@@ -18,7 +19,19 @@ import niquests
 
 
 class HaReplError(Exception):
-    """Connection, auth or command failure (not an error in the user's code)."""
+    """Connection, auth or command failure (not an error in the user's code).
+
+    `code`/`detail` are the server's own error code and bare message when
+    this came from a failed websocket command, for a caller that wants to
+    turn a specific failure into its own exception (see sql.py's SqlTool).
+    """
+
+    def __init__(
+        self, message: str, *, code: str | None = None, detail: str | None = None
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.detail = detail
 
 
 @functools.cache
@@ -121,6 +134,10 @@ class Client:
         self._ws: Any = (
             None  # set by open() - the extension: send_payload()/next_payload()/close()
         )
+        # One command at a time: call() reads until its own reply arrives and
+        # drops anything else, so two overlapping calls (e.g. a gather() of
+        # two sql() queries) would each discard the other's reply.
+        self._call_lock = asyncio.Lock()
 
     @property
     def token(self) -> str:
@@ -172,20 +189,26 @@ class Client:
         return json.loads(payload)
 
     async def call(self, type_: str, **payload: Any) -> Any:
-        msg_id = next(self._ids)
-        await self._ws.send_payload(
-            json.dumps({"id": msg_id, "type": type_, **payload})
-        )
-        while True:
-            msg = await self._recv()
-            if msg.get("id") != msg_id or msg.get("type") != "result":
-                continue
-            if not msg["success"]:
-                error = msg.get("error", {})
-                if error.get("code") == "unknown_command":
+        async with self._call_lock:
+            msg_id = next(self._ids)
+            await self._ws.send_payload(
+                json.dumps({"id": msg_id, "type": type_, **payload})
+            )
+            while True:
+                msg = await self._recv()
+                if msg.get("id") != msg_id or msg.get("type") != "result":
+                    continue
+                if not msg["success"]:
+                    error = msg.get("error", {})
+                    code = error.get("code")
+                    if code == "unknown_command":
+                        raise HaReplError(
+                            f"{type_} not available: is the ha_repl_server integration "
+                            "installed and `ha_repl_server:` in configuration.yaml?",
+                            code=code,
+                        )
+                    detail = error.get("message")
                     raise HaReplError(
-                        f"{type_} not available: is the ha_repl_server integration "
-                        "installed and `ha_repl_server:` in configuration.yaml?"
+                        f"{type_} failed: {detail or error}", code=code, detail=detail
                     )
-                raise HaReplError(f"{type_} failed: {error.get('message', error)}")
-            return msg["result"]
+                return msg["result"]

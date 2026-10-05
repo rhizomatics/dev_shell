@@ -58,7 +58,12 @@ class LocalSession:
             return
         if value is not None:
             self.globals_["_"] = value
-            _console.print(Pretty(value))
+            # A value that knows how to render itself (a SqlResult's table)
+            # is shown as-is rather than through Pretty's repr-style output.
+            rich_aware = not isinstance(value, type) and (
+                hasattr(value, "__rich__") or hasattr(value, "__rich_console__")
+            )
+            _console.print(value if rich_aware else Pretty(value))
 
     async def _execute(self, source: str) -> Any:
         # Not "<ha_repl-N>": rich.traceback refuses to show source for any
@@ -69,7 +74,12 @@ class LocalSession:
         linecache.cache[filename] = (
             len(source),
             None,
-            source.splitlines(keepends=True),
+            # Always newline-terminated: rich's traceback rendering fails
+            # ("substring not found") on a source with no newline in it at
+            # all, i.e. any one-line command.
+            (source if source.endswith("\n") else source + "\n").splitlines(
+                keepends=True
+            ),
             filename,
         )
         tree = ast.parse(source, filename, "exec")

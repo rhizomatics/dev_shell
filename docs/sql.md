@@ -4,6 +4,8 @@ Home Assistant has an internal SQL database front-ended by the [Recorder](https:
 
 When in `live` mode, the `ha-cli` exposes an `sql` variable, which allows access to this database, via the Recorder interface. 
 
+`sql` and its results are local objects. A query is sent to Home Assistant, the rows come back as one download, and everything after that - `show()`, slicing, dataframes, CSV export - works on that local copy, with whatever libraries you have installed locally. Nothing extra needs installing in Home Assistant.
+
 !!! info 
     Data is serialized as Apache Arrow using the `nanofeather` library - this provides column-oriented data for good compression, zero-copy reuse into dataframes and good compatibility with popular data libraries like `polars` and `pandas`.
 
@@ -36,13 +38,13 @@ The results can also be sliced like a Python list, so `[:10]` for the first 10 r
 | -------------- | ------------------ |
 | `rowcount`     | Size of result set, may not be size of table due to row limits |
 | `truncated`    | `True` if results were truncated due to row limits |
-| `table`        | The `SqlTable` object describing this table |
-| `columns`      | List of `Column` objects describing each column |
+| `table`        | The `Table` object describing this table, or `None` if the columns don't identify a single table |
+| `columns`      | The data itself: a `dict` of Arrow arrays, one per column, by name |
 | `column_names` | List of the column names in the table, in order |
 | `show()`       | Dump the table data to the console |
 | `project()`    | Create a new result object with a limited set of columns based on this one |
 | `sample()`     | Randomly sample selected quantity of rows out of the result set |
-| `export_csv()` | Write the results to a CSV file, by default named after the table |
+| `export_csv()` | Write the results to a local CSV file, by default named after the table (`result.csv` if there isn't one) |
 | `arrow()`      | Raw Arrow data |
 | `to_dicts()`   | Extract a `list` of `dict` objects from the results |
 | `to_pandas()`  | Turn the results into a *pandas* dataframe, if pandas installed |
