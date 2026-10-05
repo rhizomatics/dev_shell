@@ -86,7 +86,7 @@ uv run --with homeassistant-devshell dev_shell --token <<<my long lived access t
 
 ## Using the Shell
 
-The shell is a full Python REPL shell, implemented as a VSCode NotebookController, with multi-line editing, history etc, living inside an asyncio loop that exposes the live Home Assistant instance as:
+The shell is a full Python REPL shell, with multi-line editing, history etc, living inside an asyncio loop that exposes the live Home Assistant instance as:
 
 * `obj` - the object tree exposed as a dictionary object and common methods
 

@@ -49,7 +49,7 @@ Physical
 
 ## REPL
 
-The REPL shell is a full Python REPL shell, implemented as a VSCode NotebookController, with multi-line editing, history etc, living inside an asyncio loop that exposes the live Home Assistant instance as
+The REPL shell is a full Python REPL shell, (implemented as a VSCode NotebookController?), with multi-line editing, history etc, living inside an asyncio loop that exposes the live Home Assistant instance as
 
 * `hass` - the `HomeAssistant` class at the root of the Python API
 * `obj[]` - the object tree exposed as a dictionary object
