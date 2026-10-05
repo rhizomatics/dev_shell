@@ -56,7 +56,9 @@ Needed for `custom` mode only, since `api` mode only uses standard Home Assistan
 
 See the [Roadmap](https://homeassistant-repl.rhizomatics.org.uk/developer/design/roadmap/index.md) for where this might go, and your feedback welcome.
 
-> [!NOTE] It is not intended to ever be a replacement for a Python debugger, although it may complement one. It also does not intend to replicate [PyScript](https://pyscript.net), instead focusing on standard python (PyScript uses MicroPython) even at expense of general usability or home assistance access, and not a general automation script execution service. For most non-developer cases, [homeassistant-cli](https://pypi.org/project/homeassistant-cli/) is a better choice, with pre-packaged access to devices, entities, services etc.
+Note
+
+It is not intended to ever be a replacement for a Python debugger, although it may complement one. It also does not intend to replicate [PyScript](https://pyscript.net), instead focusing on standard python (PyScript uses MicroPython) even at expense of general usability or home assistance access, and not a general automation script execution service. For most non-developer cases, [homeassistant-cli](https://pypi.org/project/homeassistant-cli/) is a better choice, with pre-packaged access to devices, entities, services etc.
 
 ## Quick Start
 
@@ -95,7 +97,9 @@ The `homeassistant-api` integration can be used like:
 12
 ```
 
-> [!NOTE] The `hass_api` object returns `AsyncEntity` objects rather than `ApiEntity` objects - this is because it comes from a separate project, [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) that is focused solely on API development, whereas the `ApiEntity` class is designed for custom code development, being a subset of the real `Entity` in HomeAssistant, that you'd also get in `live` mode.
+Note
+
+The `hass_api` object returns `AsyncEntity` objects rather than `ApiEntity` objects - this is because it comes from a separate project, [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) that is focused solely on API development, whereas the `ApiEntity` class is designed for custom code development, being a subset of the real `Entity` in HomeAssistant, that you'd also get in `live` mode.
 
 See also [Alternative Integration](https://homeassistant-repl.rhizomatics.org.uk/alternative_integration/index.md) options for how to use this in your own plain python shell, ipython, Marimo or similar.
 
@@ -120,7 +124,7 @@ All the usual Python tricks can of course also be used, iterators, comprehension
 
 ### `obj[]`
 
-This allows dictionary ('Mapping') access to the object tree.
+This allows dictionary ('Mapping') access to the object tree. It can also accept a simple entity name and bypass the tree structure altogether.
 
 In the example tree below, the objects and subtrees of objects can be accessed like:
 
@@ -132,6 +136,7 @@ In the example tree below, the objects and subtrees of objects can be accessed l
 >>> obj["/rflink"]  # the 'light','binary_sensor' and 'sensor' subtrees for rflink
 >>> obj["/rflink/sensor"]  # all the sensors for rflink
 >>> len(obj["/rflink/sensor"])  # count of rflink sensors in this example
+>>> obj["sensor.shed_temperature"] # non-path simple entity name mode
 ```
 
 ##### Example Tree
@@ -154,16 +159,26 @@ In the example tree below, the objects and subtrees of objects can be accessed l
 ...
 ```
 
-> [!NOTE] In the roadmap, there will be a visual Object Browser to view and select entities. For now, it is accessible only via Python code. It also may extend beyond entities, to things like areas, users, categories and devices.
+Note
+
+In the roadmap, there will be a visual Object Browser to view and select entities. For now, it is accessible only via Python code. It also may extend beyond entities, to things like areas, users, categories and devices.
 
 #### `obj.find('..')`
 
 Where the dictionary access gives a nested directory view of the object tree, `find` provides a flat iteration with no order guarantees, so its fast and simple and can be sorted the usual Python way if needed.
 
+`find` functions can accept a full or partial path, or a regular expression.
+
 `find` also has built in filters, to narrow the big list of objects by one or more `platform`,`domain`,`area`,`label` - each of these will take a single string or list of strings, and they can be combined to narrow down the list.
 
 ```python
 >>> {(o.entity_id, o.state) for o in obj.find(domain="binary_sensor")}
+```
+
+Or using a regular expression:
+
+```python
+>>> {(o.entity_id, o.state) for o in obj.find("/rflink/binary_sensor/*._leak")}
 ```
 
 ##### Raw Objects
@@ -177,6 +192,7 @@ Identical to `obj.find()` except it only returns an iterable of the object paths
 ```python
 >>> list(objs.find(area="kitchen"))  # list names of all entities in kitchen
 >>> sorted(objs.find(area=["kitchen", "shed"]))
+>>> list(objs.find(".*_leak"))
 ```
 
 #### `obj.find_names(..)`
