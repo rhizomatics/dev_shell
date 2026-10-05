@@ -454,6 +454,17 @@
     <ul class="md-nav__list" data-md-component="toc">
       
         <li class="md-nav__item">
+  <a href="#030" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#020" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -736,6 +747,18 @@
 
 
 <h1 id="whats-new">What's New<a class="headerlink" href="#whats-new" title="Permanent link">&para;</a></h1>
+<h2 id="030">0.3.0<a class="headerlink" href="#030" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Integrated <a href="https://github.com/HomeAssistant-API/HomeAssistantAPI">homeassistant-api</a> client object as <code>api</code> variable for pure REST/WS API access</li>
+<li><code>api.get_state(entity_id="binary_sensor.kitchen_pir")</code></li>
+<li><code>api</code> has its own <code>AsyncEntity</code> class which differs from the <code>ApiEntity</code> used by the core REPL<ul>
+<li>reason is that <code>ApiEntity</code> is designed to offer a subset of the real entity and allow easier prototyping of custom component code whereas <code>AsyncEntity</code> is the <code>homeassistant-api</code> package way of working purely with API data</li>
+</ul>
+</li>
+<li>Auto await will do the <code>await</code> for you with coroutines if you forget.</li>
+<li>Can be switched off with <code>--no-auto-await</code></li>
+<li>Replaced use of <code>websockets</code> with <code>niquests[ws]</code></li>
+</ul>
 <h2 id="020">0.2.0<a class="headerlink" href="#020" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Renamed to <code>Home Assistant REPL</code> and cli tool to <code>ha_repl</code> to make it clearer what it does and avoid confusion in package name space or terminal with other dev shells.</li>
