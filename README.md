@@ -48,6 +48,8 @@ This is primarily for developers of custom components, and their LLM agents, tho
 - Integrated with `rich` for pretty object printouts and stack traces
 - Access to all entities via dictionary like interface, `obj`
 - Usual multi-line editing support and history of Python
+- Integrated with [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) as `api` object, available in both modes
+- Auto-awaits coroutines for easy shell use (can be switched off or overridden)
 - Dedicated shell that can be run without installation with `uv`
 - Usable from inside `ipython` shell, Marimo notebooks or plain `python -m asyncio`
 
@@ -91,8 +93,9 @@ uv run --with homeassistant-repl ha-repl --token <<<my long lived access token>>
 The shell is a full Python REPL shell, with multi-line editing, history etc, living inside an asyncio loop that exposes the live Home Assistant instance as:
 
 * `obj` - the object tree exposed as a dictionary object and common methods
+* `api` - the Home Assistant web socket / REST API exposed using the [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) library
 
-In `custom` mode it also offers:
+In `custom` mode it offers, in addition to what `api` mode offers:
 
 * `hass` - the `HomeAssistant` class at the root of the Python API
 
@@ -105,7 +108,10 @@ pir.state = "on"  # non-strict mode, sets entity state with repl as context
 
 The return value of the object is returned to the shell, value printed and available to Python code as `_`. Tracebacks are printed also, as if they were local (in general everything feels like its local)
 
-See also [Alternative Integration](alternative_integration.md) options.
+>[!NOTE]
+> The `api` object returns `AsyncEntity` objects rather than `ApiEntity` objects - this is because it comes from a separate project, [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) that is focused solely on API development, whereas the `ApiEntity` class is designed for custom code development, being a subset of the real `Entity` in HomeAssistant, that you'd also get in `direct` mode.
+
+See also [Alternative Integration](alternative_integration.md) options for how to use this in your own plain python shell, ipython, Marimo or similar.
 
 ## The Object Tree
 

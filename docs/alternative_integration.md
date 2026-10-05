@@ -39,13 +39,17 @@ asyncio.run(main())
 
 By default the cached snapshot is reused for 30 seconds (`ttl=` to change that) and the websocket connection is left open for the life of the process; call `await obj.cache.refresh()` for a fresh snapshot on demand, or `await obj.cache.client.close()` when you're done with it if that matters for your script.
 
-## iPython example
+## iPython Example
 
 ```bash
 $ ipython
 >>> import homeassistant_repl
 >>> obj = await homeassistant_repl.connect()
 ```
+
+## Marimo Example
+
+![Example Marimo Import and Usage](assets/screenshots/marimo.png)
 
 ## Install Local Home Assistant with the Custom Mode Server
 
