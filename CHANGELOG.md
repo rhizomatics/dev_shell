@@ -2,9 +2,16 @@
 
 # 0.7.0
 ## SQL
-- Results can now be sliced like a list, e.g. `[:-10]` for last 10 rows, `[:10]` for first 10
-- Results has `project()` method which takes a list of columns and produces same table with just those columns
-- Results has an `export_csv()` method, with same keyword arguments as `csv.writer`
+- Results object has new features
+  - It can now be sliced like a list, e.g. `[:-10]` for last 10 rows, `[:10]` for first 10
+  - `project()` method which takes a list of columns and produces same table with just those columns
+  - `sample()` returns a random sample of rows from the table, defaulting to 20, overridable with `count=` 
+  -  `export_csv()` method, with same keyword arguments as `csv.writer`
+  - `len()` can be called on result set to get size, subject to row limits
+  - The results can be iterated over with a list of values per row
+    `for e in sql('select * from events'):
+        print(e[0],e[5])`
+  - The Apache Arrow / Feather data is available as `arrow()`
 - Queries all executed under `read_only` session scope so no commits expected (this is not a security measure)
 ## Live Server
 - Config switches now to optionally switch off `sql` and/or `hass` access

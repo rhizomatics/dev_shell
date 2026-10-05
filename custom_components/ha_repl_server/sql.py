@@ -7,31 +7,39 @@ Live mode only: this needs the real `hass`/recorder instance running in this
 process - there's no REST/websocket equivalent reachable from API client mode.
 The session-global `sql` is a SqlTool instance (one per session, see
 PerSession in session.py): call it like a function (`sql("select ...")`),
-inspect/change its default row cap via `sql.limit` (None removes it), or
+inspect/change its default row cap via `sql.max_rows` (None removes it), or
 look at `sql.tables` for the recorder's current tables without a query.
 
-Results come back as nanoarrow arrays (https://arrow.apache.org/nanoarrow/) -
-a ~1MB, dependency-free Arrow implementation, not the ~100MB pyarrow - with
-`.to_pandas()`/`.to_polars()`/`.to_dicts()` for whichever (if any) dataframe
-library the caller already has installed. Column types come from Home
-Assistant's own declared recorder schema (homeassistant.components.recorder.
-db_schema) wherever a result column's name matches a real column there - no
-runtime value sniffing needed for the handful of stable tables (events,
-states, statistics, ...) this is meant for. A column whose name isn't
-recognised there (e.g. an aggregate like COUNT(*)) falls back to a one-off
-peek at its own first non-null value, not a sniff of every column.
+This SqlResult is deliberately the minimal, server-side half of the type:
+the query's rows as nanoarrow arrays (https://arrow.apache.org/nanoarrow/) -
+a ~1MB, dependency-free Arrow implementation, not the ~100MB pyarrow - plus
+`.arrow()` to serialize them as a single Arrow IPC stream. Rendering
+(`.show()`) and dataframe conversion (`.to_pandas()`/`.to_polars()`) live
+only on the separate, full-featured SqlResult in homeassistant_repl (the
+CLI/client package) that reconstructs from those bytes - see that module's
+own docstring for why: every dependency here is a dependency the running
+Home Assistant instance pays for, not just the developer typing the query,
+so rich/pandas/polars have no business being manifest.json requirements of
+this component when the client can freely install them instead. Column
+types come from Home Assistant's own declared recorder schema
+(homeassistant.components.recorder.db_schema) wherever a result column's
+name matches a real column there - no runtime value sniffing needed for the
+handful of stable tables (events, states, statistics, ...) this is meant
+for. A column whose name isn't recognised there (e.g. an aggregate like
+COUNT(*)) falls back to a one-off peek at its own first non-null value, not
+a sniff of every column.
 """
 
 from __future__ import annotations
 
-import csv
 import functools
+import io
+import random
 import re
 from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
-from pathlib import Path
 from typing import Any
 
 import nanoarrow as na
@@ -40,11 +48,10 @@ import sqlparse
 from homeassistant.components.recorder import db_schema, get_instance
 from homeassistant.components.recorder.core import Recorder
 from homeassistant.core import HomeAssistant
-from rich.table import Table
+from homeassistant.helpers.recorder import session_scope
+from nanoarrow.ipc import StreamWriter
 
-DEFAULT_ROW_LIMIT = 1000
-DEFAULT_SHOW_ROWS = 30
-DEFAULT_SHOW_COLUMNS = 6
+DEFAULT_MAX_ROWS = 1000
 _FETCH_CHUNK_SIZE = 200
 
 
@@ -69,8 +76,34 @@ def _column_repr(column: sa.Column) -> str:
     return _COLUMN_REPR_TABLE_KWARG.sub("", _ORIGINAL_COLUMN_REPR(column))
 
 
-sa.Table.__repr__ = _table_repr  # type:ignore[method-assign] # ty:ignore[invalid-assignment]
+sa.Table.__repr__ = _table_repr  # type:ignore[method-assign] # ty:ignore[invalid-assignment]
 sa.Column.__repr__ = _column_repr  # type:ignore[method-assign] # ty:ignore[invalid-assignment]
+
+
+@dataclass
+class SqlTable:
+    """A recorder table - wraps the real sa.Table (the same one
+    _recorder_arrow_types() reads column types from, so there's exactly
+    one source of truth for what a table's columns are) rather than
+    re-describing it under a parallel schema of our own.
+    """
+
+    _table: sa.Table
+
+    @property
+    def name(self) -> str:
+        return self._table.name
+
+    def column_names(self) -> list[str]:
+        """Just the names, in schema order."""
+        return list(self._table.c.keys())
+
+    def columns(self) -> list[sa.Column]:
+        """The real sa.Column objects, in schema order."""
+        return list(self._table.c)
+
+    def __repr__(self) -> str:
+        return repr(self._table)
 
 
 class SqlError(Exception):
@@ -147,31 +180,52 @@ def _recorder_arrow_types() -> dict[str, Any]:
 
 @dataclass
 class SqlResult:
-    """A query result as nanoarrow arrays, one per column. `columns` (name
-    -> nanoarrow Array) is there directly for anyone who wants Arrow itself;
-    .to_pandas()/.to_polars()/.to_dicts() convert on demand, lazily
-    importing whichever library the caller already has installed.
+    """A query result as nanoarrow arrays, one per column - `columns` (name
+    -> nanoarrow Array) is there directly for anyone who wants Arrow itself.
+    This is the minimal, server-side half of the type: see this module's
+    own docstring for why rendering/dataframe conversion live only on the
+    client's own SqlResult (homeassistant_repl.sql), reconstructed from
+    `.arrow()`'s bytes, not here.
     """
 
     columns: dict[str, Any]
-    row_count: int
+    rowcount: int
     truncated: bool
-
-    def to_polars(self) -> Any:
-        import polars as pl  # type: ignore[import-not-found]  # ty: ignore[unresolved-import]
-
-        return pl.DataFrame(self.columns)
-
-    def to_pandas(self) -> Any:
-        import pandas as pd  # type: ignore[import-untyped]  # ty: ignore[unresolved-import]
-
-        return pd.DataFrame({
-            name: list(arr.iter_py()) for name, arr in self.columns.items()
-        })
 
     def to_dicts(self) -> list[dict[str, Any]]:
         names = list(self.columns)
         return [dict(zip(names, row, strict=True)) for row in self._rows()]
+
+    def arrow(self) -> bytes:
+        """This result as a single Arrow IPC stream: every column as one
+        named field of a single struct-typed batch, in column order - the
+        wire format this is actually meant to cross a client/server
+        boundary in (unlike every other `.to_*()` here, which only ever
+        make sense inside the one process that already holds the live
+        nanoarrow Arrays), and a `pyarrow.ipc.open_stream()`/
+        `polars.read_ipc_stream()`/etc.-readable file format in its own
+        right.
+        """
+        schema = na.struct({name: arr.schema for name, arr in self.columns.items()})
+        batch = na.c_array_from_buffers(
+            schema,
+            length=self.rowcount,
+            buffers=[],
+            children=list(self.columns.values()),
+        )
+        buf = io.BytesIO()
+        with StreamWriter.from_writable(buf) as writer:
+            writer.write_stream(batch)
+        return buf.getvalue()
+
+    def __iter__(self) -> Iterator[list[Any]]:
+        """Rows as plain lists (not `.to_dicts()`'s dicts, not the tuples
+        `_rows()` zips internally) - so `for row in result:`, `print(row)`
+        and a comprehension like `[row[0] for row in result]` reach
+        straight for a row's values.
+        """
+        for row in self._rows():
+            yield list(row)
 
     @property
     def column_names(self) -> list[str]:
@@ -182,8 +236,8 @@ class SqlResult:
         return list(self.columns)
 
     @property
-    def table(self) -> sa.Table | None:
-        """The one recorder table (the same sa.Table objects sql.tables
+    def table(self) -> SqlTable | None:
+        """The one recorder table (the same SqlTable objects sql.tables
         exposes, not a copy) whose own columns are a superset of this
         result's - not SQL parsing, since joins/aliases/computed columns
         make "which table was this queried from" unreliable to parse, just
@@ -192,63 +246,8 @@ class SqlResult:
         does (e.g. a bare `entity_id` that several tables share).
         """
         names = set(self.columns)
-        matches = [t for t in _current_tables() if names <= set(t.c.keys())]
+        matches = [t for t in _current_tables() if names <= set(t.column_names())]
         return matches[0] if len(matches) == 1 else None
-
-    def show(
-        self,
-        columns: list[str] | None = None,
-        *,
-        max_rows: int | None = DEFAULT_SHOW_ROWS,
-        max_cols: int | None = DEFAULT_SHOW_COLUMNS,
-    ) -> Table:
-        """A rich Table rendering of this result - the trailing-expression
-        equivalent of obj.show(): meant to be the trailing expression at the
-        REPL so the usual echo renders it, not printed directly here. Every
-        cell goes through str() - the same "good enough to read, not meant
-        to round-trip" rule _format_error's traceback rendering applies,
-        rather than re-implementing per-type formatting rich's own Pretty
-        already does better for the arrow-free single-value case.
-
-        Left to the defaults, a wide/long result is cut down to its first
-        `max_cols` columns and `max_rows` rows - raise either (or pass None
-        for no cap) so a `select *` doesn't blow out whatever's rendering
-        this (REPL, notebook, ...) by default. `columns` narrows (and/or
-        reorders) to a specific set of columns instead, overriding
-        `max_cols` entirely.
-        """
-        all_names = self.column_names
-        if columns is not None:
-            names = columns
-            cols_truncated = False
-        elif max_cols is not None and len(all_names) > max_cols:
-            names = all_names[:max_cols]
-            cols_truncated = True
-        else:
-            names = all_names
-            cols_truncated = False
-
-        if max_rows is not None and self.row_count > max_rows:
-            row_cap = max_rows
-            rows_truncated = True
-        else:
-            row_cap = self.row_count
-            rows_truncated = False
-
-        caption = f"{self.row_count} row{'' if self.row_count == 1 else 's'}"
-        if self.truncated:
-            caption += " (truncated)"
-        if cols_truncated:
-            caption += f" ({len(names)}/{len(all_names)} cols)"
-        if rows_truncated:
-            caption += f" (showing first {row_cap} rows)"
-
-        table = Table(*names, caption=caption)
-        for i, row in enumerate(self._rows(names)):
-            if i >= row_cap:
-                break
-            table.add_row(*("" if v is None else str(v) for v in row))
-        return table
 
     def project(self, columns: list[str]) -> SqlResult:
         """A new SqlResult with just these columns (same rows, same
@@ -257,7 +256,7 @@ class SqlResult:
         """
         return SqlResult(
             {name: self.columns[name] for name in columns},
-            self.row_count,
+            self.rowcount,
             self.truncated,
         )
 
@@ -275,28 +274,28 @@ class SqlResult:
             name: na.array(arr.to_pylist()[key], schema=arr.schema)
             for name, arr in self.columns.items()
         }
-        row_count = len(range(*key.indices(self.row_count)))
-        return SqlResult(columns, row_count, self.truncated)
+        rowcount = len(range(*key.indices(self.rowcount)))
+        return SqlResult(columns, rowcount, self.truncated)
 
-    def export_csv(self, path: str | Path | None = None, **kwargs: Any) -> Path:
-        """Write this result to a CSV file at `path` - a header row, then
-        every row with each cell through str() (the same "good enough to
-        read" rule show()'s own cells use - CSV has no native types
-        anyway). `kwargs` go straight to csv.writer (dialect, delimiter,
-        ...). `path` defaults to `{self.table.name}.csv` (or `result.csv`
-        if `.table` can't resolve one - see its own docstring) in the
-        current directory; either way, the path actually written to is
-        returned.
+    def __len__(self) -> int:
+        return self.rowcount
+
+    def sample(self, count: int = 20) -> SqlResult:
+        """A new SqlResult with `count` rows chosen at random, without
+        replacement (capped at the rows actually here, so this never
+        raises for a small result) - an unbiased look at a big result,
+        unlike show()/slicing's plain "first N". Rows keep their original
+        relative order, only which ones are picked is random.
         """
-        if path is None:
-            path = f"{self.table.name if self.table is not None else 'result'}.csv"
-        path = Path(path)
-        with path.open("w", newline="", encoding="utf-8") as fp:
-            writer = csv.writer(fp, **kwargs)
-            writer.writerow(self.column_names)
-            for row in self._rows():
-                writer.writerow("" if v is None else str(v) for v in row)
-        return path
+        chosen = set(random.sample(range(self.rowcount), min(count, self.rowcount)))
+        columns = {
+            name: na.array(
+                [value for i, value in enumerate(arr.to_pylist()) if i in chosen],
+                schema=arr.schema,
+            )
+            for name, arr in self.columns.items()
+        }
+        return SqlResult(columns, len(chosen), self.truncated)
 
     def _rows(self, names: list[str] | None = None) -> Iterator[tuple[Any, ...]]:
         arrays = (
@@ -309,7 +308,7 @@ class SqlResult:
     def __repr__(self) -> str:
         suffix = " (truncated)" if self.truncated else ""
         cols = ", ".join(self.columns)
-        return f"<SqlResult {self.row_count} rows x {len(self.columns)} cols [{cols}]{suffix}>"
+        return f"<SqlResult {self.rowcount} rows x {len(self.columns)} cols [{cols}]{suffix}>"
 
 
 def _coerce_for_arrow(value: Any) -> Any:
@@ -369,7 +368,7 @@ def _check_select_only(query: str) -> None:
 
 
 def _fetch_rows(
-    hass: HomeAssistant, query: str, limit: int | None
+    hass: HomeAssistant, query: str, max_rows: int | None
 ) -> tuple[list[str], list[tuple[Any, ...]], bool]:
     """Runs on the recorder's own executor thread - see sql() below for why
     (SQLite, and the recorder's pooled connections generally, are
@@ -377,15 +376,17 @@ def _fetch_rows(
     generic executor).
     """
     chunk_size = (
-        _FETCH_CHUNK_SIZE if limit is None else max(1, min(limit, _FETCH_CHUNK_SIZE))
+        _FETCH_CHUNK_SIZE
+        if max_rows is None
+        else max(1, min(max_rows, _FETCH_CHUNK_SIZE))
     )
-    with get_instance(hass).get_session() as session:
+    with session_scope(hass=hass, read_only=True) as session:
         result = session.execute(sa.text(query))
         columns = list(result.keys())
         rows: list[tuple[Any, ...]] = []
         truncated = False
         for row in result.yield_per(chunk_size):
-            if limit is not None and len(rows) >= limit:
+            if max_rows is not None and len(rows) >= max_rows:
                 truncated = True
                 break
             rows.append(tuple(row))
@@ -394,7 +395,7 @@ def _fetch_rows(
 
 
 async def sql(
-    hass: HomeAssistant, query: str, *, limit: int | None = DEFAULT_ROW_LIMIT
+    hass: HomeAssistant, query: str, *, max_rows: int | None = DEFAULT_MAX_ROWS
 ) -> SqlResult:
     """Run a single read-only SQL SELECT against Home Assistant's Recorder
     database and return the result as nanoarrow-backed columns - see this
@@ -403,20 +404,20 @@ async def sql(
     Only one SELECT statement is allowed - the same restriction Home
     Assistant's own `sql` integration applies, since this runs against your
     live recorder database and a stray UPDATE/DELETE here is as real as one
-    from any other integration. At most `limit` rows are fetched (default
+    from any other integration. At most `max_rows` rows are fetched (default
     1000) - rows beyond it are never transferred from the database, not
-    just discarded afterwards; pass a higher `limit` for more, or None for
-    no cap at all.
+    just discarded afterwards; pass a higher `max_rows` for more, or None
+    for no cap at all.
     """
-    if limit is not None and limit < 1:
-        raise SqlError("limit must be at least 1")
+    if max_rows is not None and max_rows < 1:
+        raise SqlError("max_rows must be at least 1")
     _check_select_only(query)
     try:
         instance: Recorder = get_instance(hass)
     except KeyError:
         raise SqlError("the recorder is not set up on this instance") from None
     columns, rows, truncated = await instance.async_add_executor_job(
-        _fetch_rows, hass, query, limit
+        _fetch_rows, hass, query, max_rows
     )
     column_values = list(zip(*rows, strict=True)) if rows else [() for _ in columns]
     arrays = {
@@ -426,49 +427,56 @@ async def sql(
     return SqlResult(arrays, len(rows), truncated)
 
 
-_LIMIT_UNSET: Any = object()
+_MAX_ROWS_UNSET: Any = object()
 
 
 @dataclass
 class SqlTool:
     """The `sql` global bound into each live-mode session: callable to run a
-    query, plus two bits of state a plain function can't hold - `.limit`
+    query, plus two bits of state a plain function can't hold - `.max_rows`
     (this session's own default row cap; set it to change the default for
     every call after, or to None to remove it entirely) and `.tables` (the
     recorder's current tables, to explore the schema without a query).
     One of these is created fresh per session (see PerSession in session.py)
-    so `sql.limit = ...` in one session can't affect another's.
+    so `sql.max_rows = ...` in one session can't affect another's.
     """
 
     hass: HomeAssistant
-    limit: int | None = DEFAULT_ROW_LIMIT
+    max_rows: int | None = DEFAULT_MAX_ROWS
 
     async def __call__(
-        self, query: str, *, limit: int | None = _LIMIT_UNSET
+        self, query: str, *, max_rows: int | None = _MAX_ROWS_UNSET
     ) -> SqlResult:
-        """Same as sql() above, defaulting to this session's `.limit` - pass
-        `limit=` explicitly (including None, for no cap) to override it for
-        just this one call."""
+        """Same as sql() above, defaulting to this session's `.max_rows` -
+        pass `max_rows=` explicitly (including None, for no cap) to
+        override it for just this one call."""
         return await sql(
-            self.hass, query, limit=self.limit if limit is _LIMIT_UNSET else limit
+            self.hass,
+            query,
+            max_rows=self.max_rows if max_rows is _MAX_ROWS_UNSET else max_rows,
         )
 
     @property
-    def tables(self) -> list[sa.Table]:
+    def tables(self) -> list[SqlTable]:
         return _current_tables()
 
     def __repr__(self) -> str:
-        return f"<sql(query, limit=...) - default limit={self.limit!r}; see sql.tables>"
+        return (
+            f"<sql(query, max_rows=...) - default max_rows={self.max_rows!r}; "
+            "see sql.tables>"
+        )
 
 
 @functools.cache
-def _current_tables() -> list[sa.Table]:
-    """The recorder's own current (non-deprecated) tables as real SQLAlchemy
-    Table objects - from homeassistant.components.recorder.db_schema, the
-    same source _recorder_arrow_types() reads above, not a live reflection
-    of the connected database: these tables are schema-defined and the same
+def _current_tables() -> list[SqlTable]:
+    """The recorder's own current (non-deprecated) tables, wrapped as
+    SqlTable - from homeassistant.components.recorder.db_schema, the same
+    source _recorder_arrow_types() reads above, not a live reflection of
+    the connected database: these tables are schema-defined and the same
     for every instance of a given HA version, so there's nothing a blocking
-    round trip to the real database would add here.
+    round trip to the real database would add here. Cached so repeated
+    calls (SqlTool.tables, SqlResult.table) return the exact same SqlTable
+    objects, not equal-but-distinct copies.
     """
     tables: dict[str, sa.Table] = {}
     for name, obj in vars(db_schema).items():
@@ -477,4 +485,4 @@ def _current_tables() -> list[sa.Table]:
         table = getattr(obj, "__table__", None)
         if table is not None:
             tables[table.name] = table
-    return sorted(tables.values(), key=lambda t: t.name)
+    return [SqlTable(t) for t in sorted(tables.values(), key=lambda t: t.name)]

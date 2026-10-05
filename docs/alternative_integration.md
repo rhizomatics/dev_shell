@@ -51,24 +51,3 @@ $ ipython
 
 ![Example Marimo Import and Usage](assets/screenshots/marimo.png)
 
-## Install Local Home Assistant with the Custom Mode Server
-
-Dev instance (devcontainer, or directly on a host with Python 3.14):
-
-```sh
-dev/setup.sh                 # installs HA into its own venv + the CLI (devcontainer runs this)
-dev/run-ha.sh                # HA on :8123 with custom_components/ha_repl_server symlinked in
-uv run python dev/bootstrap.py   # onboard (user dev/dev) and write dev/.env with a token
-```
-
-Using it (host or container):
-
-```sh
-set -a; . dev/.env; set +a
-uv run ha-repl                                         # interactive
-uv run ha-repl exec 'hass.states.get("sun.sun")'
-uv run ha-repl exec - <<'PY'
-await hass.services.async_call("light", "toggle", {"entity_id": "light.kitchen_lights"}, blocking=True)
-hass.states.get("light.kitchen_lights").state
-PY
-```

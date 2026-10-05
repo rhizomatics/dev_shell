@@ -8,6 +8,7 @@ enable it on an instance where admin accounts are not fully trusted.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -17,7 +18,7 @@ from homeassistant.helpers.typing import ConfigType
 from . import websocket_api
 from .const import DOMAIN
 from .objtree import ObjTree
-from .rest import HassApiUnavailable, connect_hass_api
+from .rest import HassApiUnavailable, connect_hass_api, warm_urllib3_lazy_imports
 from .session import PerSession, SessionManager, warm_rich_unicode_data
 from .sql import SqlTool
 
@@ -41,18 +42,24 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.async_add_executor_job(warm_rich_unicode_data)
+    await hass.async_add_executor_job(warm_urllib3_lazy_imports)
     try:
         hass_api = await connect_hass_api()
     except HassApiUnavailable as err:
         _LOGGER.warning("Home Assistant REPL: `hass_api` unavailable: %s", err)
         hass_api = None
 
-    hass.data[DOMAIN] = SessionManager({
-        "hass": hass,
-        "obj": ObjTree(hass),
-        "hass_api": hass_api,
-        "sql": PerSession(lambda: SqlTool(hass)),
-    })
+    # In entry.options, not entry.data: editable after setup via Configure
+    # (see config_flow.py's HaReplServerOptionsFlow), not fixed at creation.
+    # Missing (not just False) means an entry from before these existed -
+    # both default on, matching that version's always-on behaviour.
+    bindings: dict[str, Any] = {"obj": ObjTree(hass), "hass_api": hass_api}
+    if entry.options.get("expose_hass", True):
+        bindings["hass"] = hass
+    if entry.options.get("expose_sql", True):
+        bindings["sql"] = PerSession(lambda: SqlTool(hass))
+
+    hass.data[DOMAIN] = SessionManager(bindings)
     _LOGGER.warning(
         "Home Assistant REPL is enabled: admin users can execute arbitrary Python in this instance"
     )

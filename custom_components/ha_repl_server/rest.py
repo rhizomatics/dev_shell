@@ -17,6 +17,7 @@ set (a warning, not a failed setup).
 
 from __future__ import annotations
 
+import importlib
 import os
 
 from homeassistant_api import AsyncClient
@@ -26,6 +27,21 @@ from homeassistant_api.errors import HomeassistantAPIError
 class HassApiUnavailable(Exception):
     """No usable $SUPERVISOR_TOKEN or $HASS_SERVER/$HASS_TOKEN, or the API
     didn't respond/authenticate."""
+
+
+def warm_urllib3_lazy_imports() -> None:
+    """`AsyncClient(...)`/`check_api_running()` below each lazily
+    `import_module()` one of urllib3's own pluggable pieces (a DNS
+    resolver backend, an HTTP/1.1 protocol implementation) the first time
+    they're used - cheap once cached in sys.modules, but as a plain import
+    straight on the event loop (connect_hass_api() runs during
+    async_setup_entry, before anything's offloaded to an executor), HA's
+    blocking-call detector flags it. Same fix as session.py's
+    warm_rich_unicode_data(): call once, in the executor, at setup, so the
+    real call later just hits the cache.
+    """
+    importlib.import_module(".system", "urllib3.contrib.resolver._async")
+    importlib.import_module(".protocols.http1", "urllib3.contrib.hface")
 
 
 async def connect_hass_api() -> AsyncClient:

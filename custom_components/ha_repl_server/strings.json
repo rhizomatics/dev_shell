@@ -3,11 +3,31 @@
     "step": {
       "user": {
         "title": "Home Assistant REPL Live Server",
-        "description": "Lets admin users run arbitrary Python inside this Home Assistant instance over the websocket API. Only enable it if every admin account is fully trusted."
+        "description": "Lets admin users run arbitrary Python inside this Home Assistant instance over the websocket API. Only enable it if every admin account is fully trusted.",
+        "data": {
+          "ack_stability": "I understand enabling this may slow down or crash Home Assistant",
+          "ack_sql_not_guaranteed": "I understand `sql` is read-only by intent, not by a strong guarantee",
+          "ack_secrets": "I understand nothing on this instance, including secrets, can be guaranteed protected from a live session",
+          "ack_token": "I will carefully protect the token used to access this service"
+        }
       }
+    },
+    "error": {
+      "ack_required": "You must acknowledge every statement before continuing"
     },
     "abort": {
       "single_instance_allowed": "Already configured. Only a single configuration is possible."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Home Assistant REPL Live Server",
+        "data": {
+          "expose_hass": "Expose `hass` in live sessions",
+          "expose_sql": "Expose `sql` in live sessions"
+        }
+      }
     }
   }
 }

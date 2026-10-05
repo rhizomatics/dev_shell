@@ -4,16 +4,20 @@ needs Home Assistant's own SQLAlchemy engine/schema, not a fake."""
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
 import pytest
 import sqlalchemy as sa
 from homeassistant.components.recorder import get_instance
 from homeassistant.core import HomeAssistant
-from rich.table import Table
 
-from custom_components.ha_repl_server.sql import SqlError, SqlResult, SqlTool, sql
+from custom_components.ha_repl_server.sql import (
+    SqlError,
+    SqlResult,
+    SqlTable,
+    SqlTool,
+    sql,
+)
 
 
 async def _settle(hass: HomeAssistant) -> None:
@@ -38,7 +42,7 @@ async def test_sql_select_returns_arrow_backed_result(
     )
 
     assert isinstance(result, SqlResult)
-    assert result.row_count == 1
+    assert result.rowcount == 1
     assert not result.truncated
     assert result.to_dicts() == [{"entity_id": "sensor.test", "state": "42"}]
 
@@ -55,13 +59,13 @@ async def test_sql_column_types_from_recorder_schema(
     assert str(result.columns["metadata_id"].schema) == "<Schema> int64"
 
 
-async def test_sql_limit_truncates_and_flags_it(recorder_mock, hass: HomeAssistant):
+async def test_sql_max_rows_truncates_and_flags_it(recorder_mock, hass: HomeAssistant):
     for i in range(5):
         hass.states.async_set(f"sensor.test_{i}", "on")
     await _settle(hass)
 
-    result = await sql(hass, "select entity_id from states_meta", limit=2)
-    assert result.row_count == 2
+    result = await sql(hass, "select entity_id from states_meta", max_rows=2)
+    assert result.rowcount == 2
     assert result.truncated is True
 
 
@@ -80,27 +84,19 @@ async def test_sql_rejects_empty_query(recorder_mock, hass: HomeAssistant):
         await sql(hass, "   ")
 
 
-async def test_sql_rejects_bad_limit(recorder_mock, hass: HomeAssistant):
-    with pytest.raises(SqlError, match="limit"):
-        await sql(hass, "select 1", limit=0)
+async def test_sql_rejects_bad_max_rows(recorder_mock, hass: HomeAssistant):
+    with pytest.raises(SqlError, match="max_rows"):
+        await sql(hass, "select 1", max_rows=0)
 
 
-async def test_sql_to_dicts_to_pandas_to_polars(recorder_mock, hass: HomeAssistant):
+async def test_sql_to_dicts(recorder_mock, hass: HomeAssistant):
+    # to_pandas()/to_polars() live only on the client-side SqlResult now -
+    # see tests/test_sql_client.py - this server-side one stops at to_dicts().
     hass.states.async_set("sensor.test", "42")
     await _settle(hass)
 
     result = await sql(hass, "select entity_id from states_meta")
     assert result.to_dicts() == [{"entity_id": "sensor.test"}]
-
-    pd = pytest.importorskip("pandas")
-    pdf = result.to_pandas()
-    assert list(pdf["entity_id"]) == ["sensor.test"]
-    assert isinstance(pdf, pd.DataFrame)
-
-    pl = pytest.importorskip("polars")
-    pldf = result.to_polars()
-    assert pldf["entity_id"].to_list() == ["sensor.test"]
-    assert isinstance(pldf, pl.DataFrame)
 
 
 async def test_sql_unknown_column_falls_back_to_value_inference(
@@ -111,68 +107,47 @@ async def test_sql_unknown_column_falls_back_to_value_inference(
     assert str(result.columns["n"].schema) == "<Schema> int64"
 
 
-async def test_sqltool_uses_its_own_limit_as_the_default(
+async def test_sqltool_uses_its_own_max_rows_as_the_default(
     recorder_mock, hass: HomeAssistant
 ):
     for i in range(5):
         hass.states.async_set(f"sensor.test_{i}", "on")
     await _settle(hass)
 
-    tool = SqlTool(hass, limit=2)
+    tool = SqlTool(hass, max_rows=2)
     result = await tool("select entity_id from states_meta")
-    assert result.row_count == 2
+    assert result.rowcount == 2
     assert result.truncated is True
 
 
-async def test_sqltool_limit_none_removes_the_cap(recorder_mock, hass: HomeAssistant):
-    for i in range(5):
-        hass.states.async_set(f"sensor.test_{i}", "on")
-    await _settle(hass)
-
-    tool = SqlTool(hass, limit=2)
-    tool.limit = None
-    result = await tool("select entity_id from states_meta")
-    assert result.row_count == 5
-    assert result.truncated is False
-
-
-async def test_sqltool_per_call_limit_overrides_but_does_not_stick(
+async def test_sqltool_max_rows_none_removes_the_cap(
     recorder_mock, hass: HomeAssistant
 ):
     for i in range(5):
         hass.states.async_set(f"sensor.test_{i}", "on")
     await _settle(hass)
 
-    tool = SqlTool(hass, limit=2)
-    result = await tool("select entity_id from states_meta", limit=None)
-    assert result.row_count == 5
+    tool = SqlTool(hass, max_rows=2)
+    tool.max_rows = None
+    result = await tool("select entity_id from states_meta")
+    assert result.rowcount == 5
+    assert result.truncated is False
+
+
+async def test_sqltool_per_call_max_rows_overrides_but_does_not_stick(
+    recorder_mock, hass: HomeAssistant
+):
+    for i in range(5):
+        hass.states.async_set(f"sensor.test_{i}", "on")
+    await _settle(hass)
+
+    tool = SqlTool(hass, max_rows=2)
+    result = await tool("select entity_id from states_meta", max_rows=None)
+    assert result.rowcount == 5
     # The override was for that one call only - the tool's own default
     # still applies to the next one.
     result = await tool("select entity_id from states_meta")
-    assert result.row_count == 2
-
-
-async def test_sql_result_show_returns_a_rich_table(recorder_mock, hass: HomeAssistant):
-    hass.states.async_set("sensor.test", "42")
-    await _settle(hass)
-
-    result = await sql(
-        hass,
-        "select states_meta.entity_id, states.state from states "
-        "join states_meta on states.metadata_id = states_meta.metadata_id",
-    )
-    table = result.show()
-
-    assert isinstance(table, Table)
-    assert [str(c.header) for c in table.columns] == ["entity_id", "state"]
-    assert [list(c.cells) for c in table.columns] == [["sensor.test"], ["42"]]
-
-
-async def test_sql_result_show_notes_truncation_in_caption():
-    import nanoarrow as na
-
-    result = SqlResult({"n": na.array([1], schema=na.int64())}, 1, truncated=True)
-    assert "truncated" in str(result.show().caption)
+    assert result.rowcount == 2
 
 
 async def test_sqltool_tables_lists_known_recorder_tables(hass: HomeAssistant):
@@ -180,8 +155,17 @@ async def test_sqltool_tables_lists_known_recorder_tables(hass: HomeAssistant):
     names = [t.name for t in tool.tables]
     assert "states" in names
     assert "events" in names
-    assert all(isinstance(t, sa.Table) for t in tool.tables)
+    assert all(isinstance(t, SqlTable) for t in tool.tables)
     assert not any(name.lower().startswith("legacy") for name in names)
+
+
+async def test_sqltable_column_names_and_columns(hass: HomeAssistant):
+    tool = SqlTool(hass)
+    states = next(t for t in tool.tables if t.name == "states")
+
+    assert "entity_id" in states.column_names()
+    assert all(isinstance(c, sa.Column) for c in states.columns())
+    assert [c.name for c in states.columns()] == states.column_names()
 
 
 async def test_sql_result_column_names_lists_just_the_names(
@@ -228,69 +212,6 @@ async def test_sql_result_table_is_none_when_ambiguous_or_unmatched(
     assert aggregate.table is None
 
 
-async def test_sql_result_show_defaults_to_first_six_columns():
-    import nanoarrow as na
-
-    columns = {f"c{i}": na.array([1], schema=na.int64()) for i in range(8)}
-    result = SqlResult(columns, 1, truncated=False)
-
-    table = result.show()
-    assert [str(c.header) for c in table.columns] == [f"c{i}" for i in range(6)]
-    assert "6/8 cols" in str(table.caption)
-
-
-async def test_sql_result_show_columns_kwarg_overrides_the_default():
-    import nanoarrow as na
-
-    columns = {f"c{i}": na.array([1], schema=na.int64()) for i in range(8)}
-    result = SqlResult(columns, 1, truncated=False)
-
-    table = result.show(columns=["c7", "c0"])
-    assert [str(c.header) for c in table.columns] == ["c7", "c0"]
-    assert "cols" not in str(table.caption)
-
-
-async def test_sql_result_show_defaults_to_first_thirty_rows():
-    import nanoarrow as na
-
-    column = na.array(list(range(40)), schema=na.int64())
-    result = SqlResult({"n": column}, 40, truncated=False)
-
-    table = result.show()
-    assert len(list(table.columns[0].cells)) == 30
-    assert "showing first 30 rows" in str(table.caption)
-
-
-async def test_sql_result_show_max_rows_overrides_the_default():
-    import nanoarrow as na
-
-    column = na.array(list(range(40)), schema=na.int64())
-    result = SqlResult({"n": column}, 40, truncated=False)
-
-    table = result.show(max_rows=None)
-    assert len(list(table.columns[0].cells)) == 40
-    assert "showing" not in str(table.caption)
-
-    table = result.show(max_rows=5)
-    assert len(list(table.columns[0].cells)) == 5
-    assert "showing first 5 rows" in str(table.caption)
-
-
-async def test_sql_result_show_max_cols_overrides_the_default():
-    import nanoarrow as na
-
-    columns = {f"c{i}": na.array([1], schema=na.int64()) for i in range(8)}
-    result = SqlResult(columns, 1, truncated=False)
-
-    table = result.show(max_cols=None)
-    assert [str(c.header) for c in table.columns] == [f"c{i}" for i in range(8)]
-    assert "cols" not in str(table.caption)
-
-    table = result.show(max_cols=3)
-    assert [str(c.header) for c in table.columns] == ["c0", "c1", "c2"]
-    assert "3/8 cols" in str(table.caption)
-
-
 def test_table_repr_shows_just_name_and_columns():
     m = sa.MetaData()
     t = sa.Table("states", m, sa.Column("state_id", sa.BigInteger, primary_key=True))
@@ -310,14 +231,14 @@ def test_column_repr_omits_the_table():
 def _result(**columns: list[Any]) -> SqlResult:
     import nanoarrow as na
 
-    row_count = len(next(iter(columns.values())))
+    rowcount = len(next(iter(columns.values())))
     arrays = {
         name: na.array(
             values, schema=na.string() if isinstance(values[0], str) else na.int64()
         )
         for name, values in columns.items()
     }
-    return SqlResult(arrays, row_count, truncated=False)
+    return SqlResult(arrays, rowcount, truncated=False)
 
 
 def test_sql_result_project_returns_just_those_columns():
@@ -325,7 +246,7 @@ def test_sql_result_project_returns_just_those_columns():
 
     projected = result.project(["c", "a"])
     assert projected.column_names == ["c", "a"]
-    assert projected.row_count == 3
+    assert projected.rowcount == 3
     assert projected.to_dicts() == [
         {"c": 7, "a": 1},
         {"c": 8, "a": 2},
@@ -339,8 +260,8 @@ def test_sql_result_slicing_returns_a_new_result():
     assert result[:3].to_dicts() == [{"a": 0}, {"a": 1}, {"a": 2}]
     assert result[-1:].to_dicts() == [{"a": 9}]
     assert result[3:6].to_dicts() == [{"a": 3}, {"a": 4}, {"a": 5}]
-    assert result[:3].row_count == 3
-    assert result[-1:].row_count == 1
+    assert result[:3].rowcount == 3
+    assert result[-1:].rowcount == 1
 
 
 def test_sql_result_getitem_rejects_a_plain_index():
@@ -349,51 +270,60 @@ def test_sql_result_getitem_rejects_a_plain_index():
         result[0]  # type: ignore
 
 
-def test_sql_result_export_csv_writes_header_and_rows(tmp_path):
-    result = _result(a=[1, 2], b=["x", "y"])
-    path = tmp_path / "out.csv"
-
-    result.export_csv(path)
-
-    assert path.read_text() == "a,b\r\n1,x\r\n2,y\r\n"
+def test_sql_result_len_reports_rowcount():
+    result = _result(a=[1, 2, 3])
+    assert len(result) == 3
+    assert len(result) == result.rowcount
 
 
-def test_sql_result_export_csv_passes_kwargs_to_csv_writer(tmp_path):
-    result = _result(a=[1, 2], b=["x", "y"])
-    path = tmp_path / "out.csv"
+def test_sql_result_sample_returns_the_requested_count_in_original_order():
+    result = _result(a=list(range(100)))
 
-    result.export_csv(path, delimiter="|")
+    sampled = result.sample(10)
 
-    assert path.read_text() == "a|b\r\n1|x\r\n2|y\r\n"
-
-
-def test_sql_result_export_csv_returns_the_path_written(tmp_path):
-    result = _result(a=[1])
-    path = tmp_path / "out.csv"
-
-    assert result.export_csv(path) == path
+    assert len(sampled) == 10
+    values = [row["a"] for row in sampled.to_dicts()]
+    assert len(set(values)) == 10
+    assert values == sorted(values)
 
 
-async def test_sql_result_export_csv_defaults_to_table_name_csv(
-    recorder_mock, hass: HomeAssistant, tmp_path, monkeypatch
-):
-    monkeypatch.chdir(tmp_path)
-    hass.states.async_set("sensor.test", "42")
-    await _settle(hass)
+def test_sql_result_sample_caps_at_the_available_rows():
+    result = _result(a=[1, 2, 3])
 
-    result = await sql(hass, "select entity_id, metadata_id from states_meta")
-    path = result.export_csv()
+    sampled = result.sample(20)
 
-    assert path == Path("states_meta.csv")
-    assert path.read_text() == "entity_id,metadata_id\r\nsensor.test,1\r\n"
+    assert len(sampled) == 3
+    assert sorted(row["a"] for row in sampled.to_dicts()) == [1, 2, 3]
 
 
-def test_sql_result_export_csv_defaults_to_result_csv_when_table_is_ambiguous(
-    tmp_path, monkeypatch
-):
-    monkeypatch.chdir(tmp_path)
-    result = _result(n=[1])
+def test_sql_result_iterates_rows_as_lists():
+    result = _result(a=[1, 2, 3], b=["x", "y", "z"])
 
-    path = result.export_csv()
+    rows = list(result)
 
-    assert path == Path("result.csv")
+    assert rows == [[1, "x"], [2, "y"], [3, "z"]]
+    assert all(type(row) is list for row in rows)
+
+
+def test_sql_result_iteration_does_not_go_through_getitem():
+    # __iter__ must be used directly - falling back to the old
+    # __getitem__(0), __getitem__(1), ... protocol would hit the
+    # slice-only TypeError guard on the very first row.
+    result = _result(a=[1, 2, 3])
+    assert list(result) == [[1], [2], [3]]
+
+
+def test_sql_result_arrow_round_trips_through_ipc():
+    import nanoarrow as na
+
+    result = _result(a=[1, 2, 3], b=["x", "y", "z"])
+
+    data = result.arrow()
+
+    assert isinstance(data, bytes)
+    roundtrip = na.ArrayStream.from_readable(data).read_all()
+    assert roundtrip.to_pylist() == [
+        {"a": 1, "b": "x"},
+        {"a": 2, "b": "y"},
+        {"a": 3, "b": "z"},
+    ]

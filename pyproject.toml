@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.14.2"
 dependencies = [
     "homeassistant-api>=6.1.0",
+    "nanoarrow>=0.9.0",
     "niquests[ws]>=3.21.0",
     "prompt-toolkit>=3.0",
     "pygments>=2.18",
@@ -26,15 +27,19 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-# For `sql(...).to_polars()`/`.to_pandas()` in live mode - installed into
-# whichever Python actually runs that code (this project's own venv when
-# testing custom_components/ha_repl_server locally; Home Assistant's venv
-# for a real live-mode server, by hand since manifest.json requirements
-# can't be optional). Floors are the earliest release with a Python 3.14
-# wheel, not just the earliest with the feature this module relies on
-# (polars' Arrow PyCapsule-based DataFrame-from-dict-of-arrays support is
-# actually a little older, from 1.3.0) - an older pin would just fall back
-# to a slow/failing source build on this project's own `requires-python`.
+# For homeassistant_repl.sql.SqlResult.to_polars()/.to_pandas() - installed
+# into whichever Python actually runs that code. Since sql() downloads a
+# complete result as Arrow and hands it to *this* package's own SqlResult
+# (not custom_components/ha_repl_server's - the two share nothing but the
+# Arrow bytes; see sql.py's own module docstring) to render/convert
+# locally, that's always this project's own venv, never Home Assistant's -
+# installing it is a `uv pip install`/`pyproject.toml` edit here, not a
+# manifest.json change to the running instance. Floors are the earliest
+# release with a Python 3.14 wheel, not just the earliest with the feature
+# this module relies on (polars' Arrow PyCapsule-based
+# DataFrame-from-dict-of-arrays support is actually a little older, from
+# 1.3.0) - an older pin would just fall back to a slow/failing source build
+# on this project's own `requires-python`.
 polars = ["polars>=1.3.0"]
 pandas = ["pandas>=2.3.3"]
 
@@ -149,7 +154,8 @@ ignore-words-list="hass,referer"
 
 [tool.bandit]
 exclude_dirs = ["tests"]
-skips = ["B105"]
+skips = ["B105", # asserts are ok
+        "B311"] # RNGs not used for security
 
 [project.urls]
 Homepage="https://homeassistant-repl.rhizomatics.org.uk"

@@ -1,6 +1,7 @@
 """Tests for the execution engine, run without Home Assistant."""
 
 import asyncio
+import base64
 import importlib.util
 import sys
 from pathlib import Path
@@ -279,6 +280,25 @@ async def test_help_excludes_cached_properties_from_methods(manager):
     assert "total" not in result.stdout
 
 
+async def test_help_lists_properties_separately_from_methods(manager):
+    code = (
+        "class Widget:\n"
+        "    '''A widget.'''\n"
+        "    @property\n"
+        "    def size(self):\n"
+        "        '''How big it is.'''\n"
+        "        return 42\n"
+        "    def go(self):\n"
+        "        pass\n"
+        "w = Widget()\n"
+        "help(w)"
+    )
+    result = await run(manager, code)
+    assert "Properties:" in result.stdout
+    assert "size - How big it is." in result.stdout
+    assert "go()" in result.stdout
+
+
 async def test_help_signature_formatting(manager):
     code = (
         "import decimal\n"
@@ -367,3 +387,43 @@ async def test_help_on_method_keeps_its_docstring(manager):
     )
     result = await run(manager, code)
     assert "Distance to another point." in result.stdout
+
+
+async def test_trailing_value_with_arrow_method_sends_arrow_not_text(manager):
+    code = (
+        "class Downloaded:\n"
+        "    truncated = True\n"
+        "    def arrow(self):\n"
+        "        return b'fake-arrow-bytes'\n"
+        "    def __repr__(self):\n"
+        "        return '<Downloaded>'\n"
+        "Downloaded()"
+    )
+    result = await run(manager, code)
+
+    assert result.arrow == base64.b64encode(b"fake-arrow-bytes").decode("ascii")
+    assert result.arrow_truncated is True
+    # A plain repr() fallback travels alongside, for a client that doesn't
+    # know to look at `arrow`.
+    assert result.value == "<Downloaded>"
+
+
+async def test_arrow_method_raising_falls_back_to_normal_rendering(manager):
+    code = (
+        "class Broken:\n"
+        "    def arrow(self):\n"
+        "        raise RuntimeError('nope')\n"
+        "Broken()"
+    )
+    result = await run(manager, code)
+
+    assert result.arrow is None
+    assert result.error is None
+    assert "Broken object" in result.value
+
+
+async def test_value_without_arrow_method_is_unaffected(manager):
+    result = await run(manager, "1 + 1")
+    assert result.arrow is None
+    assert result.arrow_truncated is False
+    assert result.value == "2"

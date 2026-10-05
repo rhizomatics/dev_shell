@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import ast
 import asyncio
+import base64
 import builtins
 import inspect
 import io
@@ -49,10 +50,22 @@ _DOC_URLS: dict[str, str] = yaml.safe_load(
 
 @dataclass
 class ExecResult:
-    """Outcome of running one snippet."""
+    """Outcome of running one snippet.
+
+    `arrow` (base64, since this whole result is JSON) is set instead of
+    `value` when the trailing expression downloaded its own data and wants
+    the client to render it from that - see _maybe_arrow() below; `value`
+    still gets a plain repr() alongside it, for a client that doesn't know
+    to look at `arrow` to still show something. `arrow_truncated` mirrors
+    that value's own `.truncated` (e.g. a capped SqlResult) - unrelated to
+    `truncated` below, which is about *this text* being cut down to
+    MAX_OUTPUT_CHARS, not about the query that produced it.
+    """
 
     stdout: str = ""
     value: str | None = None
+    arrow: str | None = None
+    arrow_truncated: bool = False
     error: dict[str, str] | None = None
     duration: float = 0.0
     truncated: bool = False
@@ -61,6 +74,8 @@ class ExecResult:
         return {
             "stdout": self.stdout,
             "value": self.value,
+            "arrow": self.arrow,
+            "arrow_truncated": self.arrow_truncated,
             "error": self.error,
             "duration": self.duration,
             "truncated": self.truncated,
@@ -108,15 +123,29 @@ class Session:
                 value = await (asyncio.wait_for(coro, timeout) if timeout else coro)
                 if value is not None:
                     self.globals_["_"] = value
-                    # A value that already knows how to render itself as a
-                    # rich renderable (e.g. the Table from sql(...).show())
-                    # is shown as-is instead of being wrapped in Pretty's
-                    # generic repr-style rendering, which would just dump
-                    # its attributes instead of drawing the table.
-                    renderable = (
-                        value if hasattr(value, "__rich_console__") else Pretty(value)
-                    )
-                    result.value = _render(renderable, color=color, width=width)
+                    arrow_bytes = _maybe_arrow(value)
+                    if arrow_bytes is not None:
+                        # This value downloaded its own data (sql()'s
+                        # SqlResult today, duck-typed rather than
+                        # isinstance-checked - see _maybe_arrow()) - the
+                        # client renders *that*, not a server-side repr.
+                        result.arrow = base64.b64encode(arrow_bytes).decode("ascii")
+                        result.arrow_truncated = bool(
+                            getattr(value, "truncated", False)
+                        )
+                        result.value = repr(value)
+                    else:
+                        # A value that already knows how to render itself as
+                        # a rich renderable is shown as-is instead of being
+                        # wrapped in Pretty's generic repr-style rendering,
+                        # which would just dump its attributes instead of
+                        # rendering it properly.
+                        renderable = (
+                            value
+                            if hasattr(value, "__rich_console__")
+                            else Pretty(value)
+                        )
+                        result.value = _render(renderable, color=color, width=width)
             except asyncio.CancelledError:
                 # Cancellation of the caller must propagate, not be reported as a result.
                 raise
@@ -190,6 +219,25 @@ def warm_rich_unicode_data() -> None:
     import rich._unicode_data
 
     rich._unicode_data.load()
+
+
+def _maybe_arrow(value: Any) -> bytes | None:
+    """`value.arrow()`'s bytes, if it has a no-arg method by that name -
+    duck-typed, not isinstance-checked, so this module stays free of
+    Home Assistant/sql.py imports (see this module's own docstring). Only
+    sql.py's SqlResult exposes this today, but nothing here hard-codes
+    that: anything that downloads its own data and wants the client to
+    render it from that, rather than from a server-side repr, just needs
+    the same method.
+    """
+    method = getattr(value, "arrow", None)
+    if not callable(method):
+        return None
+    try:
+        data = method()
+    except Exception:  # noqa: BLE001 - fall back to a normal repr, not a crash
+        return None
+    return data if isinstance(data, bytes) else None
 
 
 def _render(renderable: Any, *, color: bool, width: int) -> str:
@@ -422,6 +470,24 @@ def _class_summary(thing: Any, *, color: bool, width: int) -> str:
         for name in method_names:
             sig = _format_signature(getattr(cls, name), drop_self=True)
             parts.append(_signature_line(f"  {name}{sig}", width=width))
+    property_names = sorted(
+        name
+        for name in dir(cls)
+        if not name.startswith("_") and isinstance(getattr(cls, name, None), property)
+    )
+    if property_names:
+        parts += [Text(""), Text("Properties:", style="bold underline")]
+        for name in property_names:
+            doc = inspect.getdoc(getattr(cls, name))
+            summary = doc.strip().splitlines()[0] if doc else ""
+            line = f"  {name}" + (f" - {summary}" if summary else "")
+            parts.append(
+                Text(
+                    textwrap.fill(
+                        line, width=max(width, 20), subsequent_indent="      "
+                    )
+                )
+            )
     return _render(Group(*parts), color=color, width=width)
 
 
