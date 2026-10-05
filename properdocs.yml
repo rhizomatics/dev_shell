@@ -85,6 +85,7 @@ plugins:
 markdown_extensions:
   - admonition
   - pymdownx.details
+  - pymdownx.critic
   - attr_list
   - md_in_html
   - pymdownx.blocks.caption
