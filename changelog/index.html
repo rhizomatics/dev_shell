@@ -454,10 +454,10 @@
     <ul class="md-nav__list" data-md-component="toc">
       
         <li class="md-nav__item">
-  <a href="#030" class="md-nav__link">
+  <a href="#040" class="md-nav__link">
     <span class="md-ellipsis">
       
-        0.3.0
+        0.4.0
       
     </span>
   </a>
@@ -465,10 +465,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#020" class="md-nav__link">
+  <a href="#030---5th-oct-2026" class="md-nav__link">
     <span class="md-ellipsis">
       
-        0.2.0
+        0.3.0 - 5th Oct 2026
       
     </span>
   </a>
@@ -476,10 +476,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#012" class="md-nav__link">
+  <a href="#020---5th-oct-2026" class="md-nav__link">
     <span class="md-ellipsis">
       
-        0.1.2
+        0.2.0 - 5th Oct 2026
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#012---5th-oct-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.2 - 5th Oct 2026
       
     </span>
   </a>
@@ -747,7 +758,13 @@
 
 
 <h1 id="whats-new">What's New<a class="headerlink" href="#whats-new" title="Permanent link">&para;</a></h1>
-<h2 id="030">0.3.0<a class="headerlink" href="#030" title="Permanent link">&para;</a></h2>
+<h2 id="040">0.4.0<a class="headerlink" href="#040" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>live</code> mode now offers switch back to <code>api</code> mode when calling <code>obj</code></li>
+<li>Use <code>obj.mode("api")</code> or <code>obj.mode("live")</code> to control session</li>
+<li>To minimize confusion, the <a href="https://github.com/HomeAssistant-API/HomeAssistantAPI">homeassistant-api</a> integration now uses the <code>hass_api</code> variable</li>
+</ul>
+<h2 id="030---5th-oct-2026">0.3.0 - 5th Oct 2026<a class="headerlink" href="#030---5th-oct-2026" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Integrated <a href="https://github.com/HomeAssistant-API/HomeAssistantAPI">homeassistant-api</a> client object as <code>api</code> variable for pure REST/WS API access</li>
 <li><code>api.get_state(entity_id="binary_sensor.kitchen_pir")</code></li>
@@ -760,11 +777,11 @@
 <li>Can be one-off switched off by doing an <code>unawait</code> to get raw coroutine</li>
 <li>Replaced use of <code>websockets</code> with <code>niquests[ws]</code></li>
 </ul>
-<h2 id="020">0.2.0<a class="headerlink" href="#020" title="Permanent link">&para;</a></h2>
+<h2 id="020---5th-oct-2026">0.2.0 - 5th Oct 2026<a class="headerlink" href="#020---5th-oct-2026" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Renamed to <code>Home Assistant REPL</code> and cli tool to <code>ha_repl</code> to make it clearer what it does and avoid confusion in package name space or terminal with other dev shells.</li>
 </ul>
-<h2 id="012">0.1.2<a class="headerlink" href="#012" title="Permanent link">&para;</a></h2>
+<h2 id="012---5th-oct-2026">0.1.2 - 5th Oct 2026<a class="headerlink" href="#012---5th-oct-2026" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Simpler <code>connect</code> method to use the API and <code>obj</code> from any Python async code</li>
 <li>Environment variables can be sourced from an <code>.env</code> file</li>
