@@ -46,7 +46,7 @@ def _parser() -> argparse.ArgumentParser:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--url", default=None, help="defaults to $HASS_SERVER")
+    parser.add_argument("--server", default=None, help="defaults to $HASS_SERVER")
     parser.add_argument("--token", default=None, help="defaults to $HASS_TOKEN")
     parser.add_argument(
         "-s", "--session", default=os.environ.get("HASS_SESSION", "default")

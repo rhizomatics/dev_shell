@@ -1,5 +1,8 @@
 # What's New
 
+## Unreleased
+- Renamed `--url` to `--server` on `ha-repl` for consistency with environment variable names
+
 ## 0.4.0
 - `live` mode now offers switch back to `api` mode when calling `obj`
   - Use `obj.mode("api")` or `obj.mode("live")` to control session
