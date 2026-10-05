@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_415ec6c96d6323ff_cli_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.15.4">coverage.py v7.15.4</a>,
-            created at 2026-10-05 13:50 +0000
+            created at 2026-10-05 17:06 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -85,7 +85,7 @@
     <p class="pln"><span class="n"><a id="t1" href="#t1">1</a></span><span class="t"><span class="str">&quot;&quot;&quot;API client mode&#x27;s interactive shell: same local line editing/history as</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t2" href="#t2">2</a></span><span class="t"><span class="str">repl.py, but code runs right here (LocalSession) - no `hass`, no</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t3" href="#t3">3</a></span><span class="t"><span class="str">ha_repl_server/exec call, no HACS component required on the HA side at</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t4" href="#t4">4</a></span><span class="t"><span class="str">all. `obj` is bound the same name as custom mode, just to an ApiObjTree</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t4" href="#t4">4</a></span><span class="t"><span class="str">all. `obj` is bound the same name as live mode, just to an ApiObjTree</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t5" href="#t5">5</a></span><span class="t"><span class="str">instead of the live ObjTree, so a snippet that only touches `obj` runs</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t6" href="#t6">6</a></span><span class="t"><span class="str">unchanged in either mode. `hass_api` is bound the same way - an</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t7" href="#t7">7</a></span><span class="t"><span class="str">already-connected homeassistant_api.AsyncClient, not a function to call.</span>&nbsp;</span><span class="r"></span></p>
@@ -109,7 +109,7 @@
     <p class="mis show_mis"><span class="n"><a id="t25" href="#t25">25</a></span><span class="t"><span class="key">from</span> <span class="nam">pygments</span><span class="op">.</span><span class="nam">lexers</span><span class="op">.</span><span class="nam">python</span> <span class="key">import</span> <span class="nam">PythonLexer</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t26" href="#t26">26</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t27" href="#t27">27</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">api_objtree</span> <span class="key">import</span> <span class="nam">ApiObjTree</span><span class="op">,</span> <span class="nam">Cache</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t28" href="#t28">28</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">client</span> <span class="key">import</span> <span class="nam">Client</span><span class="op">,</span> <span class="nam">HaReplError</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t28" href="#t28">28</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">client</span> <span class="key">import</span> <span class="nam">Client</span><span class="op">,</span> <span class="nam">HaReplError</span><span class="op">,</span> <span class="nam">client_version</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t29" href="#t29">29</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">local_session</span> <span class="key">import</span> <span class="nam">LocalSession</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t30" href="#t30">30</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">repl</span> <span class="key">import</span> <span class="nam">is_quit_call</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t31" href="#t31">31</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">rest</span> <span class="key">import</span> <span class="nam">hass_api</span>&nbsp;</span><span class="r"></span></p>
@@ -136,7 +136,7 @@
     <p class="mis mis2 show_mis"><span class="n"><a id="t52" href="#t52">52</a></span><span class="t">        <span class="nam">history</span><span class="op">=</span><span class="nam">FileHistory</span><span class="op">(</span><span class="nam">str</span><span class="op">(</span><span class="nam">HISTORY</span><span class="op">)</span><span class="op">)</span><span class="op">,</span> <span class="nam">lexer</span><span class="op">=</span><span class="nam">PygmentsLexer</span><span class="op">(</span><span class="nam">PythonLexer</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis mis2 show_mis"><span class="n"><a id="t53" href="#t53">53</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t54" href="#t54">54</a></span><span class="t">    <span class="nam">print</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t55" href="#t55">55</a></span><span class="t">        <span class="fst">f&quot;</span><span class="fst">Home Assistant REPL (API client mode) connected to </span><span class="op">{</span><span class="nam">client</span><span class="op">.</span><span class="nam">url</span><span class="op">}</span><span class="fst">. </span><span class="fst">&quot;</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis mis2 show_mis"><span class="n"><a id="t55" href="#t55">55</a></span><span class="t">        <span class="fst">f&quot;</span><span class="fst">API connected to </span><span class="op">{</span><span class="nam">client</span><span class="op">.</span><span class="nam">url</span><span class="op">}</span><span class="fst">. Client v</span><span class="op">{</span><span class="nam">client_version</span><span class="op">(</span><span class="op">)</span><span class="op">}</span><span class="fst">. </span><span class="fst">&quot;</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis mis2 show_mis"><span class="n"><a id="t56" href="#t56">56</a></span><span class="t">        <span class="str">&quot;`obj` (read-only) and `hass_api` (REST client) - no `hass`. Ctrl-D to exit.&quot;</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis mis2 show_mis"><span class="n"><a id="t57" href="#t57">57</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t58" href="#t58">58</a></span><span class="t">    <span class="nam">lines</span><span class="op">:</span> <span class="nam">list</span><span class="op">[</span><span class="nam">str</span><span class="op">]</span> <span class="op">=</span> <span class="op">[</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
@@ -173,7 +173,7 @@
             <a class="nav" href="z_415ec6c96d6323ff_cli_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.15.4">coverage.py v7.15.4</a>,
-            created at 2026-10-05 13:50 +0000
+            created at 2026-10-05 17:06 +0000
         </p>
     </div>
 </footer>

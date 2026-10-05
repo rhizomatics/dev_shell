@@ -411,15 +411,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#custom-mode" class="md-nav__link">
+  <a href="#live-mode" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Custom Mode
+        Live Mode
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Custom Mode">
+    <nav class="md-nav" aria-label="Live Mode">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -590,10 +590,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#custom-mode-for-real-server" class="md-nav__link">
+  <a href="#live-mode-for-real-server" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Custom Mode for Real Server
+        Live Mode for Real Server
       
     </span>
   </a>
@@ -940,8 +940,8 @@
 <li>Usable from inside <code>ipython</code> shell, Marimo notebooks or plain <code>python -m asyncio</code></li>
 </ul>
 <p>All of the above works with standard Home Assistant APIs, referred to as <code>api</code> mode.</p>
-<p>Home Assistant REPL also has an advanced <code>custom</code> mode that taps directly into a live Home Assistant using an optional server component available via <a href="http://hacs.xyz">HACS</a>.</p>
-<h2 id="custom-mode">Custom Mode<a class="headerlink" href="#custom-mode" title="Permanent link">&para;</a></h2>
+<p>Home Assistant REPL also has an advanced <code>live</code> mode that taps directly into a live Home Assistant using an optional server component available via <a href="http://hacs.xyz">HACS</a>.</p>
+<h2 id="live-mode">Live Mode<a class="headerlink" href="#live-mode" title="Permanent link">&para;</a></h2>
 <p>This mode requires a custom component to be installed on the target Home Assistant server via HACS, or use the supplied scripts to install on a local devcontainer. It adds:</p>
 <ul>
 <li>Full access to the core Home Assistant Python API via <code>hass</code></li>
@@ -950,7 +950,7 @@
 </ul>
 <h3 id="ha-repl-server">HA REPL Server<a class="headerlink" href="#ha-repl-server" title="Permanent link">&para;</a></h3>
 <p>A HACS component that taps into the Home Assistant and acts as a session server over web sockets. It has been designed for HomeAssistant 2026.8 or greater.</p>
-<p>Needed for <code>custom</code> mode only, since <code>api</code> mode only uses standard Home Assistant APIs.</p>
+<p>Needed for <code>live</code> mode only, since <code>api</code> mode only uses standard Home Assistant APIs.</p>
 <h2 id="future-developments">Future Developments<a class="headerlink" href="#future-developments" title="Permanent link">&para;</a></h2>
 <p>See the <a href="developer/design/roadmap/">Roadmap</a> for where this might go, and your feedback welcome.</p>
 <div class="admonition note">
@@ -968,7 +968,7 @@
 <li><code>obj</code> - the object tree exposed as a dictionary object and common methods</li>
 <li><code>hass_api</code> - the Home Assistant web socket / REST API exposed using the <a href="https://pypi.org/project/HomeAssistant-API/">homeassistant-api</a> library</li>
 </ul>
-<p>In <code>custom</code> mode it offers, in addition to what <code>api</code> mode offers:</p>
+<p>In <code>live</code> mode it offers, in addition to what <code>api</code> mode offers:</p>
 <ul>
 <li><code>hass</code> - the <code>HomeAssistant</code> class at the root of the Python API</li>
 </ul>
@@ -1045,7 +1045,7 @@
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="p">{(</span><span class="n">o</span><span class="o">.</span><span class="n">entity_id</span><span class="p">,</span> <span class="n">o</span><span class="o">.</span><span class="n">state</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"/rflink/binary_sensor/*._leak"</span><span class="p">)}</span>
 </span></code></pre></div>
 <h5 id="raw-objects">Raw Objects<a class="headerlink" href="#raw-objects" title="Permanent link">&para;</a></h5>
-<p>In API Client mode, <code>find()</code> returns a local proxy for the remote class, normalized to look more like the same object you'd get in custom mode. Switching <code>raw=True</code> will bypass this and you'll get the object untouched as it was received from the API.</p>
+<p>In API Client mode, <code>find()</code> returns a local proxy for the remote class, normalized to look more like the same object you'd get in live mode. Switching <code>raw=True</code> will bypass this and you'll get the object untouched as it was received from the API.</p>
 <h4 id="objfind_paths"><code>obj.find_paths(..)</code><a class="headerlink" href="#objfind_paths" title="Permanent link">&para;</a></h4>
 <p>Identical to <code>obj.find()</code> except it only returns an iterable of the object paths rather than the objects themselves. Ideal for plugging into some logic that will then call <code>obj[path]</code> on each one.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="nb">list</span><span class="p">(</span><span class="n">objs</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">area</span><span class="o">=</span><span class="s2">"kitchen"</span><span class="p">))</span>  <span class="c1"># list names of all entities in kitchen</span>
@@ -1060,14 +1060,14 @@
 </span></code></pre></div>
 <h2 id="starting-the-shell">Starting the Shell<a class="headerlink" href="#starting-the-shell" title="Permanent link">&para;</a></h2>
 <p>Use the <code>HASS_SERVER</code> environment variable, exported or in a local <code>.env</code> file, or the <code>--server</code> command line argument if the Home Assistant server is not running locally at usual address( i.e. <code>http://homeassistant.local:8123</code>). A <a href="https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token">long lived access token</a> is needed at <code>--token</code> or in an <code>HASS_TOKEN</code> environment variable.</p>
-<h3 id="custom-mode-for-real-server">Custom Mode for Real Server<a class="headerlink" href="#custom-mode-for-real-server" title="Permanent link">&para;</a></h3>
+<h3 id="live-mode-for-real-server">Live Mode for Real Server<a class="headerlink" href="#live-mode-for-real-server" title="Permanent link">&para;</a></h3>
 <p>On a real instance, install via HACS:
  - it's not in the default HACS repository, so you'll have to add <code>https://github.com/rhizomatics/homeassistant-repl</code> as a Custom Repository from the top-right dot menu first
  - Search for <em>Home Assistant REPL</em> in the HACS menu and choose <em>Download</em>
  - Restart Home Assistant for it to recognize the new custom component available
  - From <strong>Settings → Devices &amp; services → Add integration</strong> find <strong>Home Assistant REPL Server</strong> in the list and install, there's no further config needed
    - Alternatively add <code>ha_repl_server:</code> to <code>configuration.yaml</code>, which is imported as a config entry) 
- - Run <code>ha-repl</code> with the <code>custom</code> argument</p>
+ - Run <code>ha-repl</code> with the <code>live</code> argument</p>
 <p>The quickest way to run the shell is using <em>uv</em>, which you can do without cloning this repo or making any other downloads.</p>
 <p><div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>uv<span class="w"> </span>run<span class="w"> </span>--with<span class="w"> </span>homeassistant-repl<span class="w"> </span>ha-repl<span class="w">         </span>
 </span></code></pre></div>

@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_415ec6c96d6323ff_client_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.15.4">coverage.py v7.15.4</a>,
-            created at 2026-10-05 13:50 +0000
+            created at 2026-10-05 17:06 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -86,13 +86,13 @@
     <p class="pln"><span class="n"><a id="t2" href="#t2">2</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t3" href="#t3">3</a></span><span class="t"><span class="str">  ha-repl                                         interactive API client shell (default)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t4" href="#t4">4</a></span><span class="t"><span class="str">                                                    `obj` only, read-only, no HACS component needed</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t5" href="#t5">5</a></span><span class="t"><span class="str">  ha-repl custom                                  interactive custom-component shell</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t5" href="#t5">5</a></span><span class="t"><span class="str">  ha-repl live.                                   interactive custom-component shell</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t6" href="#t6">6</a></span><span class="t"><span class="str">                                                    `hass` + `obj` (same `obj` API, live not cached);</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t7" href="#t7">7</a></span><span class="t"><span class="str">                                                    needs the ha_repl_server component</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t8" href="#t8">8</a></span><span class="t"><span class="str">  ha-repl exec &#x27;hass.states.get(&quot;sun.sun&quot;)&#x27;       run a snippet (custom mode only)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t8" href="#t8">8</a></span><span class="t"><span class="str">  ha-repl exec &#x27;hass.states.get(&quot;sun.sun&quot;)&#x27;       run a snippet (live mode only)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t9" href="#t9">9</a></span><span class="t"><span class="str">  ha-repl exec -f snippet.py                      run a file</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t10" href="#t10">10</a></span><span class="t"><span class="str">  ha-repl exec - &lt;&lt;&#x27;EOF&#x27; ... EOF                  read the snippet from stdin</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t11" href="#t11">11</a></span><span class="t"><span class="str">  ha-repl reset / ha-repl sessions                manage custom-mode server-side sessions</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t11" href="#t11">11</a></span><span class="t"><span class="str">  ha-repl reset / ha-repl sessions                manage live-mode server-side sessions</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t12" href="#t12">12</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t13" href="#t13">13</a></span><span class="t"><span class="str">Connection: HASS_SERVER (default http://homeassistant.local:8123), HASS_TOKEN, HASS_SESSION.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t14" href="#t14">14</a></span><span class="t"><span class="str">Both HASS_SERVER/HASS_TOKEN also fall back to a `.env` file in the current directory, below real env vars.</span>&nbsp;</span><span class="r"></span></p>
@@ -165,11 +165,11 @@
     <p class="mis mis2 show_mis"><span class="n"><a id="t81" href="#t81">81</a></span><span class="t">        <span class="nam">help</span><span class="op">=</span><span class="str">&quot;interactive API client shell (the default): obj only, no HACS component needed&quot;</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis mis2 show_mis"><span class="n"><a id="t82" href="#t82">82</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t83" href="#t83">83</a></span><span class="t">    <span class="nam">sub</span><span class="op">.</span><span class="nam">add_parser</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t84" href="#t84">84</a></span><span class="t">        <span class="str">&quot;custom&quot;</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis mis2 show_mis"><span class="n"><a id="t84" href="#t84">84</a></span><span class="t">        <span class="str">&quot;live&quot;</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis mis2 show_mis"><span class="n"><a id="t85" href="#t85">85</a></span><span class="t">        <span class="nam">help</span><span class="op">=</span><span class="str">&quot;interactive custom-component shell: hass + obj, needs the ha_repl_server component&quot;</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis mis2 show_mis"><span class="n"><a id="t86" href="#t86">86</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t87" href="#t87">87</a></span><span class="t">    <span class="nam">sub</span><span class="op">.</span><span class="nam">add_parser</span><span class="op">(</span><span class="str">&quot;reset&quot;</span><span class="op">,</span> <span class="nam">help</span><span class="op">=</span><span class="str">&quot;discard the custom-mode session&#x27;s variables&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t88" href="#t88">88</a></span><span class="t">    <span class="nam">sub</span><span class="op">.</span><span class="nam">add_parser</span><span class="op">(</span><span class="str">&quot;sessions&quot;</span><span class="op">,</span> <span class="nam">help</span><span class="op">=</span><span class="str">&quot;list custom-mode sessions on the server&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t87" href="#t87">87</a></span><span class="t">    <span class="nam">sub</span><span class="op">.</span><span class="nam">add_parser</span><span class="op">(</span><span class="str">&quot;reset&quot;</span><span class="op">,</span> <span class="nam">help</span><span class="op">=</span><span class="str">&quot;discard the live-mode session&#x27;s variables&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t88" href="#t88">88</a></span><span class="t">    <span class="nam">sub</span><span class="op">.</span><span class="nam">add_parser</span><span class="op">(</span><span class="str">&quot;sessions&quot;</span><span class="op">,</span> <span class="nam">help</span><span class="op">=</span><span class="str">&quot;list live-mode sessions on the server&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t89" href="#t89">89</a></span><span class="t">    <span class="key">return</span> <span class="nam">parser</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t90" href="#t90">90</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t91" href="#t91">91</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -187,7 +187,7 @@
     <p class="mis show_mis"><span class="n"><a id="t103" href="#t103">103</a></span><span class="t">                <span class="nam">result</span> <span class="op">=</span> <span class="key">await</span> <span class="nam">client</span><span class="op">.</span><span class="nam">call</span><span class="op">(</span><span class="str">&quot;ha_repl_server/sessions&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t104" href="#t104">104</a></span><span class="t">                <span class="nam">_emit</span><span class="op">(</span><span class="nam">args</span><span class="op">,</span> <span class="nam">result</span><span class="op">,</span> <span class="nam">_format_sessions</span><span class="op">(</span><span class="nam">result</span><span class="op">[</span><span class="str">&quot;sessions&quot;</span><span class="op">]</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t105" href="#t105">105</a></span><span class="t">                <span class="key">return</span> <span class="num">0</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t106" href="#t106">106</a></span><span class="t">            <span class="key">case</span> <span class="str">&quot;custom&quot;</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t106" href="#t106">106</a></span><span class="t">            <span class="key">case</span> <span class="str">&quot;live&quot;</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t107" href="#t107">107</a></span><span class="t">                <span class="key">from</span> <span class="op">.</span><span class="nam">repl</span> <span class="key">import</span> <span class="nam">run_repl</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t108" href="#t108">108</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t109" href="#t109">109</a></span><span class="t">                <span class="key">return</span> <span class="key">await</span> <span class="nam">run_repl</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
@@ -280,7 +280,7 @@
             <a class="nav" href="z_415ec6c96d6323ff_client_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.15.4">coverage.py v7.15.4</a>,
-            created at 2026-10-05 13:50 +0000
+            created at 2026-10-05 17:06 +0000
         </p>
     </div>
 </footer>

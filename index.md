@@ -36,9 +36,9 @@ This is primarily for developers of custom components, and their LLM agents, tho
 
 All of the above works with standard Home Assistant APIs, referred to as `api` mode.
 
-Home Assistant REPL also has an advanced `custom` mode that taps directly into a live Home Assistant using an optional server component available via [HACS](http://hacs.xyz).
+Home Assistant REPL also has an advanced `live` mode that taps directly into a live Home Assistant using an optional server component available via [HACS](http://hacs.xyz).
 
-## Custom Mode
+## Live Mode
 
 This mode requires a custom component to be installed on the target Home Assistant server via HACS, or use the supplied scripts to install on a local devcontainer. It adds:
 
@@ -50,7 +50,7 @@ This mode requires a custom component to be installed on the target Home Assista
 
 A HACS component that taps into the Home Assistant and acts as a session server over web sockets. It has been designed for HomeAssistant 2026.8 or greater.
 
-Needed for `custom` mode only, since `api` mode only uses standard Home Assistant APIs.
+Needed for `live` mode only, since `api` mode only uses standard Home Assistant APIs.
 
 ## Future Developments
 
@@ -77,7 +77,7 @@ The shell is a full Python REPL shell, with multi-line editing, history etc, liv
 - `obj` - the object tree exposed as a dictionary object and common methods
 - `hass_api` - the Home Assistant web socket / REST API exposed using the [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) library
 
-In `custom` mode it offers, in addition to what `api` mode offers:
+In `live` mode it offers, in addition to what `api` mode offers:
 
 - `hass` - the `HomeAssistant` class at the root of the Python API
 
@@ -183,7 +183,7 @@ Or using a regular expression:
 
 ##### Raw Objects
 
-In API Client mode, `find()` returns a local proxy for the remote class, normalized to look more like the same object you'd get in custom mode. Switching `raw=True` will bypass this and you'll get the object untouched as it was received from the API.
+In API Client mode, `find()` returns a local proxy for the remote class, normalized to look more like the same object you'd get in live mode. Switching `raw=True` will bypass this and you'll get the object untouched as it was received from the API.
 
 #### `obj.find_paths(..)`
 
@@ -211,7 +211,7 @@ obj.show('/unifi/sensor/kitchen_wifi_cpu_utilization')
 
 Use the `HASS_SERVER` environment variable, exported or in a local `.env` file, or the `--server` command line argument if the Home Assistant server is not running locally at usual address( i.e. `http://homeassistant.local:8123`). A [long lived access token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) is needed at `--token` or in an `HASS_TOKEN` environment variable.
 
-### Custom Mode for Real Server
+### Live Mode for Real Server
 
 On a real instance, install via HACS:
 
@@ -220,7 +220,7 @@ On a real instance, install via HACS:
 - Restart Home Assistant for it to recognize the new custom component available
 - From **Settings → Devices & services → Add integration** find **Home Assistant REPL Server** in the list and install, there's no further config needed
 - Alternatively add `ha_repl_server:` to `configuration.yaml`, which is imported as a config entry)
-- Run `ha-repl` with the `custom` argument
+- Run `ha-repl` with the `live` argument
 
 The quickest way to run the shell is using *uv*, which you can do without cloning this repo or making any other downloads.
 
