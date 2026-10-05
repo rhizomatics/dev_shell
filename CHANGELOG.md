@@ -1,5 +1,14 @@
 # What's New
 
+# 0.7.0
+## SQL
+- Results can now be sliced like a list, e.g. `[:-10]` for last 10 rows, `[:10]` for first 10
+- Results has `project()` method which takes a list of columns and produces same table with just those columns
+- Results has an `export_csv()` method, with same keyword arguments as `csv.writer`
+- Queries all executed under `read_only` session scope so no commits expected (this is not a security measure)
+## Live Server
+- Config switches now to optionally switch off `sql` and/or `hass` access
+
 # 0.6.0
 - Live Mode now has direct SQL query access
  - New `sql` global var, with `sql.tables` to show choice of tables

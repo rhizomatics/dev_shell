@@ -4,6 +4,9 @@ needs Home Assistant's own SQLAlchemy engine/schema, not a fake."""
 
 from __future__ import annotations
 
+from pathlib import Path
+from typing import Any
+
 import pytest
 import sqlalchemy as sa
 from homeassistant.components.recorder import get_instance
@@ -302,3 +305,95 @@ def test_column_repr_omits_the_table():
         repr(t.c.state_id)
         == "Column('state_id', BigInteger(), primary_key=True, nullable=False)"
     )
+
+
+def _result(**columns: list[Any]) -> SqlResult:
+    import nanoarrow as na
+
+    row_count = len(next(iter(columns.values())))
+    arrays = {
+        name: na.array(
+            values, schema=na.string() if isinstance(values[0], str) else na.int64()
+        )
+        for name, values in columns.items()
+    }
+    return SqlResult(arrays, row_count, truncated=False)
+
+
+def test_sql_result_project_returns_just_those_columns():
+    result = _result(a=[1, 2, 3], b=["x", "y", "z"], c=[7, 8, 9])
+
+    projected = result.project(["c", "a"])
+    assert projected.column_names == ["c", "a"]
+    assert projected.row_count == 3
+    assert projected.to_dicts() == [
+        {"c": 7, "a": 1},
+        {"c": 8, "a": 2},
+        {"c": 9, "a": 3},
+    ]
+
+
+def test_sql_result_slicing_returns_a_new_result():
+    result = _result(a=list(range(10)))
+
+    assert result[:3].to_dicts() == [{"a": 0}, {"a": 1}, {"a": 2}]
+    assert result[-1:].to_dicts() == [{"a": 9}]
+    assert result[3:6].to_dicts() == [{"a": 3}, {"a": 4}, {"a": 5}]
+    assert result[:3].row_count == 3
+    assert result[-1:].row_count == 1
+
+
+def test_sql_result_getitem_rejects_a_plain_index():
+    result = _result(a=[1, 2, 3])
+    with pytest.raises(TypeError, match="slicing"):
+        result[0]  # type: ignore
+
+
+def test_sql_result_export_csv_writes_header_and_rows(tmp_path):
+    result = _result(a=[1, 2], b=["x", "y"])
+    path = tmp_path / "out.csv"
+
+    result.export_csv(path)
+
+    assert path.read_text() == "a,b\r\n1,x\r\n2,y\r\n"
+
+
+def test_sql_result_export_csv_passes_kwargs_to_csv_writer(tmp_path):
+    result = _result(a=[1, 2], b=["x", "y"])
+    path = tmp_path / "out.csv"
+
+    result.export_csv(path, delimiter="|")
+
+    assert path.read_text() == "a|b\r\n1|x\r\n2|y\r\n"
+
+
+def test_sql_result_export_csv_returns_the_path_written(tmp_path):
+    result = _result(a=[1])
+    path = tmp_path / "out.csv"
+
+    assert result.export_csv(path) == path
+
+
+async def test_sql_result_export_csv_defaults_to_table_name_csv(
+    recorder_mock, hass: HomeAssistant, tmp_path, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)
+    hass.states.async_set("sensor.test", "42")
+    await _settle(hass)
+
+    result = await sql(hass, "select entity_id, metadata_id from states_meta")
+    path = result.export_csv()
+
+    assert path == Path("states_meta.csv")
+    assert path.read_text() == "entity_id,metadata_id\r\nsensor.test,1\r\n"
+
+
+def test_sql_result_export_csv_defaults_to_result_csv_when_table_is_ambiguous(
+    tmp_path, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)
+    result = _result(n=[1])
+
+    path = result.export_csv()
+
+    assert path == Path("result.csv")

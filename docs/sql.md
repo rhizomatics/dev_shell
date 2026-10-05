@@ -23,14 +23,25 @@ For example this will show the size of the `statistics` table.
 
 ### Result Objects
 
-On the result object, `show()` will display data in tabular form at the command, using the `rich` library's table support. The result will have both its rows and columns automatically limited, so it doesn't look like a mess or lock up the console. Use `max_rows` or `max_cols` to override this, or `columns` to set the list of columns specifically.
+On the result object, `show()` will display data in tabular form at the command, using the `rich` library's table support. 
 
-| Operation | Description        |
-| --------- | ------------------ |
-| `show()`  | Dump the table data to the console |
-| `to_dicts()` | Extract a `list` of `dict` objects from the results |
-| `to_pandas()` | Turn the results into a *pandas* dataframe, if pandas installed |
-| `to_polars()` | Turn the results into a *polars* dataframe, if polars installed |
+The result will have both its rows and columns automatically limited, so it doesn't look like a mess or lock up the console. Use `max_rows` or `max_cols` to override this, or `columns` to set the list of columns specifically.
+
+The results can also be sliced like a Python list, so `[:10]` for the first 10 rows or `[-10:]` for the last 10.
+
+| Operation.     | Description        |
+| -------------- | ------------------ |
+| `rowcount`     | Size of result set, may not be size of table due to row limits |
+| `truncated`    | `True` if results were truncated due to row limits |
+| `table`        | The `SqlTable` object describing this table |
+| `columns`      | List of `Column` objects describing each column |
+| `column_names` | List of the column names in the table, in order |
+| `show()`       | Dump the table data to the console |
+| `project()`    | Create a new result object with a limited set of columns based on this one |
+| `export_csv()` | Write the results to a CSV file, by default named after the table |
+| `to_dicts()`   | Extract a `list` of `dict` objects from the results |
+| `to_pandas()`  | Turn the results into a *pandas* dataframe, if pandas installed |
+| `to_polars()`  | Turn the results into a *polars* dataframe, if polars installed |
 
 ### Table Objects
 

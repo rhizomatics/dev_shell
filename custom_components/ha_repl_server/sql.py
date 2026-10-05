@@ -24,18 +24,21 @@ peek at its own first non-null value, not a sniff of every column.
 
 from __future__ import annotations
 
+import csv
 import functools
 import re
 from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
+from pathlib import Path
 from typing import Any
 
 import nanoarrow as na
 import sqlalchemy as sa
 import sqlparse
 from homeassistant.components.recorder import db_schema, get_instance
+from homeassistant.components.recorder.core import Recorder
 from homeassistant.core import HomeAssistant
 from rich.table import Table
 
@@ -247,6 +250,54 @@ class SqlResult:
             table.add_row(*("" if v is None else str(v) for v in row))
         return table
 
+    def project(self, columns: list[str]) -> SqlResult:
+        """A new SqlResult with just these columns (same rows, same
+        underlying arrays - no data is copied) - for narrowing or
+        reordering a result after the fact, without re-running the query.
+        """
+        return SqlResult(
+            {name: self.columns[name] for name in columns},
+            self.row_count,
+            self.truncated,
+        )
+
+    def __getitem__(self, key: slice) -> SqlResult:
+        """Slice the rows with standard Python slice notation (`r[:10]`,
+        `r[-1:]`, `r[10:20]`) - a new SqlResult, not a view, since nanoarrow
+        Arrays don't support slicing directly; only `truncated` carries
+        over, since it describes the underlying query, not this slice.
+        """
+        if not isinstance(key, slice):
+            raise TypeError(
+                f"SqlResult only supports slicing (e.g. result[:10]), not {key!r}"
+            )
+        columns = {
+            name: na.array(arr.to_pylist()[key], schema=arr.schema)
+            for name, arr in self.columns.items()
+        }
+        row_count = len(range(*key.indices(self.row_count)))
+        return SqlResult(columns, row_count, self.truncated)
+
+    def export_csv(self, path: str | Path | None = None, **kwargs: Any) -> Path:
+        """Write this result to a CSV file at `path` - a header row, then
+        every row with each cell through str() (the same "good enough to
+        read" rule show()'s own cells use - CSV has no native types
+        anyway). `kwargs` go straight to csv.writer (dialect, delimiter,
+        ...). `path` defaults to `{self.table.name}.csv` (or `result.csv`
+        if `.table` can't resolve one - see its own docstring) in the
+        current directory; either way, the path actually written to is
+        returned.
+        """
+        if path is None:
+            path = f"{self.table.name if self.table is not None else 'result'}.csv"
+        path = Path(path)
+        with path.open("w", newline="", encoding="utf-8") as fp:
+            writer = csv.writer(fp, **kwargs)
+            writer.writerow(self.column_names)
+            for row in self._rows():
+                writer.writerow("" if v is None else str(v) for v in row)
+        return path
+
     def _rows(self, names: list[str] | None = None) -> Iterator[tuple[Any, ...]]:
         arrays = (
             self.columns.values()
@@ -361,7 +412,7 @@ async def sql(
         raise SqlError("limit must be at least 1")
     _check_select_only(query)
     try:
-        instance = get_instance(hass)
+        instance: Recorder = get_instance(hass)
     except KeyError:
         raise SqlError("the recorder is not set up on this instance") from None
     columns, rows, truncated = await instance.async_add_executor_job(
