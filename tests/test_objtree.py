@@ -5,6 +5,8 @@ entity registry entry to exercise the api/live branches honestly."""
 
 from __future__ import annotations
 
+import re
+
 import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
@@ -18,9 +20,11 @@ from custom_components.ha_repl_server.objtree import ApiEntity, ObjTree
 
 @pytest.fixture
 async def obj(hass: HomeAssistant) -> ObjTree:
-    entity = MockEntity(entity_id="sensor.test_one", unique_id="t1", name="Test One")
-    entity._attr_state = "42"
-    setup_test_component_platform(hass, "sensor", [entity])
+    one = MockEntity(entity_id="sensor.test_one", unique_id="t1", name="Test One")
+    one._attr_state = "42"
+    two = MockEntity(entity_id="sensor.test_two", unique_id="t2", name="Test Two")
+    two._attr_state = "7"
+    setup_test_component_platform(hass, "sensor", [one, two])
     assert await async_setup_component(
         hass, "sensor", {"sensor": [{"platform": "test"}]}
     )
@@ -68,10 +72,57 @@ async def test_mode_rejects_bad_value(obj: ObjTree):
         obj.mode("bogus")
 
 
+async def test_bare_entity_id_courtesy_lookup_at_root(obj: ObjTree):
+    entity = obj["sensor.test_one"]
+    assert isinstance(entity, MockEntity)
+
+
+async def test_bare_entity_id_courtesy_lookup_scoped_to_integration(obj: ObjTree):
+    scoped = obj["/test"]
+    assert isinstance(scoped, ObjTree)
+    entity = scoped["sensor.test_one"]
+    assert isinstance(entity, MockEntity)
+    assert entity is obj["sensor.test_one"]
+
+
+async def test_bare_entity_id_courtesy_lookup_wrong_integration_fails(obj: ObjTree):
+    # Constructed directly (not via obj["/not_test"]) so the mismatch itself
+    # is what's under test, not an empty-subtree KeyError from navigating
+    # into an integration scope with no entities at all.
+    scoped = ObjTree(obj.hass, integration="not_test")
+    with pytest.raises(KeyError):
+        scoped["sensor.test_one"]
+
+
 async def test_find_respects_mode(obj: ObjTree):
     obj.mode("api")
-    [found] = list(obj.find())
-    assert isinstance(found, ApiEntity)
+    found = list(obj.find())
+    assert found and all(isinstance(f, ApiEntity) for f in found)
     obj.mode("live")
-    [found] = list(obj.find())
-    assert isinstance(found, MockEntity)
+    found = list(obj.find())
+    assert found and all(isinstance(f, MockEntity) for f in found)
+
+
+async def test_find_paths_accepts_a_regex_prefix(obj: ObjTree):
+    assert sorted(obj.find_paths("/test/sensor/test_one.*")) == [
+        "/test/sensor/test_one"
+    ]
+
+
+async def test_find_names_regex_matches_multiple(obj: ObjTree):
+    assert sorted(obj.find_names(".*test_(one|two)")) == [
+        "sensor.test_one",
+        "sensor.test_two",
+    ]
+
+
+async def test_find_paths_regex_combines_with_domain_filter(obj: ObjTree):
+    assert sorted(obj.find_paths(".*test_one", domain="sensor")) == [
+        "/test/sensor/test_one",
+    ]
+    assert list(obj.find_paths(".*test_one", domain="light")) == []
+
+
+async def test_find_paths_invalid_regex_raises(obj: ObjTree):
+    with pytest.raises(re.error):
+        list(obj.find_paths("/test/sensor/["))

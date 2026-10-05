@@ -28,6 +28,7 @@ just marks the cache stale; it does not fetch.
 
 from __future__ import annotations
 
+import re
 import time
 from collections.abc import (
     ItemsView,
@@ -64,6 +65,12 @@ def _as_set(value: str | list[str] | None) -> set[str]:
     if value is None:
         return set()
     return {value} if isinstance(value, str) else set(value)
+
+
+# HA's own slugs (integration/domain/object_id) are always [a-z0-9_] - never any
+# of these - so a `find()` path containing one is unambiguously a regex, not a
+# literal path, with no risk of misreading a real path as a pattern.
+_REGEX_METACHARS = frozenset(".^$*+?{}[]|()\\")
 
 
 def _require_str(value: Any, what: str = "path") -> str:
@@ -290,6 +297,18 @@ class ApiObjTree(Mapping[str, "ApiEntity | ApiObjTree"]):
 
     def __getitem__(self, key: str) -> ApiEntity | ApiObjTree:
         _require_str(key, "key")
+        if (
+            "/" not in key
+            and "." in key
+            and self.integration is not None
+            and self.domain is None
+        ):
+            # Courtesy: a full entity_id ("domain.object_id") also works
+            # scoped to just an integration, not only at the root - translate
+            # to the equivalent "/"-path so the logic below (which already
+            # enforces the platform match) handles it the same way.
+            domain, _, object_id = key.partition(".")
+            key = f"{domain}/{object_id}"
         if "/" not in key and self.integration is None:
             entity = self.cache.entities.get(key)
             if entity is None:
@@ -356,7 +375,17 @@ class ApiObjTree(Mapping[str, "ApiEntity | ApiObjTree"]):
     ) -> Iterator[_Found]:
         """The real search, shared by find()/find_paths()/find_names() - each
         just projects a different field from the (path, entity) pairs this
-        yields. `domain` matches the HA domain (e.g. "light") across
+        yields.
+
+        `path` is normally an exact /integration/domain/object_id prefix, the
+        same as indexing - but a path containing a regex metacharacter (e.g.
+        "/mqtt/binary_sensor/barn.*") is matched as a regular expression
+        against each candidate's full path instead, anchored at the start
+        (so it behaves like a prefix match unless you anchor the end
+        yourself with `$`). That trades the usual early narrowing for a scan
+        of this view's whole subtree, filtered by the pattern.
+
+        `domain` matches the HA domain (e.g. "light") across
         integrations, the same way `platform` does for the owning
         integration; `area`/`label` each take an id or a display name. Each
         of the four ORs within itself when given a list, and they AND
@@ -364,12 +393,17 @@ class ApiObjTree(Mapping[str, "ApiEntity | ApiObjTree"]):
         """
         _require_str(path)
         scope = tuple(p for p in (self.integration, self.domain) if p is not None)
-        try:
-            prefix = scope if path in ("", "/") else scope + parse_path(path)
-        except ValueError as err:
-            raise KeyError(str(err)) from None
-        if len(prefix) > 3:
-            raise KeyError(path)
+        pattern = None
+        if path not in ("", "/") and _REGEX_METACHARS.intersection(path):
+            pattern = re.compile(path)
+            prefix = scope
+        else:
+            try:
+                prefix = scope if path in ("", "/") else scope + parse_path(path)
+            except ValueError as err:
+                raise KeyError(str(err)) from None
+            if len(prefix) > 3:
+                raise KeyError(path)
 
         platforms = _as_set(platform)
         domains = _as_set(domain)
@@ -389,6 +423,8 @@ class ApiObjTree(Mapping[str, "ApiEntity | ApiObjTree"]):
                 full_path = "/" + "/".join(
                     (entity.platform, entity.domain, entity.object_id)[len(scope) :]
                 )
+                if pattern is not None and not pattern.match(full_path):
+                    continue
                 yield _Found(full_path, entity)
 
         return _matches()

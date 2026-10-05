@@ -1,6 +1,10 @@
 # What's New
 
-## Unreleased
+## 0.5.0
+- `obj` will take a plain entity name now as well as a path
+  - For example, `obj("binary_sensor.kitchen_pir")`
+- `obj.find`,`obj.find_names` and `obj.find_paths` now take regular expressions
+  - For example, `obj.find_names("/mqtt/binary_sensor/kitchen.*")` or `obj.find_names("/mqtt/binary_sensor/.*_leak")` or just `obj.find_names(".*_leak")`
 - Renamed `--url` to `--server` on `ha-repl` for consistency with environment variable names
 
 ## 0.4.0

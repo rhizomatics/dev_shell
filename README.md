@@ -141,7 +141,7 @@ All the usual Python tricks can of course also be used, iterators, comprehension
 
 ### `obj[]`
 
-This allows dictionary ('Mapping') access to the object tree.
+This allows dictionary ('Mapping') access to the object tree. It can also accept a simple entity name and bypass the tree structure altogether.
 
 In the example tree below, the objects and subtrees of objects can be accessed like:
 
@@ -153,6 +153,7 @@ In the example tree below, the objects and subtrees of objects can be accessed l
 >>> obj["/rflink"]  # the 'light','binary_sensor' and 'sensor' subtrees for rflink
 >>> obj["/rflink/sensor"]  # all the sensors for rflink
 >>> len(obj["/rflink/sensor"])  # count of rflink sensors in this example
+>>> obj["sensor.shed_temperature"] # non-path simple entity name mode
 ```
 
 ##### Example Tree
@@ -182,10 +183,18 @@ In the example tree below, the objects and subtrees of objects can be accessed l
 
 Where the dictionary access gives a nested directory view of the object tree, `find` provides a flat iteration with no order guarantees, so its fast and simple and can be sorted the usual Python way if needed.
 
+`find` functions can accept a full or partial path, or a regular expression.
+
 `find` also has built in filters, to narrow the big list of objects by one or more `platform`,`domain`,`area`,`label` - each of these will take a single string or list of strings, and they can be combined to narrow down the list.
 
 ```python
 >>> {(o.entity_id, o.state) for o in obj.find(domain="binary_sensor")}
+```
+
+Or using a regular expression:
+
+```python
+>>> {(o.entity_id, o.state) for o in obj.find("/rflink/binary_sensor/*._leak")}
 ```
 
 ##### Raw Objects
@@ -199,6 +208,7 @@ Identical to `obj.find()` except it only returns an iterable of the object paths
 ```python
 >>> list(objs.find(area="kitchen"))  # list names of all entities in kitchen
 >>> sorted(objs.find(area=["kitchen", "shed"]))
+>>> list(objs.find(".*_leak"))
 ```
 
 #### `obj.find_names(..)`

@@ -4,6 +4,7 @@ config/*_registry/list websocket commands actually return."""
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import pytest
@@ -125,6 +126,23 @@ async def test_bare_entity_id_lookup(tree: ApiObjTree):
     assert kitchen_lights.entity_id == "light.kitchen_lights"
 
 
+async def test_bare_entity_id_lookup_scoped_to_integration(tree: ApiObjTree):
+    hue = tree["/hue"]
+    assert isinstance(hue, ApiObjTree)
+    kitchen_lights = hue["light.kitchen_lights"]
+    assert isinstance(kitchen_lights, ApiEntity)
+    assert kitchen_lights.entity_id == "light.kitchen_lights"
+    assert kitchen_lights is tree["light.kitchen_lights"]
+
+
+async def test_bare_entity_id_lookup_wrong_integration_fails(tree: ApiObjTree):
+    # media_player.kitchen_show belongs to alexa_devices, not hue.
+    hue = tree["/hue"]
+    assert isinstance(hue, ApiObjTree)
+    with pytest.raises(KeyError):
+        hue["media_player.kitchen_show"]
+
+
 async def test_missing_intermediate_path_raises(tree: ApiObjTree):
     with pytest.raises(KeyError):
         tree["/hue/sensor"]  # hue has no sensors
@@ -179,6 +197,34 @@ async def test_find_paths_by_domain_across_integrations(tree: ApiObjTree):
 async def test_find_paths_filters_and_together(tree: ApiObjTree):
     # domain=light AND platform=demo: no light is on the demo platform here.
     assert list(tree.find_paths(domain="light", platform="demo")) == []
+
+
+async def test_find_paths_accepts_a_regex_prefix(tree: ApiObjTree):
+    # "." and "*" make this a regex, not a literal 3-segment path.
+    assert sorted(tree.find_paths("/hue/light/kitchen.*")) == [
+        "/hue/light/kitchen_lights",
+    ]
+
+
+async def test_find_names_regex_can_cross_integrations(tree: ApiObjTree):
+    # A plain /integration/domain/object_id prefix can't express this -
+    # kitchen_lights (hue) and kitchen_show (alexa_devices) are unrelated
+    # integrations, only a pattern over the whole path can match both.
+    assert sorted(tree.find_names(".*kitchen.*")) == [
+        "light.kitchen_lights",
+        "media_player.kitchen_show",
+    ]
+
+
+async def test_find_paths_regex_combines_with_platform_filter(tree: ApiObjTree):
+    assert sorted(tree.find_paths(".*kitchen.*", platform="hue")) == [
+        "/hue/light/kitchen_lights",
+    ]
+
+
+async def test_find_paths_invalid_regex_raises(tree: ApiObjTree):
+    with pytest.raises(re.error):
+        list(tree.find_paths("/hue/light/["))
 
 
 async def test_find_yields_bare_entities(tree: ApiObjTree):

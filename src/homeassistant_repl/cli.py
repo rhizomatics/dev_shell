@@ -90,7 +90,7 @@ def _parser() -> argparse.ArgumentParser:
 
 
 async def _dispatch(args: argparse.Namespace) -> int:
-    url = resolve_url(args.url)
+    url = resolve_url(args.server)
     async with Client(url, resolve_token(args.token)) as client:
         match args.command:
             case "exec":
