@@ -6,17 +6,17 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Other ways of using Home Assistant REPL without using the supplied shell.">
+        <meta name="description" content="All of the objects (only entities for now) are arranged in a giant tree, like a file system, exposed as the global variable objs and implemented as Python Mapping object (which provides the MappingView views ItemsView and KeysView)">
       
       
       
-        <link rel="canonical" href="https://homeassistant-repl.rhizomatics.org.uk/alternative_integration/">
+        <link rel="canonical" href="https://homeassistant-repl.rhizomatics.org.uk/obj_tree/">
       
       
-        <link rel="prev" href="..">
+        <link rel="prev" href="../changelog/">
       
       
-        <link rel="next" href="../changelog/">
+        <link rel="next" href="../sql/">
       
       
         
@@ -34,7 +34,7 @@
     
     
       
-        <title>Alternative Integration - Home Assistant REPL</title>
+        <title>The Object Tree - Home Assistant REPL</title>
       
     
     
@@ -85,7 +85,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#alternative-integration" class="md-skip">
+        <a href="#the-object-tree" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Alternative Integration
+              The Object Tree
             
           </span>
         </div>
@@ -228,11 +228,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="./" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../alternative_integration/" class="md-tabs__link">
         
   
   
@@ -268,9 +266,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../obj_tree/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
         
   
   
@@ -402,37 +402,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Alternative Integration
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../alternative_integration/" class="md-nav__link">
         
   
   
@@ -448,70 +421,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc">
-      
-        <li class="md-nav__item">
-  <a href="#using-homeassistant_repl-from-plain-python" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Using homeassistant_repl from Plain Python
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#ipython-example" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        iPython Example
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#marimo-example" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Marimo Example
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#install-local-home-assistant-with-the-custom-mode-server" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Install Local Home Assistant with the Custom Mode Server
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -547,10 +456,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../obj_tree/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Object Tree
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -566,6 +502,115 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc">
+      
+        <li class="md-nav__item">
+  <a href="#obj" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        obj[]
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="obj[]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-tree" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Tree
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#objfind" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        obj.find('..')
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="obj.find(&#39;..&#39;)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#raw-objects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raw Objects
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#objfind_paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        obj.find_paths(..)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#objfind_names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        obj.find_names(..)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#objshow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        obj.show(..)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -811,7 +856,7 @@
                 
                   
   
-    <a href="https://github.com/rhizomatics/homeassistant-repl/edit/main/docs/alternative_integration.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/rhizomatics/homeassistant-repl/edit/main/docs/obj_tree.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -820,63 +865,84 @@
     
       
     
-    <a href="https://github.com/rhizomatics/homeassistant-repl/raw/main/docs/alternative_integration.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/rhizomatics/homeassistant-repl/raw/main/docs/obj_tree.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="alternative-integration">Alternative Integration<a class="headerlink" href="#alternative-integration" title="Permanent link">&para;</a></h1>
-<p>Other ways of using Home Assistant REPL without using the supplied shell.</p>
-<h2 id="using-homeassistant_repl-from-plain-python">Using <code>homeassistant_repl</code> from Plain Python<a class="headerlink" href="#using-homeassistant_repl-from-plain-python" title="Permanent link">&para;</a></h2>
-<p>The <code>api</code> mode REPL above is just a thin wrapper around <code>homeassistant_repl.connect()</code> - the same call works from a one-off script, a notebook, or an interactive <code>python -m asyncio</code> session (the standard library's REPL that supports top-level <code>await</code>, unlike plain <code>python</code>), with no dependency on the <code>ha-repl</code> executable at all.</p>
-<p>Install the package first (<code>pip install homeassistant-repl</code>, or <code>uv add homeassistant-repl</code> in a project) - the importable package is named <code>homeassistant_repl</code>.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>asyncio
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>&gt;&gt;&gt;<span class="w"> </span>import<span class="w"> </span>homeassistant_repl
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>&gt;&gt;&gt;<span class="w"> </span><span class="nv">obj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>await<span class="w"> </span>homeassistant_repl.connect<span class="o">()</span><span class="w">  </span><span class="c1"># reads $HASS_SERVER/$HASS_TOKEN, same as the CLI</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>&gt;&gt;&gt;<span class="w"> </span>obj<span class="o">[</span><span class="s2">"/rflink/binary_sensor/hall_pir"</span><span class="o">]</span>.state
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="s1">'off'</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>&gt;&gt;&gt;<span class="w"> </span><span class="o">[</span>e.entity_id<span class="w"> </span><span class="k">for</span><span class="w"> </span>e<span class="w"> </span><span class="k">in</span><span class="w"> </span>obj.find<span class="o">(</span><span class="nv">domain</span><span class="o">=</span><span class="s2">"light"</span><span class="o">)]</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="o">[</span><span class="s1">'light.kitchen_lights'</span>,<span class="w"> </span><span class="s1">'light.shed'</span><span class="o">]</span>
+<h1 id="the-object-tree">The Object Tree<a class="headerlink" href="#the-object-tree" title="Permanent link">&para;</a></h1>
+<p>All of the objects (only entities for now) are arranged in a giant tree, like a file system, exposed as the global variable <code>objs</code> and implemented as Python <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a> object (which provides the <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.MappingView">MappingView</a> views <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.ItemsView">ItemsView</a> and <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.KeysView">KeysView</a>)</p>
+<p><code>objs</code> offers:</p>
+<ul>
+<li>Dictionary style access, using <code>[]</code></li>
+<li>Raises <code>KeyError</code> if entity or sub-path doesn't exist</li>
+<li>Each level of the tree returns a sub-tree</li>
+<li><code>keys()</code>,<code>values()</code>,<code>items()</code> of the sub-tree shows only that level</li>
+<li>An <code>OrderedView</code> is used rather than plain <code>MappingView</code> so can be accessed like a <code>list</code> and items are alphabetically organized</li>
+<li><code>find()</code></li>
+<li>Returns a flat iterable of the entire tree</li>
+<li>Optionally restrict by <code>platform</code>,<code>area</code>,<code>label</code></li>
+<li><code>show()</code></li>
+<li>Dump the most useful info on an object to console</li>
+</ul>
+<p>All the usual Python tricks can of course also be used, iterators, comprehensions, classes, lambdas or a simple <code>len()</code>.</p>
+<h3 id="obj"><code>obj[]</code><a class="headerlink" href="#obj" title="Permanent link">&para;</a></h3>
+<p>This allows dictionary ('Mapping') access to the object tree. It can also accept a simple entity name and bypass the tree structure altogether.</p>
+<p>In the example tree below, the objects and subtrees of objects can be accessed like:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">obj</span><span class="p">[</span><span class="s2">"/rflink/sensor/shed_temperature"</span><span class="p">]</span><span class="o">.</span><span class="n">state</span>  <span class="c1"># prints out temperature</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">obj</span><span class="p">[</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="s2">"/rflink/sensor/shed_temperature"</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">]</span><span class="o">.</span><span class="n">state_attributes</span>  <span class="c1"># prints out additional attributes</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">obj</span><span class="p">[</span><span class="s2">"/rflink"</span><span class="p">]</span>  <span class="c1"># the 'light','binary_sensor' and 'sensor' subtrees for rflink</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">obj</span><span class="p">[</span><span class="s2">"/rflink/sensor"</span><span class="p">]</span>  <span class="c1"># all the sensors for rflink</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="o">&gt;&gt;&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="p">[</span><span class="s2">"/rflink/sensor"</span><span class="p">])</span>  <span class="c1"># count of rflink sensors in this example</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">obj</span><span class="p">[</span><span class="s2">"sensor.shed_temperature"</span><span class="p">]</span> <span class="c1"># non-path simple entity name mode</span>
 </span></code></pre></div>
-<p>Or pass the URL/token explicitly rather than via environment variables, and use it in a script with <code>asyncio.run</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">homeassistant_repl</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">obj</span> <span class="o">=</span> <span class="k">await</span> <span class="n">homeassistant_repl</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>        <span class="n">url</span><span class="o">=</span><span class="s2">"http://homeassistant.local:8123"</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="s2">"..."</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="p">)</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">obj</span><span class="p">[</span><span class="s2">"/rflink/binary_sensor/hall_pir"</span><span class="p">]</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+<h5 id="example-tree">Example Tree<a class="headerlink" href="#example-tree" title="Permanent link">&para;</a></h5>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>...
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>- mqtt
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>- rflink
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>  - light
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    - staircase_ceiling
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    - shed
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>  - switch
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    - upstairs_pixie
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>  - binary_sensor
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    - porch_pir
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    - shed_door
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>  - sensor
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    - shed_temperature
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    - kitchen_humidity
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>...
 </span></code></pre></div>
-<p><code>obj</code> behaves identically to the one bound in the REPL - everything under The Object Tree below applies. <code>connect()</code> only gets you <code>api</code> mode (read-only, no <code>hass</code>); <code>custom</code> mode's live object tree requires the <code>ha_repl_server</code> HACS component and talks to it over the same underlying <code>Client</code>, but isn't exposed as a standalone importable helper.</p>
-<p>By default the cached snapshot is reused for 30 seconds (<code>ttl=</code> to change that) and the websocket connection is left open for the life of the process; call <code>await obj.cache.refresh()</code> for a fresh snapshot on demand, or <code>await obj.cache.client.close()</code> when you're done with it if that matters for your script.</p>
-<h2 id="ipython-example">iPython Example<a class="headerlink" href="#ipython-example" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>$<span class="w"> </span>ipython
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>&gt;&gt;&gt;<span class="w"> </span>import<span class="w"> </span>homeassistant_repl
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>&gt;&gt;&gt;<span class="w"> </span><span class="nv">obj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>await<span class="w"> </span>homeassistant_repl.connect<span class="o">()</span>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the roadmap, there will be a visual Object Browser to view and select entities. For now, it is accessible only via Python code. It also may extend beyond entities, to things like areas, users, categories and devices.</p>
+</div>
+<h4 id="objfind"><code>obj.find('..')</code><a class="headerlink" href="#objfind" title="Permanent link">&para;</a></h4>
+<p>Where the dictionary access gives a nested directory view of the object tree, <code>find</code> provides a flat iteration with no order guarantees, so its fast and simple and can be sorted the usual Python way if needed.</p>
+<p><code>find</code> functions can accept a full or partial path, or a regular expression.</p>
+<p><code>find</code> also has built in filters, to narrow the big list of objects by one or more <code>platform</code>,<code>domain</code>,<code>area</code>,<code>label</code> - each of these will take a single string or list of strings, and they can be combined to narrow down the list.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="p">{(</span><span class="n">o</span><span class="o">.</span><span class="n">entity_id</span><span class="p">,</span> <span class="n">o</span><span class="o">.</span><span class="n">state</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="s2">"binary_sensor"</span><span class="p">)}</span>
 </span></code></pre></div>
-<h2 id="marimo-example">Marimo Example<a class="headerlink" href="#marimo-example" title="Permanent link">&para;</a></h2>
-<p><img alt="Example Marimo Import and Usage" src="../assets/screenshots/marimo.png" /></p>
-<h2 id="install-local-home-assistant-with-the-custom-mode-server">Install Local Home Assistant with the Custom Mode Server<a class="headerlink" href="#install-local-home-assistant-with-the-custom-mode-server" title="Permanent link">&para;</a></h2>
-<p>Dev instance (devcontainer, or directly on a host with Python 3.14):</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>dev/setup.sh<span class="w">                 </span><span class="c1"># installs HA into its own venv + the CLI (devcontainer runs this)</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>dev/run-ha.sh<span class="w">                </span><span class="c1"># HA on :8123 with custom_components/ha_repl_server symlinked in</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>dev/bootstrap.py<span class="w">   </span><span class="c1"># onboard (user dev/dev) and write dev/.env with a token</span>
+<p>Or using a regular expression:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="p">{(</span><span class="n">o</span><span class="o">.</span><span class="n">entity_id</span><span class="p">,</span> <span class="n">o</span><span class="o">.</span><span class="n">state</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"/rflink/binary_sensor/*._leak"</span><span class="p">)}</span>
 </span></code></pre></div>
-<p>Using it (host or container):</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">set</span><span class="w"> </span>-a<span class="p">;</span><span class="w"> </span>.<span class="w"> </span>dev/.env<span class="p">;</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>+a
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w">                                         </span><span class="c1"># interactive</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s1">'hass.states.get("sun.sun")'</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;'PY'</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="s">await hass.services.async_call("light", "toggle", {"entity_id": "light.kitchen_lights"}, blocking=True)</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="s">hass.states.get("light.kitchen_lights").state</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="s">PY</span>
+<h5 id="raw-objects">Raw Objects<a class="headerlink" href="#raw-objects" title="Permanent link">&para;</a></h5>
+<p>In API Client mode, <code>find()</code> returns a local proxy for the remote class, normalized to look more like the same object you'd get in live mode. Switching <code>raw=True</code> will bypass this and you'll get the object untouched as it was received from the API.</p>
+<h4 id="objfind_paths"><code>obj.find_paths(..)</code><a class="headerlink" href="#objfind_paths" title="Permanent link">&para;</a></h4>
+<p>Identical to <code>obj.find()</code> except it only returns an iterable of the object paths rather than the objects themselves. Ideal for plugging into some logic that will then call <code>obj[path]</code> on each one.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="nb">list</span><span class="p">(</span><span class="n">objs</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">area</span><span class="o">=</span><span class="s2">"kitchen"</span><span class="p">))</span>  <span class="c1"># list names of all entities in kitchen</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">objs</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">area</span><span class="o">=</span><span class="p">[</span><span class="s2">"kitchen"</span><span class="p">,</span> <span class="s2">"shed"</span><span class="p">]))</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="nb">list</span><span class="p">(</span><span class="n">objs</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">".*_leak"</span><span class="p">))</span>
+</span></code></pre></div>
+<h4 id="objfind_names"><code>obj.find_names(..)</code><a class="headerlink" href="#objfind_names" title="Permanent link">&para;</a></h4>
+<p>Same as <code>obj.find_paths()</code> except it returns the object bare name, as it would appear in Home Assistant, e.g. <code>sensor.bathroom_humidity</code></p>
+<h4 id="objshow"><code>obj.show(..)</code><a class="headerlink" href="#objshow" title="Permanent link">&para;</a></h4>
+<p>The <code>show</code> function will give a pretty version of an object where it knows how. For entities this means it combines the <code>RegistryEntry</code> and <code>Entity</code> information, drops some boring internal stuff, filters out all the <code>None</code> values and turns <code>datetime.datetime</code> structures into local date times.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="l l-Scalar l-Scalar-Plain">obj.show('/unifi/sensor/kitchen_wifi_cpu_utilization')</span>
 </span></code></pre></div>
 
 
