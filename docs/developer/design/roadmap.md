@@ -90,6 +90,7 @@ This switch controls trade-off between shell convenience and ability to trial wo
 
 ## Improvements
 - Make the main package more unique and HA specific than `dev_shell`
+  - `homeassistant-devshell`
 - Allow it to be set up easily inside any python code (async compatibility)?
 
 ## Other Ideas

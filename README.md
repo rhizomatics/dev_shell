@@ -86,7 +86,7 @@ uv run --with homeassistant-devshell dev_shell --token <<<my long lived access t
 
 ## Using the Shell
 
-The shell is a full Python REPL shell, implemented as a VSCode NotebookController, with multi-line editing, history etc, living inside an asyncio loop that exposes the live Home Assistant instance as
+The shell is a full Python REPL shell, implemented as a VSCode NotebookController, with multi-line editing, history etc, living inside an asyncio loop that exposes the live Home Assistant instance as:
 
 * `obj` - the object tree exposed as a dictionary object and common methods
 
@@ -102,6 +102,8 @@ pir.state = "on"  # non-strict mode, sets entity state with repl as context
 ```
 
 The return value of the object is returned to the shell, value printed and available to Python code as `_`. Tracebacks are printed also, as if they were local (in general everything feels like its local)
+
+See also [Alternative Integration](alternative_integration.md) options.
 
 ## The Object Tree
 
@@ -198,7 +200,7 @@ obj.show('/unifi/sensor/kitchen_wifi_cpu_utilization')
 
 ## Starting the Shell
 
-Use the `HASS_SERVER` environment variable or the `--url` command line argument if the Home Assistant server is not running locally at usual address( i.e. `http://homeassistant.local:8123`). A [long lived access token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) is needed at `--token` or in an `HASS_TOKEN` environment variable.
+Use the `HASS_SERVER` environment variable, exported or in a local `.env` file, or the `--url` command line argument if the Home Assistant server is not running locally at usual address( i.e. `http://homeassistant.local:8123`). A [long lived access token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) is needed at `--token` or in an `HASS_TOKEN` environment variable.
 
 ### Custom Mode for Real Server
 
@@ -228,28 +230,3 @@ If you do have this repo checked out, you can also use a direct `run` which mean
 uv run dev_shell         
 ```
 
-### Install Local Home Assistant with the Custom Mode Server
-
-Dev instance (devcontainer, or directly on a host with Python 3.14):
-
-```sh
-dev/setup.sh                 # installs HA into its own venv + the CLI (devcontainer runs this)
-dev/run-ha.sh                # HA on :8123 with custom_components/dev_shell_server symlinked in
-uv run python dev/bootstrap.py   # onboard (user dev/dev) and write dev/.env with a token
-```
-
-Using it (host or container):
-
-```sh
-set -a; . dev/.env; set +a
-uv run dev_shell                                         # interactive
-uv run dev_shell exec 'hass.states.get("sun.sun")'
-uv run dev_shell exec - <<'PY'
-await hass.services.async_call("light", "toggle", {"entity_id": "light.kitchen_lights"}, blocking=True)
-hass.states.get("light.kitchen_lights").state
-PY
-```
-
-### Running Tests
-
-Tests: `uv run pytest` covers the engine without needing HA.

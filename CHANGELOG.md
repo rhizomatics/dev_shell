@@ -1,5 +1,9 @@
 # What's New
 
+## 0.1.2
+- Simpler `connect` method to use the API and `obj` from any Python async code
+- Environment variables can be sourced from an `.env` file
+
 ## 0.1.1
 - Changed `api` mode prompt to standard Python `>>>`
 - Improved docs and tests

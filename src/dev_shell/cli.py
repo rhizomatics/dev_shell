@@ -11,6 +11,7 @@
   dev_shell reset / dev_shell sessions             manage custom-mode server-side sessions
 
 Connection: HASS_SERVER (default http://homeassistant.local:8123), HASS_TOKEN, HASS_SESSION.
+Both HASS_SERVER/HASS_TOKEN also fall back to a `.env` file in the current directory, below real env vars.
 API client mode: --ttl seconds before the cached snapshot is refreshed (default 30).
 Exit status of exec is 1 when the snippet raised, 2 on connection/usage errors.
 """
@@ -45,7 +46,7 @@ def _parser() -> argparse.ArgumentParser:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--url", default=os.environ.get("HASS_SERVER"))
+    parser.add_argument("--url", default=None, help="defaults to $HASS_SERVER")
     parser.add_argument("--token", default=None, help="defaults to $HASS_TOKEN")
     parser.add_argument(
         "-s", "--session", default=os.environ.get("HASS_SESSION", "default")
