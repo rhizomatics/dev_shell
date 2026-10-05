@@ -1,5 +1,5 @@
 """`hass_api` - an already-connected homeassistant_api.AsyncClient, bound in
-custom mode alongside `hass`/`obj` for parity with API client mode (see
+live mode alongside `hass`/`obj` for parity with API client mode (see
 ../../src/homeassistant_repl/rest.py). Duplicated rather than imported
 across the packaging boundary for the same reason as objtree.py/paths.py -
 this component is deployed via HACS with its own `manifest.json`

@@ -8,7 +8,7 @@ get_logbook_entries, get_entity_histories, render a template, ...) with
 typed responses, so there's no reason to reinvent it here.
 
 Named `hass_api`, not `api`: `obj.mode("api")` already uses "api" for the
-cached/read-only view custom mode's `obj` can switch into, and the two are
+cached/read-only view live mode's `obj` can switch into, and the two are
 easy to conflate in a transcript otherwise.
 """
 

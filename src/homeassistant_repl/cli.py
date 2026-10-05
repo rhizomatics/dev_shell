@@ -2,13 +2,13 @@
 
   ha-repl                                         interactive API client shell (default)
                                                     `obj` only, read-only, no HACS component needed
-  ha-repl custom                                  interactive custom-component shell
+  ha-repl live.                                   interactive custom-component shell
                                                     `hass` + `obj` (same `obj` API, live not cached);
                                                     needs the ha_repl_server component
-  ha-repl exec 'hass.states.get("sun.sun")'       run a snippet (custom mode only)
+  ha-repl exec 'hass.states.get("sun.sun")'       run a snippet (live mode only)
   ha-repl exec -f snippet.py                      run a file
   ha-repl exec - <<'EOF' ... EOF                  read the snippet from stdin
-  ha-repl reset / ha-repl sessions                manage custom-mode server-side sessions
+  ha-repl reset / ha-repl sessions                manage live-mode server-side sessions
 
 Connection: HASS_SERVER (default http://homeassistant.local:8123), HASS_TOKEN, HASS_SESSION.
 Both HASS_SERVER/HASS_TOKEN also fall back to a `.env` file in the current directory, below real env vars.
@@ -81,11 +81,11 @@ def _parser() -> argparse.ArgumentParser:
         help="interactive API client shell (the default): obj only, no HACS component needed",
     )
     sub.add_parser(
-        "custom",
+        "live",
         help="interactive custom-component shell: hass + obj, needs the ha_repl_server component",
     )
-    sub.add_parser("reset", help="discard the custom-mode session's variables")
-    sub.add_parser("sessions", help="list custom-mode sessions on the server")
+    sub.add_parser("reset", help="discard the live-mode session's variables")
+    sub.add_parser("sessions", help="list live-mode sessions on the server")
     return parser
 
 
@@ -103,7 +103,7 @@ async def _dispatch(args: argparse.Namespace) -> int:
                 result = await client.call("ha_repl_server/sessions")
                 _emit(args, result, _format_sessions(result["sessions"]))
                 return 0
-            case "custom":
+            case "live":
                 from .repl import run_repl
 
                 return await run_repl(

@@ -1,7 +1,7 @@
 """API client mode's interactive shell: same local line editing/history as
 repl.py, but code runs right here (LocalSession) - no `hass`, no
 ha_repl_server/exec call, no HACS component required on the HA side at
-all. `obj` is bound the same name as custom mode, just to an ApiObjTree
+all. `obj` is bound the same name as live mode, just to an ApiObjTree
 instead of the live ObjTree, so a snippet that only touches `obj` runs
 unchanged in either mode. `hass_api` is bound the same way - an
 already-connected homeassistant_api.AsyncClient, not a function to call.
