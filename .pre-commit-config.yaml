@@ -49,8 +49,9 @@ repos:
           - homeassistant-stubs
           - pytest
           - rich
+          - types-PyYAML
           - prompt_toolkit
-          - websockets
+          - niquests[ws]
           - types-PyYAML
           - types-Pygments
           - pytest_unordered

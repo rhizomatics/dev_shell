@@ -36,9 +36,7 @@ async def connect_hass_api() -> AsyncClient:
     ):
         url = server.rstrip("/") + "/api"
     else:
-        raise HassApiUnavailable(
-            "no $SUPERVISOR_TOKEN or $HASS_SERVER/$HASS_TOKEN set"
-        )
+        raise HassApiUnavailable("no $SUPERVISOR_TOKEN or $HASS_SERVER/$HASS_TOKEN set")
     client = AsyncClient(url, token)
     try:
         running = await client.check_api_running()

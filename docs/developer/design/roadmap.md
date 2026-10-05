@@ -105,7 +105,7 @@ This switch controls trade-off between shell convenience and ability to trial wo
 - Other bindings
   - sql() for the sqlite DB
     - or support for a client-side sql client ui
-  - api() shortcuts for HA APIs
+  - api() shortcuts for HA APIs [DONE]
     - https://developers.home-assistant.io/docs/api/rest/
 - REPL improvements
   - `rich` formatting [DONE]

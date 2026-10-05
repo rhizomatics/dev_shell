@@ -70,6 +70,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import label_registry as lr
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_platform import DATA_DOMAIN_ENTITIES
+from homeassistant.helpers.typing import UNDEFINED
 from homeassistant.util import dt as dt_util
 
 from .paths import parse_path
@@ -320,7 +321,10 @@ class ObjTree(Mapping[str, "Entity | ApiEntity | ObjTree"]):
         if len(full) > 3:
             raise KeyError(key)
         if len(full) < 3:
-            subtree = ObjTree(self.hass, *full, _mode=self._mode)
+            # Not `ObjTree(self.hass, *full, _mode=...)`: mypy can't tell a
+            # variable-length tuple unpack won't collide with a later keyword.
+            padded = full + (None,) * (2 - len(full))
+            subtree = ObjTree(self.hass, padded[0], padded[1], _mode=self._mode)
             # Without this, `in`/.get() (Mapping's default __contains__ tries
             # self[key]) would say yes to any made-up integration/domain name,
             # disagreeing with .keys() - which only ever lists ones with entities.
@@ -362,13 +366,17 @@ class ObjTree(Mapping[str, "Entity | ApiEntity | ObjTree"]):
         self, entry: er.RegistryEntry, domain: str, object_id: str, entity: Entity
     ) -> ApiEntity:
         devices = dr.async_get(self.hass)
+        name = entity.name
         return ApiEntity(
             entity_id=entry.entity_id,
             platform=entry.platform,
             domain=domain,
             object_id=object_id,
-            state=entity.state,
-            name=entity.name,
+            # Mirrors what /api/states actually publishes: both come back as
+            # plain strings there, not the live property's broader type
+            # (state: StateType, name: str | UndefinedType | None).
+            state=None if entity.state is None else str(entity.state),
+            name=None if name is UNDEFINED else name,
             state_attributes=dict(entity.state_attributes or {}),
             area_id=_entity_area_id(entry, devices),
             labels=frozenset(entry.labels),
@@ -493,7 +501,7 @@ class ObjTree(Mapping[str, "Entity | ApiEntity | ObjTree"]):
         area: str | list[str] | None = None,
         label: str | list[str] | None = None,
         raw: bool = False,
-    ) -> Iterator[Entity] | Iterator[dict[str, Any]]:
+    ) -> Iterator[Entity | ApiEntity] | Iterator[dict[str, Any]]:
         """Every entity (or raw dict, if raw=True) matching the filters under
         `path` (relative to this view, "/" meaning this view's whole
         subtree) - flat, skipping the directory-style one-level-at-a-time
