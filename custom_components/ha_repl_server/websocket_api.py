@@ -1,5 +1,5 @@
-"""Websocket commands: dev_shell_server/exec, dev_shell_server/reset,
-dev_shell_server/sessions (all admin only)."""
+"""Websocket commands: ha_repl_server/exec, ha_repl_server/reset,
+ha_repl_server/sessions (all admin only)."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ def _manager(
 ) -> SessionManager | None:
     if (manager := hass.data.get(DOMAIN)) is None:
         connection.send_error(
-            msg["id"], "not_loaded", "Dev Shell integration is not loaded"
+            msg["id"], "not_loaded", "Home Assistant REPL integration is not loaded"
         )
     return manager
 
@@ -36,7 +36,7 @@ def _manager(
 # static-typing friction point across the HA ecosystem, not specific to this
 # schema (mypy, via homeassistant-stubs, is fine with it as-is).
 @websocket_api.websocket_command({
-    vol.Required("type"): "dev_shell_server/exec",
+    vol.Required("type"): "ha_repl_server/exec",
     vol.Required("code"): str,
     vol.Optional("session", default=DEFAULT_SESSION): str,
     vol.Optional("timeout"): vol.Coerce(float),
@@ -57,7 +57,7 @@ async def ws_exec(
 
 @websocket_api.require_admin
 @websocket_api.websocket_command({
-    vol.Required("type"): "dev_shell_server/reset",
+    vol.Required("type"): "ha_repl_server/reset",
     vol.Optional("session", default=DEFAULT_SESSION): str,
 })
 @callback
@@ -70,7 +70,7 @@ def ws_reset(
 
 
 @websocket_api.require_admin
-@websocket_api.websocket_command({vol.Required("type"): "dev_shell_server/sessions"})
+@websocket_api.websocket_command({vol.Required("type"): "ha_repl_server/sessions"})
 @callback
 def ws_sessions(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]

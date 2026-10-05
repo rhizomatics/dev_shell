@@ -2,7 +2,7 @@
 
 test_session.py/test_paths.py/test_api_objtree.py load their modules directly
 and never import `homeassistant`, so they don't need any of this. Tests that
-do (e.g. exercising custom_components/dev_shell_server/__init__.py or
+do (e.g. exercising custom_components/ha_repl_server/__init__.py or
 objtree.py against a live `hass`) get it from here instead.
 """
 

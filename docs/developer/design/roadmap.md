@@ -80,6 +80,7 @@ This switch controls trade-off between shell convenience and ability to trial wo
 
 ### Enhancements
 - Drop down button to switch context between different Home Assistant instances
+  - Also implies some form of config more structured than env vats
 - Read-only Mode
   - Control to switch it off in the toolbar of the REPL. 
   - Caveat about side-effects of supposedly read-only calls and difficulty of knowing what's really read-only. Possibly blanket ban on calling actions.
@@ -89,28 +90,30 @@ This switch controls trade-off between shell convenience and ability to trial wo
   - On demand also for custom components, both this and core can be disabled for space constrained devices, with `inspect.getsource` as backup
 
 ## Improvements
-- Make the main package more unique and HA specific than `dev_shell`
-  - `homeassistant-devshell`
-- Allow it to be set up easily inside any python code (async compatibility)?
+- Make the main package more unique and HA specific than `dev_shell` [DONE]
+  - `homeassistant-repl`
+- Allow it to be set up easily inside any python code (async compatibility)? [DONE]
+  - `homeassistant_repl.connect()`
 
 ## Other Ideas
-- iPython support
+- iPython support [DONE]
 - VSCode extension
 - API Mode
-  - API access only, also no need of HACS components
+  - API access only, also no need of HACS components [DONE]
   - TBD: whether actions/services get folded into the object tree, or left separate
 - Other bindings
   - sql() for the sqlite DB
     - or support for a client-side sql client ui
   - api() shortcuts for HA APIs
+    - https://developers.home-assistant.io/docs/api/rest/
 - REPL improvements
-  - `rich` formatting
+  - `rich` formatting [DONE]
 - User plugins/extensions
   - python scripts in a directory
   - functions
     - add own bindings
     - common shortcuts, e.g. to a sensor or set of entities
-- Notebook support, e.g. Marimo
+- Notebook support, e.g. Marimo [DONE]
 - safe(r) mode - remove things like stop
 - Event subscription and visualization
 - Auto-complete support
@@ -149,6 +152,6 @@ This switch controls trade-off between shell convenience and ability to trial wo
 ## Development
 
 Layout:
-- `custom_components/dev_shell_server/`: the HACS integration (named `dev_shell_server` to distinguish it from the CLI below). `session.py` is the execution engine (no HA imports); `websocket_api.py` exposes the admin-only `dev_shell_server/exec`, `dev_shell_server/reset` and `dev_shell_server/sessions` commands.
-- `src/dev_shell/`: the `dev_shell` CLI (`exec`, interactive REPL, `reset`, `sessions`).
+- `custom_components/ha_repl_server/`: the HACS integration (named `ha_repl_server` to distinguish it from the CLI below). `session.py` is the execution engine (no HA imports); `websocket_api.py` exposes the admin-only `ha_repl_server/exec`, `ha_repl_server/reset` and `ha_repl_server/sessions` commands.
+- `src/homeassistant_repl/`: the `ha-repl` CLI (`exec`, interactive REPL, `reset`, `sessions`).
 - `dev/`: a throwaway HA config with `demo:` entities, plus run and bootstrap scripts.

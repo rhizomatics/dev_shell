@@ -1,4 +1,4 @@
 {
-  "name": "Developer Shell for Home Assistant",
+  "name": "Home Assistant REPL",
   "homeassistant": "2026.1.0"
 }

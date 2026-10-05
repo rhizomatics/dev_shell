@@ -104,7 +104,7 @@ async def long_lived_token(access_token):
             json.dumps({
                 "id": 1,
                 "type": "auth/long_lived_access_token",
-                "client_name": f"dev-shell-dev-{int(time.time())}",
+                "client_name": f"ha-repl-dev-{int(time.time())}",
                 "lifespan": 3650,
             })
         )

@@ -1,11 +1,11 @@
-# Dev instance for Dev Shell. Kept lean (no default_config) so it runs from a plain pip
+# Dev instance for HA REPL. Kept lean (no default_config) so it runs from a plain pip
 # install; `demo:` provides sample entities to poke at.
 frontend:
 config:
 demo:
-dev_shell_server:
+ha_repl_server:
 
 logger:
   default: info
   logs:
-    custom_components.dev_shell_server: debug
+    custom_components.ha_repl_server: debug

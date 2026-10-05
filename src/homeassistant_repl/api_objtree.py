@@ -1,6 +1,6 @@
 """ApiObjTree - API client mode's read-only `obj[...]`, built entirely from
 Home Assistant's standard websocket API (get_states, config/*_registry/list)
-- no dev_shell_server component needed, works against any instance an admin
+- no ha_repl_server component needed, works against any instance an admin
 token can reach. Bound to the same name, `obj`, as the live tree (see
 apirepl.py) so a snippet that only touches `obj` runs unchanged in either
 mode. Entities only have what that API exposes: state + attributes from
@@ -8,7 +8,7 @@ get_states, and whatever the entity registry's own partial dict exposes (no
 live component instance, so no calling methods on it, no fields an
 integration keeps off the registry/state).
 
-Mirrors custom_components/dev_shell_server/objtree.py's shape - __getitem__,
+Mirrors custom_components/ha_repl_server/objtree.py's shape - __getitem__,
 .keys()/.values()/.items(), find(), show() all behave the same way modulo the
 smaller attribute set - but lives in this package rather than that one (a
 HACS-deployed component with its own packaging boundary), so the handful of
@@ -52,7 +52,7 @@ class _ApiClient(Protocol):
 
 def parse_path(path: str) -> tuple[str, ...]:
     """Split "/integration[/domain[/object_id]]" into 1-3 parts. Duplicated
-    from custom_components/dev_shell_server/paths.py - see the module
+    from custom_components/ha_repl_server/paths.py - see the module
     docstring for why."""
     parts = tuple(p for p in path.split("/") if p)
     if not parts or len(parts) > 3:

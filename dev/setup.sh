@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install Home Assistant (own venv) and the dev_shell CLI (project venv). Idempotent.
+# Install Home Assistant (own venv) and the ha-repl CLI (project venv). Idempotent.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 HA_VENV="${HA_VENV:-$PWD/.venv-ha}"

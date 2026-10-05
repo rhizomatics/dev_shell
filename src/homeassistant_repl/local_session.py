@@ -2,7 +2,7 @@
 process, not on a remote Home Assistant session - there's no server to send
 code to, since API client mode talks to Home Assistant only through its
 standard API (see api_objtree.py). Deliberately mirrors
-custom_components/dev_shell_server/session.py's exec model (top-level await,
+custom_components/ha_repl_server/session.py's exec model (top-level await,
 trailing-expression echo via rich, rich tracebacks) rather than importing it:
 that module lives in a separate HACS-deployed package with its own packaging
 boundary, and duplicating ~100 lines here is simpler than bridging it.
@@ -41,7 +41,7 @@ class LocalSession:
     globals_: dict[str, Any]
 
     def __post_init__(self) -> None:
-        self.globals_.setdefault("__name__", "__dev_shell_api__")
+        self.globals_.setdefault("__name__", "__ha_repl_api__")
         self.globals_.setdefault("__builtins__", builtins)
 
     async def run(self, source: str) -> None:
@@ -58,11 +58,11 @@ class LocalSession:
             _console.print(Pretty(value))
 
     async def _execute(self, source: str) -> Any:
-        # Not "<dev_shell-N>": rich.traceback refuses to show source for any
+        # Not "<ha_repl-N>": rich.traceback refuses to show source for any
         # filename starting with "<" (treats it like "<stdin>"), no matter what
         # linecache holds. An absolute-looking path sidesteps that - rich joins a
         # relative one onto the cwd before the linecache lookup, which would miss.
-        filename = f"/dev_shell/api_cell_{next(_cell_counter)}"
+        filename = f"/ha_repl/api_cell_{next(_cell_counter)}"
         linecache.cache[filename] = (
             len(source),
             None,

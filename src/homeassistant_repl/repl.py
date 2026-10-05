@@ -14,7 +14,7 @@ from pygments.lexers.python import PythonLexer
 from .cli import display_options, print_result
 from .client import Client
 
-HISTORY = Path.home() / ".dev_shell_history"
+HISTORY = Path.home() / ".ha_repl_history"
 
 
 async def run_repl(client: Client, session_name: str) -> int:
@@ -24,7 +24,7 @@ async def run_repl(client: Client, session_name: str) -> int:
         history=FileHistory(str(HISTORY)), lexer=PygmentsLexer(PythonLexer)
     )
     print(
-        f"Dev Shell connected to {client.url} (session {session_name!r}). Ctrl-D to exit."
+        f"Home Assistant REPL connected to {client.url} (session {session_name!r}). Ctrl-D to exit."
     )
     lines: list[str] = []
     while True:
@@ -39,7 +39,7 @@ async def run_repl(client: Client, session_name: str) -> int:
         source = "\n".join(lines)
         try:
             # None means incomplete input: keep reading continuation lines.
-            if compiler(source, "<dev_shell>", "single") is None:
+            if compiler(source, "<ha_repl>", "single") is None:
                 continue
         except SyntaxError, OverflowError, ValueError:
             pass  # send it anyway so the server reports the error consistently
@@ -49,7 +49,7 @@ async def run_repl(client: Client, session_name: str) -> int:
         if is_quit_call(source):
             return 0
         result = await client.call(
-            "dev_shell_server/exec",
+            "ha_repl_server/exec",
             code=source,
             session=session_name,
             **display_options(),

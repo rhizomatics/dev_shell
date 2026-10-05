@@ -7,12 +7,12 @@ from pathlib import Path
 import pytest
 
 _path = (
-    Path(__file__).parent.parent / "custom_components" / "dev_shell_server" / "paths.py"
+    Path(__file__).parent.parent / "custom_components" / "ha_repl_server" / "paths.py"
 )
-_spec = importlib.util.spec_from_file_location("dev_shell_paths", _path)
+_spec = importlib.util.spec_from_file_location("ha_repl_paths", _path)
 assert _spec is not None and _spec.loader is not None
 paths_mod = importlib.util.module_from_spec(_spec)
-sys.modules["dev_shell_paths"] = paths_mod
+sys.modules["ha_repl_paths"] = paths_mod
 _spec.loader.exec_module(paths_mod)
 
 

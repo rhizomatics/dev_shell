@@ -1,6 +1,6 @@
 {
-  "domain": "dev_shell_server",
-  "name": "Developer Shell Custom Mode Server",
+  "domain": "ha_repl_server",
+  "name": "Home Assistant REPL Server",
   "codeowners": [],
   "config_flow": true,
   "dependencies": ["websocket_api"],
@@ -9,5 +9,5 @@
   "iot_class": "local_push",
   "requirements": [],
   "single_config_entry": true,
-  "version": "0.1.1"
+  "version": "0.2.0"
 }

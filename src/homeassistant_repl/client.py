@@ -13,7 +13,7 @@ from urllib.parse import urlsplit, urlunsplit
 import websockets
 
 
-class DevShellError(Exception):
+class HaReplError(Exception):
     """Connection, auth or command failure (not an error in the user's code)."""
 
 
@@ -69,7 +69,7 @@ def resolve_token(token: str | None) -> str:
         or _dotenv().get("HASS_TOKEN")
     )
     if not token:
-        raise DevShellError(
+        raise HaReplError(
             "No access token: set HASS_TOKEN or pass --token "
             "(create one under Profile > Security > Long-lived access tokens)"
         )
@@ -96,14 +96,14 @@ class Client:
         try:
             self._ws = await websockets.connect(self.url, max_size=None)
         except (OSError, websockets.InvalidURI, websockets.InvalidHandshake) as err:
-            raise DevShellError(f"Cannot connect to {self.url}: {err}") from err
+            raise HaReplError(f"Cannot connect to {self.url}: {err}") from err
         msg = await self._recv()
         if msg.get("type") != "auth_required":
-            raise DevShellError(f"Unexpected greeting: {msg}")
+            raise HaReplError(f"Unexpected greeting: {msg}")
         await self._ws.send(json.dumps({"type": "auth", "access_token": self._token}))
         msg = await self._recv()
         if msg.get("type") != "auth_ok":
-            raise DevShellError(f"Authentication failed: {msg.get('message', msg)}")
+            raise HaReplError(f"Authentication failed: {msg.get('message', msg)}")
         return self
 
     async def close(self) -> None:
@@ -113,7 +113,7 @@ class Client:
         try:
             return json.loads(await self._ws.recv())
         except websockets.ConnectionClosed as err:
-            raise DevShellError(f"Connection closed: {err}") from err
+            raise HaReplError(f"Connection closed: {err}") from err
 
     async def call(self, type_: str, **payload: Any) -> Any:
         msg_id = next(self._ids)
@@ -125,9 +125,9 @@ class Client:
             if not msg["success"]:
                 error = msg.get("error", {})
                 if error.get("code") == "unknown_command":
-                    raise DevShellError(
-                        f"{type_} not available: is the dev_shell_server integration "
-                        "installed and `dev_shell_server:` in configuration.yaml?"
+                    raise HaReplError(
+                        f"{type_} not available: is the ha_repl_server integration "
+                        "installed and `ha_repl_server:` in configuration.yaml?"
                     )
-                raise DevShellError(f"{type_} failed: {error.get('message', error)}")
+                raise HaReplError(f"{type_} failed: {error.get('message', error)}")
             return msg["result"]

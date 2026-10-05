@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from dev_shell.client import DevShellError, _dotenv, resolve_token, resolve_url
+from homeassistant_repl.client import HaReplError, _dotenv, resolve_token, resolve_url
 
 
 @pytest.fixture(autouse=True)
@@ -50,7 +50,7 @@ def test_resolve_token_explicit_arg_beats_everything(tmp_path, monkeypatch):
 
 def test_resolve_token_no_dotenv_file_raises(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    with pytest.raises(DevShellError, match="No access token"):
+    with pytest.raises(HaReplError, match="No access token"):
         resolve_token(None)
 
 

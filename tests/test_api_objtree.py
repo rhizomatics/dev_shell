@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from dev_shell.api_objtree import ApiEntity, ApiObjTree, Cache
+from homeassistant_repl.api_objtree import ApiEntity, ApiObjTree, Cache
 
 
 class FakeClient:

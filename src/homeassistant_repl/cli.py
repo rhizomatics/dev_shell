@@ -1,14 +1,14 @@
-"""dev_shell - run Python against a live Home Assistant.
+"""ha-repl - run Python against a live Home Assistant.
 
-  dev_shell                                       interactive API client shell (default)
+  ha-repl                                         interactive API client shell (default)
                                                     `obj` only, read-only, no HACS component needed
-  dev_shell custom                                 interactive custom-component shell
+  ha-repl custom                                  interactive custom-component shell
                                                     `hass` + `obj` (same `obj` API, live not cached);
-                                                    needs the dev_shell_server component
-  dev_shell exec 'hass.states.get("sun.sun")'      run a snippet (custom mode only)
-  dev_shell exec -f snippet.py                     run a file
-  dev_shell exec - <<'EOF' ... EOF                 read the snippet from stdin
-  dev_shell reset / dev_shell sessions             manage custom-mode server-side sessions
+                                                    needs the ha_repl_server component
+  ha-repl exec 'hass.states.get("sun.sun")'       run a snippet (custom mode only)
+  ha-repl exec -f snippet.py                      run a file
+  ha-repl exec - <<'EOF' ... EOF                  read the snippet from stdin
+  ha-repl reset / ha-repl sessions                manage custom-mode server-side sessions
 
 Connection: HASS_SERVER (default http://homeassistant.local:8123), HASS_TOKEN, HASS_SESSION.
 Both HASS_SERVER/HASS_TOKEN also fall back to a `.env` file in the current directory, below real env vars.
@@ -26,15 +26,15 @@ import shutil
 import sys
 from typing import Any
 
-from .client import Client, DevShellError, resolve_token, resolve_url
+from .client import Client, HaReplError, resolve_token, resolve_url
 
 
 def main() -> None:
     args = _parser().parse_args()
     try:
         sys.exit(asyncio.run(_dispatch(args)))
-    except DevShellError as err:
-        print(f"dev_shell: {err}", file=sys.stderr)
+    except HaReplError as err:
+        print(f"ha-repl: {err}", file=sys.stderr)
         sys.exit(2)
     except KeyboardInterrupt:
         sys.exit(130)
@@ -42,7 +42,7 @@ def main() -> None:
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="dev_shell",
+        prog="ha-repl",
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -76,7 +76,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     sub.add_parser(
         "custom",
-        help="interactive custom-component shell: hass + obj, needs the dev_shell_server component",
+        help="interactive custom-component shell: hass + obj, needs the ha_repl_server component",
     )
     sub.add_parser("reset", help="discard the custom-mode session's variables")
     sub.add_parser("sessions", help="list custom-mode sessions on the server")
@@ -90,13 +90,11 @@ async def _dispatch(args: argparse.Namespace) -> int:
             case "exec":
                 return await _exec(client, args)
             case "reset":
-                result = await client.call(
-                    "dev_shell_server/reset", session=args.session
-                )
+                result = await client.call("ha_repl_server/reset", session=args.session)
                 _emit(args, result, "reset" if result["reset"] else "no such session")
                 return 0
             case "sessions":
-                result = await client.call("dev_shell_server/sessions")
+                result = await client.call("ha_repl_server/sessions")
                 _emit(args, result, _format_sessions(result["sessions"]))
                 return 0
             case "custom":
@@ -116,12 +114,12 @@ async def _exec(client: Client, args: argparse.Namespace) -> int:
             code = fp.read()
     elif args.code in (None, "-"):
         if args.code is None and sys.stdin.isatty():
-            raise DevShellError("exec needs code, -f FILE, or - to read stdin")
+            raise HaReplError("exec needs code, -f FILE, or - to read stdin")
         code = sys.stdin.read()
     else:
         code = args.code
     if args.reset:
-        await client.call("dev_shell_server/reset", session=args.session)
+        await client.call("ha_repl_server/reset", session=args.session)
     payload: dict[str, Any] = {
         "code": code,
         "session": args.session,
@@ -133,7 +131,7 @@ async def _exec(client: Client, args: argparse.Namespace) -> int:
         # Escape codes embedded in a JSON string are just noise for a consumer
         # that asked for machine-readable output.
         payload["color"] = False
-    result = await client.call("dev_shell_server/exec", **payload)
+    result = await client.call("ha_repl_server/exec", **payload)
     if args.json:
         print(json.dumps(result, indent=2))
     else:
@@ -163,7 +161,7 @@ def print_result(result: dict[str, Any]) -> None:
     if result["error"]:
         sys.stderr.write(result["error"]["traceback"])
     if result.get("truncated"):
-        print("[dev_shell: output truncated]", file=sys.stderr)
+        print("[ha-repl: output truncated]", file=sys.stderr)
     sys.stdout.flush()
 
 

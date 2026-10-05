@@ -10,8 +10,8 @@ from __future__ import annotations
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.dev_shell_server.const import DOMAIN
-from custom_components.dev_shell_server.objtree import ObjTree
+from custom_components.ha_repl_server.const import DOMAIN
+from custom_components.ha_repl_server.objtree import ObjTree
 
 
 async def test_setup_and_unload_entry(hass: HomeAssistant) -> None:

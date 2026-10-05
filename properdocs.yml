@@ -1,9 +1,9 @@
-site_name: Dev Shell for Home Assistant
-site_url: https://dev-shell.rhizomatics.org.uk
+site_name: Home Assistant REPL
+site_url: https://homeassistant-repl.rhizomatics.org.uk
 site_description: Python REPL Shell for Home Assistant Developers
 
-repo_name: rhizomatics/dev_shell
-repo_url: https://github.com/rhizomatics/dev_shell
+repo_name: rhizomatics/homeassistant-repl
+repo_url: https://github.com/rhizomatics/homeassistant-repl
 edit_uri: edit/main/docs/
 docs_dir: docs
 #watch:
@@ -64,7 +64,7 @@ plugins:
       full_output: llms-full.txt
       preprocess: docs_hooks/llmstxt_preprocess.py
       markdown_description: >
-        Dev Shell is a Python REPL for developers of Home Assistant custom components. It
+        Home Assistant REPL is a Python shell for developers of Home Assistant custom components. It
         exposes the live object tree - entities and more - as a dict-like `obj`, for exploring
         APIs, trying out code snippets and hotfixing issues directly against a running Home
         Assistant instance. `api` mode uses only the standard Home Assistant HTTP/WebSocket API;
@@ -72,7 +72,7 @@ plugins:
         core Python API as `hass`.
       sections:
         Start here:
-          - index.md: Overview of what Dev Shell does, api vs custom mode, and getting started
+          - index.md: Overview of what Home Assistant REPL does, api vs custom mode, and getting started
         # changelog and roadmap left out - old or planned behaviour an agent would take as current
   #- minify:
   #    minify_html: true

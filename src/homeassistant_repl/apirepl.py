@@ -1,6 +1,6 @@
 """API client mode's interactive shell: same local line editing/history as
 repl.py, but code runs right here (LocalSession) - no `hass`, no
-dev_shell_server/exec call, no HACS component required on the HA side at
+ha_repl_server/exec call, no HACS component required on the HA side at
 all. `obj` is bound the same name as custom mode, just to an ApiObjTree
 instead of the live ObjTree, so a snippet that only touches `obj` runs
 unchanged in either mode.
@@ -27,7 +27,7 @@ from .client import Client
 from .local_session import LocalSession
 from .repl import is_quit_call
 
-HISTORY = Path.home() / ".dev_shell_api_history"
+HISTORY = Path.home() / ".ha_repl_api_history"
 
 
 async def run_api_repl(client: Client, ttl: float) -> int:
@@ -41,7 +41,7 @@ async def run_api_repl(client: Client, ttl: float) -> int:
         history=FileHistory(str(HISTORY)), lexer=PygmentsLexer(PythonLexer)
     )
     print(
-        f"Dev Shell (API client mode) connected to {client.url}. "
+        f"Home Assistant REPL (API client mode) connected to {client.url}. "
         "`obj` only, read-only - no `hass`. Ctrl-D to exit."
     )
     lines: list[str] = []
@@ -57,7 +57,7 @@ async def run_api_repl(client: Client, ttl: float) -> int:
         source = "\n".join(lines)
         try:
             # None means incomplete input: keep reading continuation lines.
-            if compiler(source, "<dev_shell>", "single") is None:
+            if compiler(source, "<ha_repl>", "single") is None:
                 continue
         except SyntaxError, OverflowError, ValueError:
             pass  # run it anyway so LocalSession reports the error consistently

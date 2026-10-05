@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/homeassistant-devshell
+      url: https://pypi.org/p/homeassistant-repl
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
 
@@ -64,7 +64,7 @@ jobs:
 
     environment:
       name: testpypi
-      url: https://test.pypi.org/p/homeassistant-devshell
+      url: https://test.pypi.org/p/homeassistant-repl
 
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing

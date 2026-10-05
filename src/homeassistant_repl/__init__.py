@@ -1,11 +1,11 @@
-"""Command line client for the Developer Shell."""
+"""Command line client for Home Assistant REPL."""
 
 from __future__ import annotations
 
 from .api_objtree import ApiObjTree, Cache
-from .client import Client, DevShellError, resolve_token, resolve_url
+from .client import Client, HaReplError, resolve_token, resolve_url
 
-__all__ = ["ApiObjTree", "Cache", "Client", "DevShellError", "connect"]
+__all__ = ["ApiObjTree", "Cache", "Client", "HaReplError", "connect"]
 
 
 async def connect(
@@ -14,7 +14,7 @@ async def connect(
     """Connect to Home Assistant's websocket API and return a ready-to-use
     `obj` tree - the one-liner version of API client mode (see
     apirepl.py/api_objtree.py for the pieces this wires together), for
-    scripts and plain Python sessions rather than the `dev_shell` REPL.
+    scripts and plain Python sessions rather than the `ha-repl` REPL.
 
     `url`/`token` default to $HASS_SERVER/$HASS_TOKEN (and, inside a Home
     Assistant add-on, the supervisor) the same way the CLI does - see

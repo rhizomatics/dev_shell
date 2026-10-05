@@ -1,5 +1,7 @@
 # What's New
 
+## 0.2.0
+- Renamed to `Home Assistant REPL` and cli tool to `ha_repl` to make it clearer what it does and avoid confusion in package name space or terminal with other dev shells.
 ## 0.1.2
 - Simpler `connect` method to use the API and `obj` from any Python async code
 - Environment variables can be sourced from an `.env` file

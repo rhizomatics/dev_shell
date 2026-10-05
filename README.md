@@ -1,16 +1,16 @@
-# Developer Shell for Home Assistant 
+# Home Assistant REPL
 
 [![Rhizomatics Open Source](https://img.shields.io/badge/rhizomatics%20open%20source-lightseagreen)](https://github.com/rhizomatics)
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/rhizomatics/dev_shell/python-package.yml)
-[![PyPI](https://img.shields.io/pypi/v/homeassistant-devshell)](https://pypi.org/project/homeassistant-devshell/)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/homeassistant-devshell)](https://www.python.org/downloads/)
-[![Docs](https://img.shields.io/badge/docs-latest-blue)](https://dev-shell.rhizomatics.org.uk)
-![GitHub](https://img.shields.io/github/license/rhizomatics/dev_shell)
-![GitHub last commit](https://img.shields.io/github/last-commit/rhizomatics/dev_shell)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/rhizomatics/homeassistant-repl/python-package.yml)
+[![PyPI](https://img.shields.io/pypi/v/homeassistant-repl)](https://pypi.org/project/homeassistant-repl/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/homeassistant-repl)](https://www.python.org/downloads/)
+[![Docs](https://img.shields.io/badge/docs-latest-blue)](https://homeassistant-repl.rhizomatics.org.uk)
+![GitHub](https://img.shields.io/github/license/rhizomatics/homeassistant-repl)
+![GitHub last commit](https://img.shields.io/github/last-commit/rhizomatics/homeassistant-repl)
 
-<img src="https://dev-shell.rhizomatics.org.uk/assets/icon.png" width="128" height="128" align="left" alt="A slice of cherry pie, drawn like a 1990s Visual Basic icon">
+<img src="https://homeassistant-repl.rhizomatics.org.uk/assets/icon.png" width="128" height="128" align="left" alt="A slice of cherry pie, drawn like a 1990s Visual Basic icon">
 
-A Home Assistant environment designed for custom component developers, tinkerers and native Python speakers. Makes it easy as pie!
+A REPL shell custom designed for Home Assistant custom component developers, tinkerers and native Python speakers. Makes it easy as pie!
 
 It is an opinionated REPL ([Read-Eval-Print-Loop](https://en.wikipedia.org/wiki/Read–eval–print_loop)) shell that aims are to make it easier without any configuration to:
 
@@ -21,8 +21,8 @@ It is an opinionated REPL ([Read-Eval-Print-Loop](https://en.wikipedia.org/wiki/
 
 <!-- termynal -->
 ```bash
-$ uv run --with homeassistant-devshell dev_shell --token=<insert token here>
-Dev Shell (API client mode) connected to ws://homeassistant.local:8123/api/websocket. `obj` only, read-only - no `hass`. Ctrl-D to exit.
+$ uv run --with homeassistant-repl ha-repl --token=<insert token here>
+Home Assistant REPL (API client mode) connected to ws://homeassistant.local:8123/api/websocket. `obj` only, read-only - no `hass`. Ctrl-D to exit.
 >>> obj["/mqtt/binary_sensor/kitchen_terrace_window_tilt"].state
 'off'
 >>> [o.name for o in obj["/rflink/binary_sensor"].values() if o.state=='unavailable']
@@ -48,10 +48,12 @@ This is primarily for developers of custom components, and their LLM agents, tho
 - Integrated with `rich` for pretty object printouts and stack traces
 - Access to all entities via dictionary like interface, `obj`
 - Usual multi-line editing support and history of Python
+- Dedicated shell that can be run without installation with `uv`
+- Usable from inside `ipython` shell, Marimo notebooks or plain `python -m asyncio`
 
 All of the above works with standard Home Assistant APIs, referred to as `api` mode.
 
-Dev Shell also has an advanced `custom` mode that taps directly into a live Home Assistant using an optional server component available via [HACS](http://hacs.xyz).
+Home Assistant REPL also has an advanced `custom` mode that taps directly into a live Home Assistant using an optional server component available via [HACS](http://hacs.xyz).
 
 ## Custom Mode
 
@@ -61,7 +63,7 @@ This mode requires a custom component to be installed on the target Home Assista
 - Read/write access to the actual objects, e.g. entities and their helpers
 - A frisson of danger
 
-### Dev Shell Server
+### HA REPL Server
 
 A HACS component that taps into the Home Assistant and acts as a session server over web sockets. 
 
@@ -76,12 +78,12 @@ See the [Roadmap](./developer/design/roadmap.md) for where this might go, and yo
 
 ## Quick Start
 
-Use the `api` mode with `uv` (traditional install also available via `pip install homeassistant-devshell`).
+Use the `api` mode with `uv` (traditional install also available via `pip install homeassistant-repl`).
 
 If Home Assistant available via `http://homeassistant.local:8123` then you can skip the `--url` argument. You will also need to create a [Long Lived Access Token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) by going to the personal settings on your Home Assistant mobile or desktop app.
 
 ```bash
-uv run --with homeassistant-devshell dev_shell --token <<<my long lived access token>>>
+uv run --with homeassistant-repl ha-repl --token <<<my long lived access token>>>
 ```
 
 ## Using the Shell
@@ -205,28 +207,28 @@ Use the `HASS_SERVER` environment variable, exported or in a local `.env` file, 
 ### Custom Mode for Real Server
 
 On a real instance, install via HACS:
- - it's not in the default HACS repository, so you'll have to add `https://github.com/rhizomatics/dev_shell` as a Custom Repository from the top-right dot menu first
- - Search for *dev shell* in the HACS menu and choose *Download*
+ - it's not in the default HACS repository, so you'll have to add `https://github.com/rhizomatics/homeassistant-repl` as a Custom Repository from the top-right dot menu first
+ - Search for *Home Assistant REPL* in the HACS menu and choose *Download*
  - Restart Home Assistant for it to recognize the new custom component available
- - From **Settings → Devices & services → Add integration** find **Developer Shell for Home Assistant** in the list and install, there's no further config needed
-   - Alternatively add `dev_shell_server:` to `configuration.yaml`, which is imported as a config entry) 
- - Run `dev_shell` with the `direct` argument
+ - From **Settings → Devices & services → Add integration** find **Home Assistant REPL Server** in the list and install, there's no further config needed
+   - Alternatively add `ha_repl_server:` to `configuration.yaml`, which is imported as a config entry) 
+ - Run `ha-repl` with the `custom` argument
 
 
 The quickest way to run the shell is using *uv*, which you can do without cloning this repo or making any other downloads.
 
 ```bash
-uv run --with homeassistant-devshell dev_shell         
+uv run --with homeassistant-repl ha-repl         
 ```
 Get help on the arguments in the usual way,
 
 ```bash
-uv run --with homeassistant-devshell dev_shell --help       ,
+uv run --with homeassistant-repl ha-repl --help       ,
 ```
 
-If you do have this repo checked out, you can also use a direct `run` which means you can also tinker locally with `dev_shell` code.
+If you do have this repo checked out, you can also use a direct `run` which means you can also tinker locally with `homeassistant_repl` code.
 
 ```bash
-uv run dev_shell         
+uv run ha-repl         
 ```
 

@@ -1,4 +1,4 @@
-"""Config flow for Dev Shell: a single, option-less entry added from the UI or imported from YAML."""
+"""Config flow for Home Assistant REPL: a single, option-less entry added from the UI or imported from YAML."""
 
 from __future__ import annotations
 
@@ -8,10 +8,10 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 
 from .const import DOMAIN
 
-TITLE = "Developer Shell"
+TITLE = "Home Assistant REPL"
 
 
-class DevShellConfigFlow(ConfigFlow, domain=DOMAIN):
+class HaReplServerConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     async def async_step_user(

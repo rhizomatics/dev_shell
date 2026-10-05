@@ -1,7 +1,7 @@
-// Throwaway Home Assistant for developing dev_shell: HA runs from pip inside this container,
-// with custom_components/dev_shell_server symlinked into dev/config. Start it with: dev/run-ha.sh
+// Throwaway Home Assistant for developing homeassistant-repl: HA runs from pip inside this container,
+// with custom_components/ha_repl_server symlinked into dev/config. Start it with: dev/run-ha.sh
 {
-  "name": "dev_shell dev (Home Assistant)",
+  "name": "ha-repl dev (Home Assistant)",
   "image": "mcr.microsoft.com/devcontainers/python:3.14",
   "forwardPorts": [8123],
   "portsAttributes": { "8123": { "label": "Home Assistant" } },

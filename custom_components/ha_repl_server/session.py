@@ -116,11 +116,11 @@ class Session:
             return result
 
     async def _execute(self, source: str) -> Any:
-        # Not "<dev_shell-N>": rich.traceback refuses to show source for any
+        # Not "<ha_repl-N>": rich.traceback refuses to show source for any
         # filename starting with "<" (treats it like "<stdin>"), no matter what
         # linecache holds. An absolute-looking path sidesteps that - rich joins a
         # relative one onto the cwd before the linecache lookup, which would miss.
-        filename = f"/dev_shell/cell_{next(_cell_counter)}"
+        filename = f"/ha_repl/cell_{next(_cell_counter)}"
         # Register the source so tracebacks can show the offending lines.
         linecache.cache[filename] = (
             len(source),
@@ -369,7 +369,7 @@ class SessionManager:
     def get(self, name: str) -> Session:
         if (session := self._sessions.get(name)) is None:
             globals_ = {
-                "__name__": "__dev_shell__",
+                "__name__": "__ha_repl__",
                 "__builtins__": builtins,
                 **self._bindings,
             }
