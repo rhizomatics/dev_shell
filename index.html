@@ -955,8 +955,8 @@
 <p>See the <a href="developer/design/roadmap/">Roadmap</a> for where this might go, and your feedback welcome.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-</div>
 <p>It is not intended to ever be a replacement for a Python debugger, although it may complement one. It also does not intend to replicate <a href="https://pyscript.net">PyScript</a>, instead focusing on standard python (PyScript uses MicroPython) even at expense of general usability or home assistance access, and not a general automation script execution service. For most non-developer cases, <a href="https://pypi.org/project/homeassistant-cli/">homeassistant-cli</a> is a better choice, with pre-packaged access to devices, entities, services etc.</p>
+</div>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <p>Use the <code>api</code> mode with <code>uv</code> (traditional install also available via <code>pip install homeassistant-repl</code>).</p>
 <p>If Home Assistant available via <code>http://homeassistant.local:8123</code> then you can skip the <code>--server</code> argument. You will also need to create a <a href="https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token">Long Lived Access Token</a> by going to the personal settings on your Home Assistant mobile or desktop app.</p>
@@ -983,8 +983,8 @@
 </span></code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-</div>
 <p>The <code>hass_api</code> object returns <code>AsyncEntity</code> objects rather than <code>ApiEntity</code> objects - this is because it comes from a separate project, <a href="https://pypi.org/project/HomeAssistant-API/">homeassistant-api</a> that is focused solely on API development, whereas the <code>ApiEntity</code> class is designed for custom code development, being a subset of the real <code>Entity</code> in HomeAssistant, that you'd also get in <code>live</code> mode.</p>
+</div>
 <p>See also <a href="alternative_integration/">Alternative Integration</a> options for how to use this in your own plain python shell, ipython, Marimo or similar.</p>
 <h2 id="the-object-tree">The Object Tree<a class="headerlink" href="#the-object-tree" title="Permanent link">&para;</a></h2>
 <p>All of the objects (only entities for now) are arranged in a giant tree, like a file system, exposed as the global variable <code>objs</code> and implemented as Python <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a> object (which provides the <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.MappingView">MappingView</a> views <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.ItemsView">ItemsView</a> and <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.KeysView">KeysView</a>)</p>
@@ -1033,8 +1033,8 @@
 </span></code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-</div>
 <p>In the roadmap, there will be a visual Object Browser to view and select entities. For now, it is accessible only via Python code. It also may extend beyond entities, to things like areas, users, categories and devices.</p>
+</div>
 <h4 id="objfind"><code>obj.find('..')</code><a class="headerlink" href="#objfind" title="Permanent link">&para;</a></h4>
 <p>Where the dictionary access gives a nested directory view of the object tree, <code>find</code> provides a flat iteration with no order guarantees, so its fast and simple and can be sorted the usual Python way if needed.</p>
 <p><code>find</code> functions can accept a full or partial path, or a regular expression.</p>
