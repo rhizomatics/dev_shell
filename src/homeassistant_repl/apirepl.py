@@ -3,8 +3,8 @@ repl.py, but code runs right here (LocalSession) - no `hass`, no
 ha_repl_server/exec call, no HACS component required on the HA side at
 all. `obj` is bound the same name as custom mode, just to an ApiObjTree
 instead of the live ObjTree, so a snippet that only touches `obj` runs
-unchanged in either mode. `api` is bound the same way - an already-connected
-homeassistant_api.AsyncClient, not a function to call.
+unchanged in either mode. `hass_api` is bound the same way - an
+already-connected homeassistant_api.AsyncClient, not a function to call.
 
 The cache refresh happens here, between prompts, not inside ApiObjTree's own
 Mapping methods - see api_objtree.py's module docstring for why (asyncio
@@ -28,7 +28,7 @@ from .api_objtree import ApiObjTree, Cache
 from .client import Client, HaReplError
 from .local_session import LocalSession
 from .repl import is_quit_call
-from .rest import api
+from .rest import hass_api
 
 HISTORY = Path.home() / ".ha_repl_api_history"
 
@@ -37,13 +37,13 @@ async def run_api_repl(client: Client, ttl: float, *, auto_await: bool = True) -
     cache = Cache(client, ttl)
     await cache.refresh()
     try:
-        rest_client = await api(client.url, client.token)
+        rest_client = await hass_api(client.url, client.token)
     except HaReplError as err:
-        print(f"ha-repl: api unavailable: {err}", file=sys.stderr)
+        print(f"ha-repl: hass_api unavailable: {err}", file=sys.stderr)
         rest_client = None
 
     session = LocalSession(
-        {"obj": ApiObjTree(cache), "api": rest_client}, auto_await=auto_await
+        {"obj": ApiObjTree(cache), "hass_api": rest_client}, auto_await=auto_await
     )
 
     compiler = codeop.CommandCompiler()
@@ -53,7 +53,7 @@ async def run_api_repl(client: Client, ttl: float, *, auto_await: bool = True) -
     )
     print(
         f"Home Assistant REPL (API client mode) connected to {client.url}. "
-        "`obj` (read-only) and `api` (REST client) - no `hass`. Ctrl-D to exit."
+        "`obj` (read-only) and `hass_api` (REST client) - no `hass`. Ctrl-D to exit."
     )
     lines: list[str] = []
     while True:

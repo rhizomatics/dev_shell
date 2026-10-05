@@ -28,6 +28,15 @@ Both return the live Entity object - the actual LightEntity/SensorEntity/etc.
 instance a component wrote, not the hass.states.get() State snapshot - since this
 is strict mode: you use it exactly as you would from component code.
 
+`obj.mode("api")` switches that: entity lookups/find() return the same
+read-only, dict-shaped ApiEntity data API client mode's `obj` would give you
+(built locally from the live entity/registry, not a second round-trip
+through the API) instead of the live Entity object - e.g. to preview how a
+snippet will behave once ported to API client mode, or just to avoid live
+side effects. It's a session-wide switch, not a one-off: it persists on
+every view sharing this `obj`'s root until `obj.mode("live")` is called.
+`obj.mode()` with no argument returns the current mode.
+
 Only entities in the entity registry are reachable by the /integration/... path,
 since that's where the owning integration ("platform") is recorded; legacy YAML
 entities without a unique_id aren't registered there. Both lookup forms require a
@@ -50,7 +59,7 @@ from collections.abc import (
     Sequence,
     ValuesView,
 )
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, NamedTuple
 
@@ -96,6 +105,38 @@ def _require_str(value: Any, what: str = "path") -> str:
     return value
 
 
+@dataclass(frozen=True)
+class ApiEntity:
+    """One entity's worth of `obj.mode("api")` data - the same read-only
+    subset of fields API client mode's own ApiEntity exposes (see
+    homeassistant_repl.api_objtree.ApiEntity), built here from the already-
+    live Entity/registry entry directly rather than a second round-trip
+    through the API. Not the live component instance: no calling methods on
+    it, no fields an integration keeps off the registry/state.
+    """
+
+    entity_id: str
+    platform: str
+    domain: str
+    object_id: str
+    state: str | None
+    name: str | None
+    state_attributes: dict[str, Any]
+    area_id: str | None
+    labels: frozenset[str]
+    registry: dict[str, Any]
+
+
+@dataclass
+class _Mode:
+    """Mutable, shared by reference across every ObjTree view derived from
+    the same root - a plain field on the (frozen, otherwise immutable)
+    ObjTree dataclass would only flip that one view, not "the rest of the
+    session" the way obj.mode(...) promises."""
+
+    api: bool = False
+
+
 class _Found(NamedTuple):
     """Internal only - never returned from find()/find_paths()/find_names(),
     just the shared (path, entity) pair each of them projects from
@@ -105,7 +146,7 @@ class _Found(NamedTuple):
     found.entity.entity_id."""
 
     path: str
-    entity: Entity
+    entity: Entity | ApiEntity
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self.entity, name)
@@ -215,7 +256,7 @@ class OrderedItemsView(_OrderedView, ItemsView, Sequence):  # type: ignore[misc]
 
 
 @dataclass(frozen=True)
-class ObjTree(Mapping[str, "Entity | ObjTree"]):
+class ObjTree(Mapping[str, "Entity | ApiEntity | ObjTree"]):
     """A view of the object tree, optionally restricted to a subtree.
 
     `integration` and/or `domain` pin this view to that part of the tree -
@@ -234,10 +275,38 @@ class ObjTree(Mapping[str, "Entity | ObjTree"]):
     hass: HomeAssistant
     integration: str | None = None
     domain: str | None = None
+    # Shared by reference with every view derived from this one (see _Mode's
+    # docstring) - not compared/hashed, since it's a toggle, not identity.
+    _mode: _Mode = field(default_factory=_Mode, compare=False)
 
-    def __getitem__(self, key: str) -> Entity | ObjTree:
+    def mode(self, value: str | None = None) -> str | None:
+        """Switch between "live" (the default - indexing/find() return the
+        real, live Entity, exactly as component code sees it) and "api"
+        (the same read-only, dict-shaped ApiEntity data API client mode's
+        `obj` would give you) - see the module docstring. Persists on every
+        view sharing this obj's root until mode() is called again; with no
+        argument, returns the current mode instead of changing it.
+        """
+        if value is None:
+            return "api" if self._mode.api else "live"
+        if value not in ("live", "api"):
+            raise ValueError(f"mode must be 'live' or 'api', not {value!r}")
+        self._mode.api = value == "api"
+        return None
+
+    def __getitem__(self, key: str) -> Entity | ApiEntity | ObjTree:
         _require_str(key, "key")
         if "/" not in key and self.integration is None:
+            if self._mode.api:
+                # No integration to check against here (that's the whole
+                # point of a bare entity_id) - just need entry+entity, not
+                # _api_entity_at's platform match.
+                entry = er.async_get(self.hass).async_get(key)
+                entity = _get_entity(self.hass, key) if entry is not None else None
+                if entry is None or entity is None:
+                    raise KeyError(key)
+                domain, _, object_id = key.partition(".")
+                return self._to_api_entity(entry, domain, object_id, entity)
             entity = _get_entity(self.hass, key)
             if entity is None:
                 raise KeyError(key)
@@ -251,13 +320,18 @@ class ObjTree(Mapping[str, "Entity | ObjTree"]):
         if len(full) > 3:
             raise KeyError(key)
         if len(full) < 3:
-            subtree = ObjTree(self.hass, *full)
+            subtree = ObjTree(self.hass, *full, _mode=self._mode)
             # Without this, `in`/.get() (Mapping's default __contains__ tries
             # self[key]) would say yes to any made-up integration/domain name,
             # disagreeing with .keys() - which only ever lists ones with entities.
             if not subtree:
                 raise KeyError(key)
             return subtree
+        if self._mode.api:
+            api_entity = self._api_entity_at(*full)
+            if api_entity is None:
+                raise KeyError(key)
+            return api_entity
         entity = self._entity_at(*full)
         if entity is None:
             raise KeyError(key)
@@ -271,6 +345,35 @@ class ObjTree(Mapping[str, "Entity | ObjTree"]):
         if entry is None or entry.platform != integration:
             return None
         return _get_entity(self.hass, entity_id)
+
+    def _api_entity_at(
+        self, integration: str, domain: str, object_id: str
+    ) -> ApiEntity | None:
+        entity_id = f"{domain}.{object_id}"
+        entry = er.async_get(self.hass).async_get(entity_id)
+        if entry is None or entry.platform != integration:
+            return None
+        entity = _get_entity(self.hass, entity_id)
+        if entity is None:
+            return None
+        return self._to_api_entity(entry, domain, object_id, entity)
+
+    def _to_api_entity(
+        self, entry: er.RegistryEntry, domain: str, object_id: str, entity: Entity
+    ) -> ApiEntity:
+        devices = dr.async_get(self.hass)
+        return ApiEntity(
+            entity_id=entry.entity_id,
+            platform=entry.platform,
+            domain=domain,
+            object_id=object_id,
+            state=entity.state,
+            name=entity.name,
+            state_attributes=dict(entity.state_attributes or {}),
+            area_id=_entity_area_id(entry, devices),
+            labels=frozenset(entry.labels),
+            registry=_public_attrs(entry),
+        )
 
     def _entries(
         self, prefix: tuple[str, ...]
@@ -372,7 +475,12 @@ class ObjTree(Mapping[str, "Entity | ObjTree"]):
                 full_path = "/" + "/".join(
                     (entry.platform, dom, object_id)[len(scope) :]
                 )
-                yield _Found(full_path, entity)
+                found_entity = (
+                    self._to_api_entity(entry, dom, object_id, entity)
+                    if self._mode.api
+                    else entity
+                )
+                yield _Found(full_path, found_entity)
 
         return _matches()
 

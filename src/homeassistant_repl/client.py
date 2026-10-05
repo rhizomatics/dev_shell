@@ -112,7 +112,7 @@ class Client:
     @property
     def token(self) -> str:
         """The resolved access token - also what a REST call (see rest.py's
-        `api()`) against the same instance should authenticate with."""
+        `hass_api()`) against the same instance should authenticate with."""
         return self._token
 
     async def __aenter__(self) -> Self:

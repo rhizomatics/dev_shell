@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from .api_objtree import ApiObjTree, Cache
 from .client import Client, HaReplError, resolve_token, resolve_url
-from .rest import api
+from .rest import hass_api
 
-__all__ = ["ApiObjTree", "Cache", "Client", "HaReplError", "api", "connect"]
+__all__ = ["ApiObjTree", "Cache", "Client", "HaReplError", "connect", "hass_api"]
 
 
 async def connect(

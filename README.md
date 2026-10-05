@@ -48,7 +48,7 @@ This is primarily for developers of custom components, and their LLM agents, tho
 - Integrated with `rich` for pretty object printouts and stack traces
 - Access to all entities via dictionary like interface, `obj`
 - Usual multi-line editing support and history of Python
-- Integrated with [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) as `api` object, available in both modes
+- Integrated with [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) as `hass_api` object, available in both modes
 - Auto-awaits coroutines for easy shell use (can be switched off or overridden)
 - Dedicated shell that can be run without installation with `uv`
 - Usable from inside `ipython` shell, Marimo notebooks or plain `python -m asyncio`
@@ -93,7 +93,7 @@ uv run --with homeassistant-repl ha-repl --token <<<my long lived access token>>
 The shell is a full Python REPL shell, with multi-line editing, history etc, living inside an asyncio loop that exposes the live Home Assistant instance as:
 
 * `obj` - the object tree exposed as a dictionary object and common methods
-* `api` - the Home Assistant web socket / REST API exposed using the [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) library
+* `hass_api` - the Home Assistant web socket / REST API exposed using the [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) library
 
 In `custom` mode it offers, in addition to what `api` mode offers:
 
@@ -102,14 +102,21 @@ In `custom` mode it offers, in addition to what `api` mode offers:
 So I can write code at the command line like:
 
 ```python
-pir = obj["/rflink/binary_sensor/hall_pir"]
-pir.state = "on"  # non-strict mode, sets entity state with repl as context
+>>> pir = obj["/rflink/binary_sensor/hall_pir"]
+>>> pir.state = "on"  # non-strict mode, sets entity state with repl as context
 ```
 
 The return value of the object is returned to the shell, value printed and available to Python code as `_`. Tracebacks are printed also, as if they were local (in general everything feels like its local)
 
+The `homeassistant-api` integration can be used like:
+
+```python
+>>> len(hass_api.get_domain('cover'))
+12
+```
+
 >[!NOTE]
-> The `api` object returns `AsyncEntity` objects rather than `ApiEntity` objects - this is because it comes from a separate project, [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) that is focused solely on API development, whereas the `ApiEntity` class is designed for custom code development, being a subset of the real `Entity` in HomeAssistant, that you'd also get in `direct` mode.
+> The `hass_api` object returns `AsyncEntity` objects rather than `ApiEntity` objects - this is because it comes from a separate project, [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) that is focused solely on API development, whereas the `ApiEntity` class is designed for custom code development, being a subset of the real `Entity` in HomeAssistant, that you'd also get in `live` mode.
 
 See also [Alternative Integration](alternative_integration.md) options for how to use this in your own plain python shell, ipython, Marimo or similar.
 
@@ -139,13 +146,13 @@ This allows dictionary ('Mapping') access to the object tree.
 In the example tree below, the objects and subtrees of objects can be accessed like:
 
 ```python
-obj["/rflink/sensor/shed_temperature"].state  # prints out temperature
-obj[
+>>> obj["/rflink/sensor/shed_temperature"].state  # prints out temperature
+>>> obj[
     "/rflink/sensor/shed_temperature"
 ].state_attributes  # prints out additional attributes
-obj["/rflink"]  # the 'light','binary_sensor' and 'sensor' subtrees for rflink
-obj["/rflink/sensor"]  # all the sensors for rflink
-len(obj["/rflink/sensor"])  # count of rflink sensors in this example
+>>> obj["/rflink"]  # the 'light','binary_sensor' and 'sensor' subtrees for rflink
+>>> obj["/rflink/sensor"]  # all the sensors for rflink
+>>> len(obj["/rflink/sensor"])  # count of rflink sensors in this example
 ```
 
 ##### Example Tree
@@ -178,7 +185,7 @@ Where the dictionary access gives a nested directory view of the object tree, `f
 `find` also has built in filters, to narrow the big list of objects by one or more `platform`,`domain`,`area`,`label` - each of these will take a single string or list of strings, and they can be combined to narrow down the list.
 
 ```python
-{(o.entity_id, o.state) for o in obj.find(domain="binary_sensor")}
+>>> {(o.entity_id, o.state) for o in obj.find(domain="binary_sensor")}
 ```
 
 ##### Raw Objects
@@ -190,8 +197,8 @@ In API Client mode, `find()` returns a local proxy for the remote class, normali
 Identical to `obj.find()` except it only returns an iterable of the object paths rather than the objects themselves. Ideal for plugging into some logic that will then call `obj[path]` on each one.
 
 ```python
-list(objs.find(area="kitchen"))  # list names of all entities in kitchen
-sorted(objs.find(area=["kitchen", "shed"]))
+>>> list(objs.find(area="kitchen"))  # list names of all entities in kitchen
+>>> sorted(objs.find(area=["kitchen", "shed"]))
 ```
 
 #### `obj.find_names(..)`

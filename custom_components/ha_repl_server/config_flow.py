@@ -8,7 +8,7 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 
 from .const import DOMAIN
 
-TITLE = "Home Assistant REPL"
+TITLE = "Home Assistant REPL Live Server"
 
 
 class HaReplServerConfigFlow(ConfigFlow, domain=DOMAIN):

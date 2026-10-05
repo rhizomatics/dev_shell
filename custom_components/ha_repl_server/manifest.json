@@ -1,6 +1,6 @@
 {
   "domain": "ha_repl_server",
-  "name": "Home Assistant REPL Server",
+  "name": "Home Assistant REPL Live Server",
   "codeowners": [],
   "config_flow": true,
   "dependencies": ["websocket_api"],
