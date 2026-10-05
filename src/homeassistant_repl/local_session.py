@@ -91,14 +91,12 @@ class LocalSession:
             await _run_code(
                 compile(tree, filename, "exec", flags=flags, dont_inherit=True),
                 self.globals_,
-                auto_await=self.auto_await,
             )
         if last_expr is None:
             return None
         return await _run_code(
             compile(last_expr, filename, "eval", flags=flags, dont_inherit=True),
             self.globals_,
-            auto_await=self.auto_await,
         )
 
 
@@ -165,17 +163,13 @@ class _AutoAwait(ast.NodeTransformer):
         return ast.Await(value=wrapped)
 
 
-async def _run_code(code: Any, globals_: dict[str, Any], *, auto_await: bool) -> Any:
+async def _run_code(code: Any, globals_: dict[str, Any]) -> Any:
+    # No separate "bare coroutine" backstop here: when auto_await is on, the
+    # _AutoAwait rewrite already resolves every call site, and NOT doing so
+    # unconditionally is exactly what `unawait(...)` asks for - a backstop
+    # here would silently defeat it for a trailing `unawait(f())`.
     result = eval(code, globals_)  # nosec B307 - the whole point of a dev shell
     if code.co_flags & inspect.CO_COROUTINE:
-        # Runs the top-level-await-compiled code itself (and, when
-        # auto_await is on, the _AutoAwait rewrite's own awaits) - not
-        # necessarily the user's own forgotten await, hence the check below.
-        result = await result
-    if auto_await and inspect.isawaitable(result):
-        # Backstop for a bare reference to an already-existing coroutine
-        # (e.g. `c = f(); c` across two statements) that the AST rewrite,
-        # which only sees call sites, can't catch.
         result = await result
     return result
 

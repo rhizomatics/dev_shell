@@ -6,7 +6,8 @@
   - `api` has its own `AsyncEntity` class which differs from the `ApiEntity` used by the core REPL
      - reason is that `ApiEntity` is designed to offer a subset of the real entity and allow easier prototyping of custom component code whereas `AsyncEntity` is the `homeassistant-api` package way of working purely with API data
 - Auto await will do the `await` for you with coroutines if you forget.
-  - Can be switched off with `--no-auto-await`
+  - Can be switched off completely with `--no-auto-await`
+  - Can be one-off switched off by doing an `unawait` to get raw coroutine
 - Replaced use of `websockets` with `niquests[ws]`
 
 ## 0.2.0

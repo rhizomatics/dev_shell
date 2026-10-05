@@ -94,6 +94,7 @@ class Session:
             self.globals_["print"] = _capturing_print(out)
             self.globals_["help"] = _capturing_help(out)
             self.globals_["_maybe_await"] = _maybe_await
+            self.globals_["unawait"] = unawait
             result = ExecResult()
             start = time.perf_counter()
             try:
@@ -151,14 +152,12 @@ class Session:
             await _run_code(
                 compile(tree, filename, "exec", flags=flags, dont_inherit=True),
                 self.globals_,
-                auto_await=auto_await,
             )
         if last_expr is None:
             return None
         return await _run_code(
             compile(last_expr, filename, "eval", flags=flags, dont_inherit=True),
             self.globals_,
-            auto_await=auto_await,
         )
 
 
@@ -190,6 +189,18 @@ async def _maybe_await(value: Any) -> Any:
     return await value if inspect.isawaitable(value) else value
 
 
+def unawait(value: Any) -> Any:
+    """Identity function and auto-await escape hatch: `unawait(f())` returns
+    f()'s bare, un-awaited result (a coroutine, if f is async) - for when
+    that's genuinely wanted, e.g. batching into `asyncio.gather(*[unawait(f())
+    for f in ...])`. Recognised by name in the `_AutoAwait` rewrite below,
+    which skips its whole argument rather than calling this at runtime; this
+    plain version only runs if auto-await itself is off (`auto_await=False`)
+    or `unawait` is used somewhere the rewrite doesn't reach.
+    """
+    return value
+
+
 class _AutoAwait(ast.NodeTransformer):
     """Rewrites every call not already explicitly awaited to go through
     _maybe_await() first, so `hass.async_foo()` works whether or not the
@@ -197,7 +208,9 @@ class _AutoAwait(ast.NodeTransformer):
     (`hass.async_foo().attr`), a comprehension, or an argument list. Leaves
     nested (synchronous) function/lambda bodies alone: `await` there is a
     SyntaxError, and those calls run later, not as part of this statement
-    anyway. Opt out with `auto_await=False` on the exec call (strict mode:
+    anyway. `unawait(expr)` is the escape hatch - its argument is left
+    completely untouched for when the bare coroutine is wanted. Opt out
+    entirely with `auto_await=False` on the exec call (strict mode:
     forgetting await behaves exactly as in component code).
     """
 
@@ -218,7 +231,14 @@ class _AutoAwait(ast.NodeTransformer):
             node.value = self.visit(node.value)
         return node
 
-    def visit_Call(self, node: ast.Call) -> ast.Await:
+    def visit_Call(self, node: ast.Call) -> ast.AST:
+        if (
+            isinstance(node.func, ast.Name)
+            and node.func.id == "unawait"
+            and len(node.args) == 1
+            and not node.keywords
+        ):
+            return node.args[0]
         self.generic_visit(node)
         wrapped = ast.Call(
             func=ast.Name(id="_maybe_await", ctx=ast.Load()), args=[node], keywords=[]
@@ -226,16 +246,13 @@ class _AutoAwait(ast.NodeTransformer):
         return ast.Await(value=wrapped)
 
 
-async def _run_code(code: Any, globals_: dict[str, Any], *, auto_await: bool) -> Any:
-    """Evaluate code, awaiting both the top-level-await wrapper (when the
-    code itself used it, including the _AutoAwait rewrite's own awaits) and,
-    as a backstop, a bare reference to an already-existing coroutine that
-    rewrite can't see (e.g. `c = f(); c` across two statements).
-    """
+async def _run_code(code: Any, globals_: dict[str, Any]) -> Any:
+    # No separate "bare coroutine" backstop here: when auto_await is on, the
+    # _AutoAwait rewrite already resolves every call site, and NOT doing so
+    # unconditionally is exactly what `unawait(...)` asks for - a backstop
+    # here would silently defeat it for a trailing `unawait(f())`.
     result = eval(code, globals_)  # nosec B307 - the whole point of a dev shell
     if code.co_flags & inspect.CO_COROUTINE:
-        result = await result
-    if auto_await and inspect.isawaitable(result):
         result = await result
     return result
 
@@ -445,7 +462,7 @@ class SessionManager:
                     k
                     for k in s.globals_
                     if not k.startswith("__")
-                    and k not in ("print", "help", "_maybe_await")
+                    and k not in ("print", "help", "_maybe_await", "unawait")
                 ),
             }
             for s in self._sessions.values()

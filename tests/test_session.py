@@ -117,6 +117,26 @@ async def test_auto_await_does_not_rewrite_nested_function_bodies(manager):
     assert result.value == "1"
 
 
+async def test_unawait_returns_bare_coroutine(manager):
+    # The escape hatch: the rewrite would otherwise auto-await this on its
+    # own, which defeats the purpose of using unawait() here.
+    result = await run(manager, "import asyncio\nc = unawait(asyncio.sleep(0))\nc")
+    assert result.value.startswith("<coroutine object sleep")
+    await run(manager, "c.close()")
+
+
+async def test_unawait_enables_concurrent_gather(manager):
+    # The motivating use case: batch unawaited coroutines for
+    # asyncio.gather() instead of each one being awaited where it's created.
+    code = (
+        "import asyncio\n"
+        "async def double(n):\n"
+        "    return n * 2\n"
+        "await asyncio.gather(*[unawait(double(i)) for i in range(3)])"
+    )
+    assert (await run(manager, code)).value == "[0, 2, 4]"
+
+
 async def test_function_definitions_and_closures(manager):
     code = "async def f(n):\n    return [i * n for i in range(3)]\nawait f(2)"
     assert (await run(manager, code)).value == "[0, 2, 4]"
@@ -159,6 +179,7 @@ async def test_describe(manager):
     assert "print" not in info["variables"]
     assert "help" not in info["variables"]
     assert "_maybe_await" not in info["variables"]
+    assert "unawait" not in info["variables"]
 
 
 async def test_help_on_module_is_captured_not_printed(manager, capsys):
