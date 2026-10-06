@@ -21,7 +21,6 @@ import importlib
 import os
 
 from homeassistant_api import AsyncClient
-from homeassistant_api.errors import HomeassistantAPIError
 
 
 class HassApiUnavailable(Exception):
@@ -56,7 +55,9 @@ async def connect_hass_api() -> AsyncClient:
     client = AsyncClient(url, token)
     try:
         running = await client.check_api_running()
-    except (HomeassistantAPIError, OSError) as err:
+    except Exception as err:
+        # Anything at all: `hass_api` is a convenience, and no way of
+        # failing to connect it should fail the integration's setup.
         raise HassApiUnavailable(f"cannot reach {url}: {err}") from err
     if not running:
         raise HassApiUnavailable(f"{url} is not running")

@@ -2,7 +2,7 @@
 
 `ha-repl exec` runs one snippet of Python against a running Home Assistant and exits. It is the non-interactive form of [live mode](live_mode.md), and its main use is giving a coding agent a way to check its ideas against a real instance: read an entity's state, query the recorder, call a service, inspect an object, then decide what to do next.
 
-It needs the same server component as live mode. Read the warnings on the [live mode](live_mode.md) page first: an agent with `exec` can run any Python inside Home Assistant. Point it at a devcontainer or development instance, not the one running your house.
+It needs the same server component as live mode - read the warnings on the [live mode](live_mode.md) page first: an agent with `exec` can run any Python inside Home Assistant. Point it at a devcontainer or development instance, not the one running your house.
 
 ## Setup
 
