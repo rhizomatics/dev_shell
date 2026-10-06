@@ -104,14 +104,14 @@ This switch controls trade-off between shell convenience and ability to trial wo
     - Same for values and `help()` output, so `ha-repl --json exec` gets clean data from both sides
 
 ## Other Ideas
-- iPython support [DONE]
+- Work inside iPython [DONE]
 - VSCode extension
 - http caching, using `niquests-cache`
 - API Mode
   - API access only, also no need of HACS components [DONE]
   - TBD: whether actions/services get folded into the object tree, or left separate
 - Other bindings
-  - sql() for the sqlite DB
+  - sql() for the sqlite DB [DONE]
     - or support for a client-side sql client ui
   - api() shortcuts for HA APIs [DONE]
     - https://developers.home-assistant.io/docs/api/rest/
