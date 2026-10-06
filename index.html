@@ -569,6 +569,45 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#other-python-repls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Other Python REPLs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Other Python REPLs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#new-default-repl-experiences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New Default REPL Experiences
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#classics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Classics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1022,7 +1061,8 @@
 <p>This is primarily for developers of custom components, and their LLM agents, though may be of interest for other folk tinkering with Home Assistant. It is a potentially sharp tool, so NOT appropriate for general Home Assistant users.</p>
 <h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Integrated with <code>rich</code> for pretty object printouts and stack traces</li>
+<li>Integrated with <code>rich</code> and <code>pygments</code> for pretty object printouts and stack traces</li>
+<li>Reuses session and history features from <code>prompt-toolkit</code></li>
 <li>Access to all entities via dictionary like interface, <code>obj</code></li>
 <li>Usual multi-line editing support and history of Python</li>
 <li>Integrated with <a href="https://pypi.org/project/HomeAssistant-API/">homeassistant-api</a> as <code>hass_api</code> object, available in both modes</li>
@@ -1090,6 +1130,21 @@ Get help on the arguments in the usual way,</p>
 <p>All modes require a <a href="https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token">Long Lived Access Token</a> which can be provided via <code>HASS_TOKEN</code> enivironment variable, a <code>HASS_TOKEN=xxxx</code> line in an <code>.env</code> file, or the <code>--token</code> argument on <code>ha-repl</code>.</p>
 <p>The URL will default to <code>http://homeassistant.local:8123</code> or can be set using the <code>HASS_SERVER</code> enivironment variable, a <code>HASS_SERVER=xxxx</code> line in an <code>.env</code> file, or the <code>--server</code> argument on <code>ha-repl</code>.</p>
 <p>Note, although <code>homeassistant-api</code> itself has different env vars, when used within <code>ha-repl</code> it will be set up automatically using the same server and token as the main shell.</p>
+<h2 id="other-python-repls">Other Python REPLs<a class="headerlink" href="#other-python-repls" title="Permanent link">&para;</a></h2>
+<p>These are all current with Python v3, there are others like dreampie that didn't make it past Python 2.</p>
+<h3 id="new-default-repl-experiences">New Default REPL Experiences<a class="headerlink" href="#new-default-repl-experiences" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="https://docs.python.org/3/tutorial/appendix.html#tut-interac">Python Interactive Mode</a> - Core python REPL, greatly enhanced in v3.13 with PyPi code, and now the default Python terminal experience.</li>
+<li><a href="https://code.visualstudio.com/docs/python/run#_native-repl">VSCode Python REPL</a> - Notebook style with Intellisense, bundled with the standard Microsoft VSCode Python bundle </li>
+</ul>
+<h3 id="classics">Classics<a class="headerlink" href="#classics" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="https://ipython.org">Terminal iPython</a> - Progenitor of Jupyter notebooks, rich formatting, syntax help, shell integration etc</li>
+<li><a href="https://github.com/prompt-toolkit/ptpython">ptpython</a> - Syntax help and formatting, mouse support and more. Part of the <a href="https://python-prompt-toolkit.readthedocs.io/en/latest/">prompt-toolkit</a> project, also used by Home Assistant REPL.</li>
+<li><a href="https://bpython-interpreter.org">bpython</a> - Syntax help, auto-complete, improved history</li>
+<li><a href="https://xon.sh">xon.sh</a> - python-centric shell</li>
+<li><a href="https://docs.python.org/3/library/idle.html">IDLE</a> - the original Python Foundation enhanced shell, colourized text, multi-window etc</li>
+</ul>
 <style data-termynal-inline="true">
  :root {
    --color-bg: #252a33;

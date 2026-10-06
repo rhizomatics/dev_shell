@@ -26,7 +26,8 @@ This is primarily for developers of custom components, and their LLM agents, tho
 
 ## Features
 
-- Integrated with `rich` for pretty object printouts and stack traces
+- Integrated with `rich` and `pygments` for pretty object printouts and stack traces
+- Reuses session and history features from `prompt-toolkit`
 - Access to all entities via dictionary like interface, `obj`
 - Usual multi-line editing support and history of Python
 - Integrated with [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) as `hass_api` object, available in both modes
@@ -127,3 +128,20 @@ All modes require a [Long Lived Access Token](https://developers.home-assistant.
 The URL will default to `http://homeassistant.local:8123` or can be set using the `HASS_SERVER` enivironment variable, a `HASS_SERVER=xxxx` line in an `.env` file, or the `--server` argument on `ha-repl`.
 
 Note, although `homeassistant-api` itself has different env vars, when used within `ha-repl` it will be set up automatically using the same server and token as the main shell.
+
+## Other Python REPLs
+
+These are all current with Python v3, there are others like dreampie that didn't make it past Python 2.
+
+### New Default REPL Experiences
+
+- [Python Interactive Mode](https://docs.python.org/3/tutorial/appendix.html#tut-interac) - Core python REPL, greatly enhanced in v3.13 with PyPi code, and now the default Python terminal experience.
+- [VSCode Python REPL](https://code.visualstudio.com/docs/python/run#_native-repl) - Notebook style with Intellisense, bundled with the standard Microsoft VSCode Python bundle
+
+### Classics
+
+- [Terminal iPython](https://ipython.org) - Progenitor of Jupyter notebooks, rich formatting, syntax help, shell integration etc
+- [ptpython](https://github.com/prompt-toolkit/ptpython) - Syntax help and formatting, mouse support and more. Part of the [prompt-toolkit](https://python-prompt-toolkit.readthedocs.io/en/latest/) project, also used by Home Assistant REPL.
+- [bpython](https://bpython-interpreter.org) - Syntax help, auto-complete, improved history
+- [xon.sh](https://xon.sh) - python-centric shell
+- [IDLE](https://docs.python.org/3/library/idle.html) - the original Python Foundation enhanced shell, colourized text, multi-window etc
