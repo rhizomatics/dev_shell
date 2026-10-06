@@ -32,21 +32,21 @@ On the result object, `show()` will display data in tabular form at the command,
 
 The result will have both its rows and columns automatically limited, so it doesn't look like a mess or lock up the console. Use `max_rows` or `max_cols` to override this, or `columns` to set the list of columns specifically.
 
-The results can also be sliced like a Python list, so `[:10]` for the first 10 rows or `[-10:]` for the last 10. You can also call `len()` on the results to get the number of rows.
+The results can also be sliced like a Python list, so `[:10]` for the first 10 rows or `[-10:]` for the last 10. Slices share the downloaded data rather than copying it. For anything more advanced - a step, filtering, sorting, joins - turn the result into a dataframe with `to_polars()`, which also uses the downloaded Arrow data directly. You can also call `len()` on the results to get the number of rows.
 
 | Operation.     | Description        |
 | -------------- | ------------------ |
 | `rowcount`     | Size of result set, may not be size of table due to row limits |
 | `truncated`    | `True` if results were truncated due to row limits |
 | `table`        | The `Table` object describing this table, or `None` if the columns don't identify a single table |
-| `columns`      | The data itself: a `dict` of Arrow arrays, one per column, by name |
 | `column_names` | List of the column names in the table, in order |
 | `show()`       | Dump the table data to the console |
 | `project()`    | Create a new result object with a limited set of columns based on this one |
 | `sample()`     | Randomly sample selected quantity of rows out of the result set |
 | `export_csv()` | Write the results to a local CSV file, by default named after the table (`result.csv` if there isn't one) |
-| `arrow()`      | The result as an Arrow array, for Arrow-aware libraries, e.g. `polars.from_arrow(r.arrow())` |
+| `arrow()`      | The result as an Arrow array, for Arrow-aware libraries, e.g. `polars.DataFrame(r.arrow())` or `pyarrow.table(r.arrow())` |
 | `arrow_ipc()`  | The result as Arrow IPC stream bytes, e.g. to save to a file |
+| `to_json()`    | The results as a JSON string of `columns`, `rows`, `rowcount` and `truncated` |
 | `to_dicts()`   | Extract a `list` of `dict` objects from the results |
 | `to_pandas()`  | Turn the results into a *pandas* dataframe, if pandas installed |
 | `to_polars()`  | Turn the results into a *polars* dataframe, if polars installed |

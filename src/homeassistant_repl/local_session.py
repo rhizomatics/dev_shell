@@ -15,6 +15,7 @@ and rich's Console can auto-detect color/width instead of being told.
 from __future__ import annotations
 
 import ast
+import asyncio
 import builtins
 import inspect
 import itertools
@@ -47,23 +48,37 @@ class LocalSession:
         self.globals_.setdefault("_maybe_await", _maybe_await)
         self.globals_.setdefault("unawait", unawait)
 
-    async def run(self, source: str) -> None:
-        """Execute source, printing the trailing expression's value (if any)
-        or a traceback directly to the real terminal - there's no result to
-        ship back over a wire, so this doesn't return one."""
+    async def run(self, source: str, *, echo: bool = True) -> bool:
+        """Execute source, printing the trailing expression's value (if any,
+        and unless `echo` is off) or a traceback directly to the real
+        terminal. Returns False if it raised."""
         try:
-            value = await self._execute(source)
+            value = await self.evaluate(source, echo=echo)
+        except asyncio.CancelledError:
+            # Cancellation of the caller (a timeout) must propagate, not be
+            # reported as the snippet's own error.
+            raise
         except BaseException as err:  # noqa: BLE001 - report everything, incl. SystemExit
             _print_error(err)
-            return
-        if value is not None:
-            self.globals_["_"] = value
-            # A value that knows how to render itself (a SqlResult's table)
-            # is shown as-is rather than through Pretty's repr-style output.
+            return False
+        if value is not None and echo:
+            # A value that knows how to render itself (the Table show()
+            # returns) is shown as-is rather than through Pretty's
+            # repr-style output.
             rich_aware = not isinstance(value, type) and (
                 hasattr(value, "__rich__") or hasattr(value, "__rich_console__")
             )
             _console.print(value if rich_aware else Pretty(value))
+        return True
+
+    async def evaluate(self, source: str, *, echo: bool = True) -> Any:
+        """Execute source and return the trailing expression's value (None
+        if there isn't one), letting anything it raises propagate - for a
+        caller that reports results its own way. `_` is set as run() would."""
+        value = await self._execute(source)
+        if value is not None and echo:
+            self.globals_["_"] = value
+        return value
 
     async def _execute(self, source: str) -> Any:
         # Not "<ha_repl-N>": rich.traceback refuses to show source for any
@@ -184,11 +199,27 @@ async def _run_code(code: Any, globals_: dict[str, Any]) -> Any:
     return result
 
 
-def _print_error(err: BaseException) -> None:
+def _user_traceback(err: BaseException) -> Any:
     tb = err.__traceback__
     # Drop the frames belonging to this module so the traceback starts at user code.
     while tb is not None and tb.tb_frame.f_code.co_filename == __file__:
         tb = tb.tb_next
+    return tb
+
+
+def format_error(err: BaseException) -> dict[str, str]:
+    """An error as plain data - the same shape the server reports one in."""
+    return {
+        "type": type(err).__name__,
+        "message": str(err),
+        "traceback": "".join(
+            traceback.format_exception(type(err), err, _user_traceback(err))
+        ),
+    }
+
+
+def _print_error(err: BaseException) -> None:
+    tb = _user_traceback(err)
     if isinstance(err, SyntaxError):
         # No frames worth showing for this one - plain is fine.
         print(

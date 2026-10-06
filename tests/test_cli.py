@@ -9,8 +9,6 @@ def _base_result(**overrides) -> dict:
     base = {
         "stdout": "",
         "value": None,
-        "arrow": None,
-        "arrow_truncated": False,
         "error": None,
         "duration": 0.0,
         "truncated": False,
@@ -26,7 +24,7 @@ def test_print_result_prints_value(capsys):
 
 
 def test_print_result_shows_a_sql_result_as_its_repr_not_a_table(capsys):
-    result = _base_result(arrow="AAAA", value="<SqlResult 2 rows x 2 cols [a, b]>")
+    result = _base_result(value="<SqlResult 2 rows x 2 cols [a, b]>")
 
     print_result(result)
 

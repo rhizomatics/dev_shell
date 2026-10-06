@@ -8,16 +8,21 @@ and `hass_api` are local objects that fetch data over the wire (Arrow over
 the websocket, and the REST API) and hand back local results.
 
 `hass` and `obj` are the exception: they only exist inside Home Assistant,
-so a command that uses either one (or a variable an earlier such command
-left behind over there) is sent whole to the server-side session and run
-there, as before, with its output shipped back as text - see LiveSession
-for exactly how that's decided and what crosses over.
+so a statement that uses either one (or a variable an earlier such statement
+left behind over there) is sent to the server-side session and run there,
+with its output shipped back as text - see LiveSession for exactly how
+that's decided and what crosses over. `ha-repl exec` runs its snippet the
+same way (cli.py), just without the prompt.
 """
 
 from __future__ import annotations
 
 import ast
+import asyncio
 import codeop
+import contextlib
+import io
+import json
 import sys
 import types
 from dataclasses import dataclass, field
@@ -28,12 +33,13 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.lexers import PygmentsLexer
 from pygments.lexers.python import PythonLexer
+from rich.console import Console
 
 from .cli import display_options, print_result
 from .client import Client, HaReplError, client_version
-from .local_session import LocalSession
+from .local_session import LocalSession, format_error
 from .rest import hass_api
-from .sql import SqlTool
+from .sql import SqlResult, SqlTool
 
 HISTORY = Path.home() / ".ha_repl_history"
 
@@ -58,20 +64,42 @@ _LITERAL_TYPES = (
 
 
 @dataclass
-class LiveSession:
-    """Decides, one command at a time, which side runs it.
+class Captured:
+    """What a run produced, collected instead of printed - for `ha-repl exec
+    --json`. `value` is the trailing expression's, as JSON-ready data."""
 
-    A command runs on the server if it mentions a name that lives there and
-    not here: `hass`, `obj`, or a variable a previous server-side command
-    assigned (`s = hass.states.get("sun.sun")`, then `s.state`). Everything
-    else runs locally. A name that exists on both sides counts as local.
+    stdout: str = ""
+    value: Any = None
+    error: dict[str, str] | None = None
+    # Server-side output was cut short at the server's size limit.
+    truncated: bool = False
+
+
+@dataclass
+class _Chunk:
+    """Consecutive statements that run on the same side."""
+
+    remote: bool
+    start: int  # first source line, 1-based
+    end: int  # last source line, inclusive
+    names: _Names
+
+
+@dataclass
+class LiveSession:
+    """Decides, one statement at a time, which side runs it.
+
+    A statement runs on the server if it reads a name that lives there:
+    `hass`, `obj`, or a variable an earlier server-side statement assigned
+    (`s = hass.states.get("sun.sun")`, then `s.state`). Everything else
+    runs locally. A name lives wherever it was last assigned.
 
     The two namespaces are otherwise separate. The one thing that crosses
-    is local -> server, for a server-side command that uses local names:
+    is local -> server, for a server-side statement that uses local names:
     plain data (strings, numbers, lists/dicts of them) is copied over, and
     an imported module is imported there under the same name. Anything else
     local (a dataframe, a SqlResult, a function) can't follow, and the
-    command is refused with an explanation rather than failing over there
+    statement is refused with an explanation rather than failing over there
     with a puzzling NameError.
     """
 
@@ -80,67 +108,171 @@ class LiveSession:
     local: LocalSession
     auto_await: bool = True
     remote_names: set[str] = field(default_factory=set)
-    # Bound on both sides by design (`sql`, `hass_api`) - never copied over.
+    # Bound locally by this shell itself (`sql`, `hass_api`) - never copied over.
     shared: frozenset[str] = frozenset()
+    # Set to collect output instead of printing it.
+    capture: Captured | None = None
+    # Seconds the server allows each of its own statements, if any.
+    timeout: float | None = None
 
     async def refresh_remote_names(self) -> None:
+        """Pick up what an existing server session already holds (it
+        outlives this process); after that, run() keeps track itself."""
         reply = await self.client.call("ha_repl_server/sessions")
+        self.remote_names = set()
         for session in reply["sessions"]:
             if session["name"] == self.session_name:
-                self.remote_names = set(session["variables"])
-                return
-        self.remote_names = set()
+                self.remote_names = set(session["variables"]) - self._local_names()
 
-    async def run(self, source: str) -> None:
+    async def run(self, source: str) -> bool:
+        """Run source, stopping at the first statement that fails. Only the
+        final statement's value is echoed. Returns False on any failure."""
         try:
             tree = ast.parse(source)
         except SyntaxError, ValueError:
-            await self.local.run(source)  # reports the error itself
-            return
-        used = _Names()
-        used.visit(tree)
-        local_names = self._local_names()
-        remote_refs = (used.loaded - local_names) & (REMOTE_ONLY | self.remote_names)
-        if not remote_refs:
-            await self.local.run(source)
-            return
+            return await self._run_local(source, echo=True)  # reports the error
+        chunks = self._plan(tree)
+        if len(chunks) <= 1:
+            # Untouched, so comments and layout survive into tracebacks.
+            texts = [source]
+        else:
+            lines = source.splitlines()
+            texts = ["\n".join(lines[c.start - 1 : c.end]) for c in chunks]
+        for i, (chunk, text) in enumerate(zip(chunks, texts, strict=False)):
+            echo = i == len(chunks) - 1
+            if chunk.remote:
+                ok = await self._run_remote(text, chunk.names, echo=echo)
+                for name in chunk.names.assigned:
+                    self.local.globals_.pop(name, None)
+                self.remote_names |= chunk.names.assigned
+            else:
+                ok = await self._run_local(text, echo=echo)
+                self.remote_names -= chunk.names.assigned
+            if not ok:
+                return False
+        if not chunks:
+            return await self._run_local(source, echo=True)
+        return True
 
+    def _plan(self, tree: ast.Module) -> list[_Chunk]:
+        local = self._local_names()
+        remote = (REMOTE_ONLY | self.remote_names) - local
+        chunks: list[_Chunk] = []
+        for stmt in tree.body:
+            names = _Names()
+            names.visit(stmt)
+            is_remote = bool(names.loaded & remote)
+            if is_remote:
+                remote |= names.assigned
+                local -= names.assigned
+            else:
+                local |= names.assigned
+                remote -= names.assigned
+            start = min([
+                stmt.lineno,
+                *(d.lineno for d in getattr(stmt, "decorator_list", [])),
+            ])
+            end = stmt.end_lineno or stmt.lineno
+            last = chunks[-1] if chunks else None
+            # Two statements sharing a line (`a = 1; hass.x`) can't be cut
+            # apart by line, so they go together - to the server if either does.
+            if last and (last.remote == is_remote or start <= last.end):
+                last.remote = last.remote or is_remote
+                last.end = max(last.end, end)
+                last.names.merge(names)
+            else:
+                chunks.append(_Chunk(is_remote, start, end, names))
+        return chunks
+
+    async def _run_local(self, source: str, *, echo: bool) -> bool:
+        if self.capture is None:
+            ok = await self.local.run(source, echo=echo)
+        else:
+            out = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(out):
+                    value = await self.local.evaluate(source, echo=echo)
+            except asyncio.CancelledError:
+                raise
+            except BaseException as err:  # noqa: BLE001 - report everything, incl. SystemExit
+                self.capture.error = format_error(err)
+                ok = False
+            else:
+                if echo and value is not None:
+                    self.capture.value = _jsonable(value)
+                ok = True
+            finally:
+                self.capture.stdout += out.getvalue()
+        if "_" in self.local.globals_:
+            self.remote_names.discard("_")
+        return ok
+
+    async def _run_remote(self, source: str, names: _Names, *, echo: bool) -> bool:
+        local_names = self._local_names()
         preamble: list[str] = []
         stuck: list[str] = []
-        for name in sorted(used.loaded & (local_names - self.shared)):
+        for name in sorted(names.loaded & (local_names - self.shared)):
             line = _ship(name, self.local.globals_[name])
             if line is not None:
                 preamble.append(line)
-            elif name not in used.bound:
+            elif name not in names.bound:
                 stuck.append(name)
         if stuck:
-            names = ", ".join(f"`{n}`" for n in stuck)
-            via = ", ".join(f"`{n}`" for n in sorted(remote_refs))
-            print(
-                f"ha-repl: not run - this would run inside Home Assistant (it uses {via}), "
-                f"but {names} only exist{'s' if len(stuck) == 1 else ''} in this local session "
-                "and can't be copied over (only plain data and imported modules can).",
-                file=sys.stderr,
+            via = ", ".join(
+                f"`{n}`"
+                for n in sorted(names.loaded & (REMOTE_ONLY | self.remote_names))
             )
-            return
-        if preamble and not await self._exec_remote("\n".join(preamble)):
-            return
-        await self._exec_remote(source)
-        # `_` is whichever side answered last: drop the local one so a
-        # following `_` is looked up on the server.
-        self.local.globals_.pop("_", None)
-        await self.refresh_remote_names()
+            self._refuse(
+                f"not run - this would run inside Home Assistant (it uses {via}), but "
+                f"{', '.join(f'`{n}`' for n in stuck)} only "
+                f"exist{'s' if len(stuck) == 1 else ''} in the local session and can't "
+                "be copied over (only plain data, small sql results and imported modules can)."
+            )
+            return False
+        if preamble and not await self._exec_remote("\n".join(preamble), echo=False):
+            return False
+        ok = await self._exec_remote(source, echo=echo)
+        if echo:
+            # `_` is whichever side answered last.
+            self.local.globals_.pop("_", None)
+            self.remote_names.add("_")
+        return ok
 
-    async def _exec_remote(self, source: str) -> bool:
-        result = await self.client.call(
-            "ha_repl_server/exec",
-            code=source,
-            session=self.session_name,
-            auto_await=self.auto_await,
+    async def _exec_remote(self, source: str, *, echo: bool) -> bool:
+        payload: dict[str, Any] = {
+            "code": source,
+            "session": self.session_name,
+            "auto_await": self.auto_await,
             **display_options(),
-        )
-        print_result(result)
+        }
+        if self.timeout:
+            payload["timeout"] = self.timeout
+        if self.capture is not None:
+            # Escape codes inside a JSON string are just noise for a consumer
+            # that asked for machine-readable output.
+            payload["color"] = False
+        result = await self.client.call("ha_repl_server/exec", **payload)
+        if not echo:
+            result = {**result, "value": None}
+        if self.capture is None:
+            print_result(result)
+        else:
+            if result["stdout"] is not None:
+                self.capture.stdout += result["stdout"]
+            self.capture.value = result["value"]
+            self.capture.error = result["error"]
+            self.capture.truncated |= bool(result.get("truncated"))
         return not result["error"]
+
+    def _refuse(self, message: str) -> None:
+        if self.capture is None:
+            print(f"ha-repl: {message}", file=sys.stderr)
+        else:
+            self.capture.error = {
+                "type": "HaReplError",
+                "message": message,
+                "traceback": f"ha-repl: {message}\n",
+            }
 
     def _local_names(self) -> set[str]:
         return {
@@ -151,29 +283,72 @@ class LiveSession:
 
 
 class _Names(ast.NodeVisitor):
-    """Every name a command reads (`loaded`) and every name it binds itself
-    (`bound` - assignments, imports, defs, arguments, loop/comprehension
-    variables), anywhere in it."""
+    """The names a piece of code reads (`loaded`), the ones it binds
+    anywhere at all (`bound` - including arguments and comprehension
+    variables), and the ones it leaves assigned in the session's own
+    namespace afterwards (`assigned` - not those inner-scope ones)."""
 
     def __init__(self) -> None:
         self.loaded: set[str] = set()
         self.bound: set[str] = set()
+        self.assigned: set[str] = set()
+        self._depth = 0
+
+    def merge(self, other: _Names) -> None:
+        self.loaded |= other.loaded
+        self.bound |= other.bound
+        self.assigned |= other.assigned
+
+    def _bind(self, name: str) -> None:
+        self.bound.add(name)
+        if self._depth == 0:
+            self.assigned.add(name)
 
     def visit_Name(self, node: ast.Name) -> None:
-        (self.loaded if isinstance(node.ctx, ast.Load) else self.bound).add(node.id)
+        if isinstance(node.ctx, ast.Load):
+            self.loaded.add(node.id)
+        else:
+            self._bind(node.id)
 
     def visit_alias(self, node: ast.alias) -> None:
-        self.bound.add((node.asname or node.name).partition(".")[0])
+        if node.name != "*":
+            self._bind((node.asname or node.name).partition(".")[0])
 
     def visit_arg(self, node: ast.arg) -> None:
         self.bound.add(node.arg)
         self.generic_visit(node)
 
     def _visit_def(self, node: Any) -> None:
-        self.bound.add(node.name)
+        self._bind(node.name)
+        self._visit_scope(node)
+
+    def _visit_scope(self, node: ast.AST) -> None:
+        self._depth += 1
         self.generic_visit(node)
+        self._depth -= 1
 
     visit_FunctionDef = visit_AsyncFunctionDef = visit_ClassDef = _visit_def
+    visit_Lambda = visit_ListComp = visit_SetComp = visit_DictComp = _visit_scope
+    visit_GeneratorExp = _visit_scope
+
+
+def _jsonable(value: Any) -> Any:
+    """A trailing value as something json.dumps accepts: a SqlResult as
+    its rows, anything already JSON-shaped as itself, a rich renderable
+    (the Table show() returns) as plain text, the rest as their repr."""
+    if isinstance(value, SqlResult):
+        return value.json_data()
+    if not isinstance(value, type) and (
+        hasattr(value, "__rich__") or hasattr(value, "__rich_console__")
+    ):
+        out = io.StringIO()
+        Console(file=out, color_system=None, width=120).print(value)
+        return out.getvalue()
+    try:
+        json.dumps(value)
+    except TypeError, ValueError:
+        return repr(value)
+    return value
 
 
 def _ship(name: str, value: Any) -> str | None:
@@ -181,6 +356,10 @@ def _ship(name: str, value: Any) -> str | None:
     on the server, or None if it isn't something that can be recreated."""
     if isinstance(value, types.ModuleType):
         return f"import {value.__name__} as {name}"
+    if isinstance(value, SqlResult):
+        # Crosses as its rows, a list of lists - enough for the loop or
+        # comprehension over a result that calls into `hass` per row.
+        value = list(value)
     if not isinstance(value, _LITERAL_TYPES):
         return None
     try:
@@ -190,6 +369,42 @@ def _ship(name: str, value: Any) -> str | None:
     except Exception:  # noqa: BLE001 - any failure just means "can't be copied"
         return None
     return f"{name} = {text}"
+
+
+async def connect_live(
+    client: Client,
+    session_name: str,
+    *,
+    auto_await: bool = True,
+    capture: Captured | None = None,
+    timeout: float | None = None,
+) -> LiveSession:
+    """A LiveSession with the local `sql` and `hass_api` bound - shared by
+    the interactive shell and `ha-repl exec`, so a snippet behaves the
+    same in either."""
+    bindings: dict[str, Any] = {}
+    try:
+        bindings["hass_api"] = await hass_api(client.url, client.token)
+    except HaReplError as err:
+        print(f"ha-repl: hass_api unavailable: {err}", file=sys.stderr)
+        bindings["hass_api"] = None
+    try:
+        bindings["sql"] = await SqlTool.connect(client)
+    except HaReplError as err:
+        # Switched off in the integration's options - left unbound.
+        print(f"ha-repl: sql unavailable: {err}", file=sys.stderr)
+
+    live = LiveSession(
+        client,
+        session_name,
+        LocalSession(dict(bindings), auto_await=auto_await),
+        auto_await=auto_await,
+        shared=frozenset(bindings),
+        capture=capture,
+        timeout=timeout,
+    )
+    await live.refresh_remote_names()
+    return live
 
 
 async def run_repl(
@@ -207,27 +422,7 @@ async def run_repl(
         # An older server predating this command - not fatal, just less to show.
         server = "Live Server"
 
-    bindings: dict[str, Any] = {}
-    try:
-        bindings["hass_api"] = await hass_api(client.url, client.token)
-    except HaReplError as err:
-        print(f"ha-repl: hass_api unavailable: {err}", file=sys.stderr)
-        bindings["hass_api"] = None
-    try:
-        bindings["sql"] = await SqlTool.connect(client)
-    except HaReplError as err:
-        # Switched off on the server, or a server predating the command -
-        # left unbound, so `sql` falls through to whatever the server has.
-        print(f"ha-repl: local sql unavailable: {err}", file=sys.stderr)
-
-    live = LiveSession(
-        client,
-        session_name,
-        LocalSession(dict(bindings), auto_await=auto_await),
-        auto_await=auto_await,
-        shared=frozenset(bindings),
-    )
-    await live.refresh_remote_names()
+    live = await connect_live(client, session_name, auto_await=auto_await)
     print(
         f"Live client v{client_version()} connected to {server} at HA API "
         f"{client.url} (session {session_name!r}). Ctrl-D to exit.\n"

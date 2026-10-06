@@ -94,6 +94,9 @@ This switch controls trade-off between shell convenience and ability to trial wo
   - `homeassistant-repl`
 - Allow it to be set up easily inside any python code (async compatibility)? [DONE]
   - `homeassistant_repl.connect()`
+- Remove `rich` from the server side
+    - Tracebacks from inside Home Assistant are rendered there as rich text and shipped as a string; send the raw traceback data and render on the client instead ([debuglater](https://github.com/ploomber/debuglater) may be an option for serializing it)
+    - Same for values and `help()` output, so `ha-repl --json exec` gets clean data from both sides
 
 ## Other Ideas
 - iPython support [DONE]

@@ -6,7 +6,10 @@
                                                     local Python with `sql` + `hass_api`; anything
                                                     using `hass`/`obj` runs inside Home Assistant;
                                                     needs the ha_repl_server component
-  ha-repl exec 'hass.states.get("sun.sun")'       run a snippet (live mode only)
+  ha-repl exec 'hass.states.get("sun.sun")'       run a snippet the way the live shell would
+  ha-repl exec 'sql("select ...").show()'           (local Python + sql, hass/obj inside HA)
+  ha-repl --json exec 'sql("select ...")'         result as JSON: {stdout, value, error, ...};
+                                                    a sql result's value is {columns, rows, ...}
   ha-repl exec -f snippet.py                      run a file
   ha-repl exec - <<'EOF' ... EOF                  read the snippet from stdin
   ha-repl reset / ha-repl sessions                manage live-mode server-side sessions
@@ -25,6 +28,7 @@ import json
 import os
 import shutil
 import sys
+import time
 from typing import Any
 
 from .client import Client, HaReplError, resolve_token, resolve_url
@@ -132,24 +136,48 @@ async def _exec(client: Client, args: argparse.Namespace) -> int:
         code = args.code
     if args.reset:
         await client.call("ha_repl_server/reset", session=args.session)
-    payload: dict[str, Any] = {
-        "code": code,
-        "session": args.session,
-        "auto_await": not args.no_auto_await,
-        **display_options(),
-    }
-    if args.timeout:
-        payload["timeout"] = args.timeout
-    if args.json:
-        # Escape codes embedded in a JSON string are just noise for a consumer
-        # that asked for machine-readable output.
-        payload["color"] = False
-    result = await client.call("ha_repl_server/exec", **payload)
-    if args.json:
-        print(json.dumps(result, indent=2))
-    else:
-        print_result(result)
-    return 1 if result["error"] else 0
+
+    from .repl import Captured, connect_live
+
+    # The same local-plus-server session the interactive shell uses, so a
+    # snippet means the same thing here: `sql` and plain Python run in this
+    # process, statements using `hass`/`obj` inside Home Assistant.
+    capture = Captured() if args.json else None
+    live = await connect_live(
+        client,
+        args.session,
+        auto_await=not args.no_auto_await,
+        capture=capture,
+        timeout=args.timeout,
+    )
+    start = time.perf_counter()
+    try:
+        ok = await asyncio.wait_for(live.run(code), args.timeout)
+    except TimeoutError:
+        ok = False
+        message = f"timed out after {args.timeout:g}s"
+        if capture is None:
+            print(f"ha-repl: {message}", file=sys.stderr)
+        else:
+            capture.error = {
+                "type": "TimeoutError",
+                "message": message,
+                "traceback": f"TimeoutError: {message}\n",
+            }
+    if capture is not None:
+        print(
+            json.dumps(
+                {
+                    "stdout": capture.stdout,
+                    "value": capture.value,
+                    "error": capture.error,
+                    "duration": time.perf_counter() - start,
+                    "truncated": capture.truncated,
+                },
+                indent=2,
+            )
+        )
+    return 0 if ok else 1
 
 
 def display_options() -> dict[str, Any]:

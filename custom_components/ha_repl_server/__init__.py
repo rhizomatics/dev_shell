@@ -19,8 +19,7 @@ from . import websocket_api
 from .const import DOMAIN
 from .objtree import ObjTree
 from .rest import HassApiUnavailable, connect_hass_api, warm_urllib3_lazy_imports
-from .session import PerSession, SessionManager, warm_rich_unicode_data
-from .sql import SqlTool
+from .session import SessionManager, warm_rich_unicode_data
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -56,10 +55,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     bindings: dict[str, Any] = {"obj": ObjTree(hass), "hass_api": hass_api}
     if entry.options.get("expose_hass", True):
         bindings["hass"] = hass
-    if entry.options.get("expose_sql", True):
-        bindings["sql"] = PerSession(lambda: SqlTool(hass))
+    # sql isn't a session binding: the client's own `sql` object fetches
+    # Arrow data through ha_repl_server/sql, which checks this feature.
+    features = {"sql"} if entry.options.get("expose_sql", True) else set()
 
-    hass.data[DOMAIN] = SessionManager(bindings)
+    hass.data[DOMAIN] = SessionManager(bindings, frozenset(features))
     _LOGGER.warning(
         "Home Assistant REPL is enabled: admin users can execute arbitrary Python in this instance"
     )

@@ -29,7 +29,6 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ha_repl_server.const import DOMAIN
 from custom_components.ha_repl_server.objtree import ObjTree
-from custom_components.ha_repl_server.sql import DEFAULT_MAX_ROWS, SqlTool
 
 
 @pytest.fixture(autouse=True)
@@ -52,8 +51,9 @@ async def test_setup_and_unload_entry(
     session = manager.get("default")
     assert session.globals_["hass"] is hass
     assert isinstance(session.globals_["obj"], ObjTree)
-    assert isinstance(session.globals_["sql"], SqlTool)
-    assert session.globals_["sql"].max_rows == DEFAULT_MAX_ROWS
+    # sql is served by its own websocket command, never bound into sessions.
+    assert "sql" not in session.globals_
+    assert manager.has_feature("sql")
     # No $HASS_SERVER/$HASS_TOKEN (nor a supervisor) here - connect_hass_api()
     # can't reach anything, so this only warns, it doesn't fail setup.
     assert session.globals_["hass_api"] is None
@@ -76,26 +76,8 @@ async def test_setup_entry_respects_expose_hass_and_expose_sql_false(
 
     session = hass.data[DOMAIN].get("default")
     assert "hass" not in session.globals_
-    assert "sql" not in session.globals_
+    assert not hass.data[DOMAIN].has_feature("sql")
     assert isinstance(session.globals_["obj"], ObjTree)
-
-    assert await hass.config_entries.async_unload(entry.entry_id)
-
-
-async def test_sql_limit_is_isolated_per_session(
-    recorder_mock, hass: HomeAssistant, enable_custom_integrations: None
-) -> None:
-    entry = MockConfigEntry(domain=DOMAIN, data={})
-    entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    manager = hass.data[DOMAIN]
-    one, two = manager.get("one"), manager.get("two")
-    assert one.globals_["sql"] is not two.globals_["sql"]
-
-    one.globals_["sql"].max_rows = 5000
-    assert two.globals_["sql"].max_rows == DEFAULT_MAX_ROWS
 
     assert await hass.config_entries.async_unload(entry.entry_id)
 

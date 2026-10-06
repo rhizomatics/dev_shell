@@ -24,6 +24,7 @@ from __future__ import annotations
 import base64
 import csv
 import io
+import json
 import random
 from collections.abc import Iterator
 from dataclasses import dataclass, field
@@ -78,15 +79,14 @@ class SqlTable:
 
 @dataclass
 class SqlResult:
-    """A query result downloaded from live mode's `sql`, as nanoarrow
-    arrays, one per column. Build one with `SqlResult.from_arrow()`, not
-    this constructor directly, unless you already have per-column arrays
-    in hand.
+    """A query result downloaded from live mode's `sql`, held as the one
+    Arrow struct array it arrived as (one field per column) - nothing is
+    unpacked or copied until a method asks for Python values. Build one
+    with `SqlResult.from_arrow()`.
     """
 
-    columns: dict[str, Any]
-    rowcount: int
-    truncated: bool
+    _data: Any
+    truncated: bool = False
     table: SqlTable | None = None
     """The recorder table these columns come from, when exactly one table
     has them all - None for a join, an aggregate, or a result that didn't
@@ -100,73 +100,99 @@ class SqlResult:
         truncated: bool = False,
         tables: list[SqlTable] | None = None,
     ) -> SqlResult:
-        """Rebuild a SqlResult from `.arrow()`'s bytes (the one shared
-        contract with the server-side SqlResult that produced them) - a
-        single Arrow IPC stream holding one struct-typed batch, one named
-        field per column. `truncated` isn't itself encoded in the Arrow
-        data (it's metadata about the query, not the rows), so it travels
-        alongside the bytes rather than inside them.
+        """Rebuild a SqlResult from Arrow IPC stream bytes (the one shared
+        contract with the server that produced them) - a single
+        struct-typed batch, one named field per column. `truncated` isn't
+        itself encoded in the Arrow data (it's metadata about the query,
+        not the rows), so it travels alongside the bytes rather than
+        inside them.
         """
         batch = na.ArrayStream.from_readable(data).read_all()
-        names = [field.name for field in batch.schema.fields]
-        columns = dict(zip(names, batch.iter_children(), strict=True))
-        matches = [t for t in tables or () if set(names) <= set(t.column_names())]
-        table = matches[0] if len(matches) == 1 else None
-        return cls(columns, len(batch), truncated, table)
+        names = {field.name for field in batch.schema.fields}
+        matches = [t for t in tables or () if names <= set(t.column_names())]
+        return cls(batch, truncated, matches[0] if len(matches) == 1 else None)
+
+    @classmethod
+    def _from_columns(
+        cls, columns: dict[str, Any], rowcount: int, like: SqlResult
+    ) -> SqlResult:
+        """A result over these per-column arrays, sharing their buffers."""
+        schema = na.struct({name: arr.schema for name, arr in columns.items()})
+        batch = na.c_array_from_buffers(
+            schema, length=rowcount, buffers=[], children=list(columns.values())
+        )
+        return cls(na.Array(batch), like.truncated, like.table)
 
     def arrow(self) -> Any:
         """The whole result as one Arrow struct array (a `nanoarrow.Array`,
         one field per column), without copying. It implements the Arrow
         PyCapsule interface, so Arrow-aware libraries take it directly:
-        `polars.from_arrow(r.arrow())`, `pyarrow.table(r.arrow())`,
+        `polars.DataFrame(r.arrow())`, `pyarrow.table(r.arrow())`,
         `pandas.DataFrame.from_arrow(r.arrow())`.
         """
-        schema = na.struct({name: arr.schema for name, arr in self.columns.items()})
-        return na.Array(
-            na.c_array_from_buffers(
-                schema,
-                length=self.rowcount,
-                buffers=[],
-                children=list(self.columns.values()),
-            )
-        )
+        return self._data
 
     def arrow_ipc(self) -> bytes:
         """The result serialized as an Arrow IPC stream - the format
         `from_arrow()` reads, and what `polars.read_ipc_stream()` or
         `pyarrow.ipc.open_stream()` expect, e.g. to save to a file.
         """
+        data = self._data
+        if data.n_chunks == 1 and data.offset:
+            # The IPC writer can't encode a sliced (offset) array; write a
+            # compact copy of just these rows instead.
+            data = self._take(range(self.rowcount))._data
         buf = io.BytesIO()
         with StreamWriter.from_writable(buf) as writer:
-            writer.write_stream(self.arrow())
+            writer.write_stream(data)
         return buf.getvalue()
 
+    @property
+    def rowcount(self) -> int:
+        return len(self._data)
+
+    @property
+    def column_names(self) -> list[str]:
+        return [field.name for field in self._data.schema.fields]
+
     def to_dicts(self) -> list[dict[str, Any]]:
-        names = list(self.columns)
-        return [dict(zip(names, row, strict=True)) for row in self._rows()]
+        return self._data.to_pylist()
+
+    def to_json(self, **kwargs: Any) -> str:
+        """The whole result as one JSON document: `columns` (names),
+        `rows` (a list per row, in column order), `rowcount` and
+        `truncated`. Compact compared to to_dicts() since column names
+        aren't repeated per row. `kwargs` go to json.dumps (indent, ...).
+        """
+        return json.dumps(self.json_data(), **kwargs)
+
+    def json_data(self) -> dict[str, Any]:
+        """What to_json() serializes, as plain Python data. Binary values
+        become hex strings; anything else JSON has no type for, str()."""
+        return {
+            "columns": self.column_names,
+            "rows": [[_json_value(v) for v in row] for row in self._rows()],
+            "rowcount": self.rowcount,
+            "truncated": self.truncated,
+        }
 
     def to_polars(self) -> Any:
         import polars as pl  # type: ignore[import-not-found]  # ty: ignore[unresolved-import]
 
-        return pl.DataFrame(self.columns)
+        return pl.DataFrame(self._data)
 
     def to_pandas(self) -> Any:
         import pandas as pd  # type: ignore[import-untyped]  # ty: ignore[unresolved-import]
 
         return pd.DataFrame({
-            name: list(arr.iter_py()) for name, arr in self.columns.items()
+            name: column.to_pylist() for name, column in self._column_arrays().items()
         })
 
     def __iter__(self) -> Iterator[list[Any]]:
-        """Rows as plain lists - see the server-side SqlResult's own
-        docstring for the same method; identical behaviour, just local.
-        """
+        """Rows as plain lists, in column order - so a `for` loop or
+        comprehension over a result just works."""
         for row in self._rows():
             yield list(row)
-
-    @property
-    def column_names(self) -> list[str]:
-        return list(self.columns)
 
     def show(
         self,
@@ -216,27 +242,31 @@ class SqlResult:
         """A new SqlResult with just these columns (same rows, same
         underlying arrays - no data is copied).
         """
-        return SqlResult(
-            {name: self.columns[name] for name in columns},
-            self.rowcount,
-            self.truncated,
-            self.table,
+        arrays = self._column_arrays()
+        return self._from_columns(
+            {name: arrays[name] for name in columns}, self.rowcount, self
         )
 
     def __getitem__(self, key: slice) -> SqlResult:
-        """Slice the rows with standard Python slice notation (`r[:10]`,
-        `r[-1:]`, `r[10:20]`) - a new SqlResult, not a view.
+        """A contiguous run of rows with standard Python slice notation
+        (`r[:10]`, `r[-1:]`, `r[10:20]`) - a new SqlResult sharing this
+        one's data, nothing copied. For anything more (a step, a filter,
+        a sort) use a dataframe: `r.to_polars()`.
         """
         if not isinstance(key, slice):
             raise TypeError(
                 f"SqlResult only supports slicing (e.g. result[:10]), not {key!r}"
             )
-        columns = {
-            name: na.array(arr.to_pylist()[key], schema=arr.schema)
-            for name, arr in self.columns.items()
-        }
-        rowcount = len(range(*key.indices(self.rowcount)))
-        return SqlResult(columns, rowcount, self.truncated, self.table)
+        start, stop, step = key.indices(self.rowcount)
+        if step != 1:
+            raise ValueError(
+                "SqlResult slices can't have a step - use result.to_polars() "
+                "for anything beyond a contiguous run of rows"
+            )
+        if self._data.n_chunks != 1:  # nothing to share: an empty result
+            return self
+        sliced = na.c_array(self._data)[start : max(start, stop)]
+        return SqlResult(na.Array(sliced), self.truncated, self.table)
 
     def __len__(self) -> int:
         return self.rowcount
@@ -246,15 +276,18 @@ class SqlResult:
         replacement (capped at the rows actually here). Rows keep their
         original relative order, only which ones are picked is random.
         """
-        chosen = set(random.sample(range(self.rowcount), min(count, self.rowcount)))
+        return self._take(
+            sorted(random.sample(range(self.rowcount), min(count, self.rowcount)))
+        )
+
+    def _take(self, indices: Any) -> SqlResult:
+        """A new SqlResult holding copies of just these rows, in this order
+        - only the rows asked for are read, not the whole column."""
         columns = {
-            name: na.array(
-                [value for i, value in enumerate(arr.to_pylist()) if i in chosen],
-                schema=arr.schema,
-            )
-            for name, arr in self.columns.items()
+            name: na.array([column[i].as_py() for i in indices], column.schema)
+            for name, column in self._column_arrays().items()
         }
-        return SqlResult(columns, len(chosen), self.truncated, self.table)
+        return self._from_columns(columns, len(indices), self)
 
     def export_csv(self, path: str | Path | None = None, **kwargs: Any) -> Path:
         """Write this result to a CSV file at `path` (your own machine,
@@ -274,18 +307,39 @@ class SqlResult:
                 writer.writerow("" if v is None else str(v) for v in row)
         return path
 
+    def _column_arrays(self) -> dict[str, Any]:
+        """Each column as its own array - views into the struct, not copies."""
+        children = list(self._data.iter_children())
+        if self._data.n_chunks == 1 and (
+            self._data.offset or any(len(c) != self.rowcount for c in children)
+        ):
+            # A sliced struct keeps its offset/length on itself; its child
+            # arrays still span the original rows, so narrow them to match.
+            start, stop = self._data.offset, self._data.offset + self.rowcount
+            children = [na.Array(na.c_array(c)[start:stop]) for c in children]
+        return dict(zip(self.column_names, children, strict=True))
+
     def _rows(self, names: list[str] | None = None) -> Iterator[tuple[Any, ...]]:
-        arrays = (
-            self.columns.values()
-            if names is None
-            else (self.columns[name] for name in names)
-        )
-        return zip(*(arr.iter_py() for arr in arrays), strict=True)
+        if names is None:
+            return self._data.iter_tuples()
+        arrays = self._column_arrays()
+        return zip(*(arrays[name].iter_py() for name in names), strict=True)
 
     def __repr__(self) -> str:
         suffix = " (truncated)" if self.truncated else ""
-        cols = ", ".join(self.columns)
-        return f"<SqlResult {self.rowcount} rows x {len(self.columns)} cols [{cols}]{suffix}>"
+        names = self.column_names
+        return (
+            f"<SqlResult {self.rowcount} rows x {len(names)} cols "
+            f"[{', '.join(names)}]{suffix}>"
+        )
+
+
+def _json_value(value: Any) -> Any:
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, (bytes, bytearray, memoryview)):
+        return bytes(value).hex()
+    return str(value)
 
 
 _MAX_ROWS_UNSET: Any = object()

@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any
 
 from homeassistant_repl.local_session import LocalSession
-from homeassistant_repl.repl import LiveSession, is_quit_call
+from homeassistant_repl.repl import Captured, LiveSession, is_quit_call
 
 
 class FakeClient:
@@ -30,8 +30,6 @@ class FakeClient:
         return {
             "stdout": "",
             "value": None,
-            "arrow": None,
-            "arrow_truncated": False,
             "error": error,
             "duration": 0.0,
             "truncated": False,
@@ -72,24 +70,117 @@ async def test_variable_left_on_the_server_routes_later_commands_there():
     live = _live(client)
 
     await live.run('s = hass.states.get("sun.sun")')
-    client.variables.append("s")
-    await live.refresh_remote_names()
     await live.run("s.state")
 
     assert client.executed[-1] == "s.state"
     assert "s" not in live.local.globals_
 
 
-async def test_name_on_both_sides_counts_as_local():
-    client = FakeClient(["hass", "obj", "sql", "x"])
-    live = _live(client, sql="local sql")
+async def test_existing_server_session_variables_are_picked_up_at_startup():
+    client = FakeClient(["hass", "obj", "hass_api", "earlier"])
+    live = _live(client, hass_api=None)
     await live.refresh_remote_names()
 
-    await live.run("x = 5")
-    await live.run("y = (x, sql)")
+    await live.run("earlier")
+    await live.run("hass_api")
 
-    assert client.executed == []
-    assert live.local.globals_["y"] == (5, "local sql")
+    assert client.executed == ["earlier"]
+
+
+async def test_a_name_lives_wherever_it_was_last_assigned():
+    client = FakeClient()
+    live = _live(client)
+
+    await live.run("x = 5")
+    await live.run("x = hass.config.latitude")
+    assert "x" not in live.local.globals_
+    await live.run("x")
+    assert client.executed == ["x = hass.config.latitude", "x"]
+
+    await live.run("x = 7")
+    await live.run("x + 1")
+    assert len(client.executed) == 2
+    assert live.local.globals_["_"] == 8
+
+
+async def test_server_side_loop_variable_does_not_take_over_a_local_name():
+    client = FakeClient()
+    live = _live(client)
+
+    await live.run("s = 'mine'")
+    await live.run("[s for s in hass.states.async_all()]")
+    await live.run("s")
+
+    assert live.local.globals_["_"] == "mine"
+
+
+async def test_mixed_snippet_is_split_by_statement():
+    client = FakeClient()
+    live = _live(client)
+
+    ok = await live.run(
+        "import json\n"
+        "eid = 'sun.sun'\n"
+        "s = hass.states.get(eid)\n"
+        "state = s.state\n"
+        "local_only = json.dumps([1])\n"
+    )
+
+    assert ok
+    # One preamble copying `eid` over, then both server statements together.
+    assert client.executed == [
+        "eid = 'sun.sun'",
+        "s = hass.states.get(eid)\nstate = s.state",
+    ]
+    assert live.local.globals_["local_only"] == "[1]"
+
+
+async def test_statements_sharing_a_line_go_together():
+    client = FakeClient()
+    live = _live(client)
+
+    await live.run("a = 1; hass.config")
+
+    assert client.executed == ["a = 1; hass.config"]
+
+
+async def test_run_stops_at_the_first_failure():
+    client = FakeClient()
+    client.fail_on = "hass.boom"
+    live = _live(client)
+
+    ok = await live.run("hass.boom\nafter = 1")
+
+    assert not ok
+    assert "after" not in live.local.globals_
+
+
+async def test_capture_collects_instead_of_printing(capsys):
+    client = FakeClient()
+    capture = Captured()
+    live = _live(client)
+    live.capture = capture
+
+    assert await live.run("print('hi')\n{'a': [1, 2]}")
+    assert capsys.readouterr().out == ""
+    assert (capture.stdout, capture.value, capture.error) == (
+        "hi\n",
+        {"a": [1, 2]},
+        None,
+    )
+
+    assert not await live.run("1/0")
+    assert capture.error is not None
+    assert capture.error["type"] == "ZeroDivisionError"
+    assert "1/0" in capture.error["traceback"]
+
+
+async def test_capture_turns_values_into_json_ready_data():
+    live = _live(FakeClient())
+    live.capture = Captured()
+
+    await live.run("object")
+    assert live.capture.value == "<class 'object'>"
 
 
 async def test_plain_local_data_is_copied_over_before_a_server_command():
@@ -162,18 +253,17 @@ async def test_shared_bindings_are_not_copied_over():
 
 
 async def test_underscore_follows_whichever_side_answered_last():
-    client = FakeClient(["hass", "obj", "_"])
+    client = FakeClient()
     live = _live(client)
-    await live.refresh_remote_names()
 
     await live.run("1 + 1")
     assert live.local.globals_["_"] == 2
     await live.run("_")
     assert client.executed == []
 
-    await live.run("hass.config.version")
+    await live.run("hass.config.latitude")
     await live.run("_")
-    assert client.executed == ["hass.config.version", "_"]
+    assert client.executed == ["hass.config.latitude", "_"]
 
 
 async def test_syntax_error_is_reported_locally(capsys):
@@ -191,3 +281,36 @@ def test_is_quit_call():
     assert is_quit_call("exit()")
     assert not is_quit_call("quit(1)")
     assert not is_quit_call("x = quit()")
+
+
+async def test_local_sql_result_crosses_to_the_server_as_its_rows():
+    import io
+
+    import nanoarrow as na
+    from nanoarrow.ipc import StreamWriter
+
+    from homeassistant_repl.sql import SqlResult
+
+    column = na.array(["sun.sun", "zone.home"], na.string())
+    batch = na.c_array_from_buffers(
+        na.struct({"entity_id": column.schema}),
+        length=2,
+        buffers=[],
+        children=[column],
+    )
+    buf = io.BytesIO()
+    with StreamWriter.from_writable(buf) as writer:
+        writer.write_stream(batch)
+
+    client = FakeClient()
+    live = _live(client)
+    live.local.globals_["r"] = SqlResult.from_arrow(buf.getvalue())
+
+    await live.run("[hass.states.get(row[0]) for row in r]")
+
+    assert client.executed == [
+        "r = [['sun.sun'], ['zone.home']]",
+        "[hass.states.get(row[0]) for row in r]",
+    ]
+    # Still the real result locally.
+    assert isinstance(live.local.globals_["r"], SqlResult)

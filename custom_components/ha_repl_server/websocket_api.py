@@ -14,7 +14,7 @@ from homeassistant.loader import async_get_integration
 
 from .const import DEFAULT_SESSION, DOMAIN
 from .session import SessionManager
-from .sql import DEFAULT_MAX_ROWS, SqlError, current_tables, sql
+from .sql import DEFAULT_MAX_ROWS, SqlError, sql, table_schemas
 
 
 @callback
@@ -127,12 +127,10 @@ async def ws_info(
 def _sql_manager(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> SessionManager | None:
-    """_manager(), plus the integration's own expose_sql switch - these
-    commands are the same `sql` a session would otherwise be bound, just
-    reached without exec, so turning that off has to turn these off too."""
+    """_manager(), plus the integration's own expose_sql switch."""
     if (manager := _manager(hass, connection, msg)) is None:
         return None
-    if not manager.has_binding("sql"):
+    if not manager.has_feature("sql"):
         connection.send_error(
             msg["id"],
             "sql_disabled",
@@ -176,7 +174,7 @@ async def ws_sql(
     connection.send_result(
         msg["id"],
         {
-            "arrow": base64.b64encode(result.arrow()).decode("ascii"),
+            "arrow": base64.b64encode(result.data).decode("ascii"),
             "truncated": result.truncated,
         },
     )
@@ -194,14 +192,4 @@ def ws_sql_tables(
     client's own `sql.tables`."""
     if _sql_manager(hass, connection, msg) is None:
         return
-    tables = [
-        {
-            "name": table.name,
-            "columns": [
-                {"name": column.name, "type": str(column.type)}
-                for column in table.columns()
-            ],
-        }
-        for table in current_tables()
-    ]
-    connection.send_result(msg["id"], {"tables": tables})
+    connection.send_result(msg["id"], {"tables": table_schemas()})

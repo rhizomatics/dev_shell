@@ -7,6 +7,7 @@ bytes one produces and the other reads - see sql.py's own module docstring.
 from __future__ import annotations
 
 import base64
+import json
 from pathlib import Path
 
 import nanoarrow as na
@@ -310,3 +311,53 @@ def test_result_has_no_rich_rendering_of_its_own():
 
     assert not hasattr(result, "__rich__")
     assert repr(result) == "<SqlResult 1 rows x 1 cols [id]>"
+
+
+def test_to_json_is_columns_and_rows():
+    result = _result(a=[1, 2], b=["x", "y"])
+
+    assert json.loads(result.to_json()) == {
+        "columns": ["a", "b"],
+        "rows": [[1, "x"], [2, "y"]],
+        "rowcount": 2,
+        "truncated": False,
+    }
+
+
+def test_json_data_makes_binary_values_hex():
+    column = na.array([b"\x01\xff", None], na.binary())
+    batch = na.c_array_from_buffers(
+        na.struct({"b": column.schema}), length=2, buffers=[], children=[column]
+    )
+    result = SqlResult(na.Array(batch))
+
+    assert result.json_data()["rows"] == [["01ff"], [None]]
+
+
+def test_arrow_is_the_downloaded_array_itself_not_a_rebuild():
+    result = _result(a=[1, 2])
+
+    assert result.arrow() is result.arrow()
+
+
+def test_contiguous_slice_keeps_working_as_a_full_result():
+    result = _result(a=[1, 2, 3, 4], b=["w", "x", "y", "z"])[1:3]
+
+    assert result.rowcount == 2
+    assert result.to_dicts() == [{"a": 2, "b": "x"}, {"a": 3, "b": "y"}]
+    assert list(result.project(["b"])) == [["x"], ["y"]]
+    assert list(result[-1:]) == [[3, "y"]]
+    assert list(SqlResult.from_arrow(result.arrow_ipc())) == [[2, "x"], [3, "y"]]
+
+
+def test_empty_and_out_of_range_slices():
+    result = _result(a=[1, 2, 3, 4])
+
+    assert len(result[3:1]) == 0
+    assert result[10:].column_names == ["a"]
+    assert len(result[10:][:5]) == 0
+
+
+def test_stepped_slice_points_at_polars():
+    with pytest.raises(ValueError, match="to_polars"):
+        _result(a=[1, 2, 3, 4])[::2]

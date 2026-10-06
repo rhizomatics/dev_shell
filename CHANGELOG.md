@@ -1,6 +1,10 @@
 # What's New
 
 # 0.7.0
+## Live Mode
+- The live mode is now local first, so arbitrary local imports can be made.
+  - `obj` and `hass` are the only fake objects, redirecting their inputs and outputs to the real equivalents inside the live server
+  - Both these objects are limited to accepting local primitive values only as arguments
 ## SQL
 - Results object has new features
   - It can now be sliced like a list, e.g. `[:-10]` for last 10 rows, `[:10]` for first 10
@@ -11,7 +15,7 @@
   - The results can be iterated over with a list of values per row
     `for e in sql('select * from events'):
         print(e[0],e[5])`
-  - The Apache Arrow / Feather data is available as `arrow()`
+  - The Apache Arrow / Feather data is available as `arrow()` using the PyCapsule interface for max compatibility
 - Queries all executed under `read_only` session scope so no commits expected (this is not a security measure)
 ## Live Server
 - Config switches now to optionally switch off `sql` and/or `hass` access

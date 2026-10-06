@@ -1,7 +1,6 @@
 """Tests for the execution engine, run without Home Assistant."""
 
 import asyncio
-import base64
 import importlib.util
 import sys
 from pathlib import Path
@@ -361,20 +360,6 @@ async def test_help_on_class_is_condensed(manager):
     assert "Point(x, y)" in result.stdout
 
 
-async def test_per_session_binding_gets_a_fresh_instance_each_session():
-    manager = session_mod.SessionManager({
-        "thing": session_mod.PerSession(lambda: {"calls": 0})
-    })
-    one = manager.get("one").globals_["thing"]
-    two = manager.get("two").globals_["thing"]
-    assert one is not two
-    one["calls"] += 1
-    assert two["calls"] == 0
-    # The factory runs once per session, not once per get() - re-fetching
-    # "one" returns the same (now-mutated) instance, not a fresh one.
-    assert manager.get("one").globals_["thing"]["calls"] == 1
-
-
 async def test_help_on_method_keeps_its_docstring(manager):
     # Drilling into one specific method still gets the full pydoc treatment.
     code = (
@@ -387,43 +372,3 @@ async def test_help_on_method_keeps_its_docstring(manager):
     )
     result = await run(manager, code)
     assert "Distance to another point." in result.stdout
-
-
-async def test_trailing_value_with_arrow_method_sends_arrow_not_text(manager):
-    code = (
-        "class Downloaded:\n"
-        "    truncated = True\n"
-        "    def arrow(self):\n"
-        "        return b'fake-arrow-bytes'\n"
-        "    def __repr__(self):\n"
-        "        return '<Downloaded>'\n"
-        "Downloaded()"
-    )
-    result = await run(manager, code)
-
-    assert result.arrow == base64.b64encode(b"fake-arrow-bytes").decode("ascii")
-    assert result.arrow_truncated is True
-    # A plain repr() fallback travels alongside, for a client that doesn't
-    # know to look at `arrow`.
-    assert result.value == "<Downloaded>"
-
-
-async def test_arrow_method_raising_falls_back_to_normal_rendering(manager):
-    code = (
-        "class Broken:\n"
-        "    def arrow(self):\n"
-        "        raise RuntimeError('nope')\n"
-        "Broken()"
-    )
-    result = await run(manager, code)
-
-    assert result.arrow is None
-    assert result.error is None
-    assert "Broken object" in result.value
-
-
-async def test_value_without_arrow_method_is_unaffected(manager):
-    result = await run(manager, "1 + 1")
-    assert result.arrow is None
-    assert result.arrow_truncated is False
-    assert result.value == "2"

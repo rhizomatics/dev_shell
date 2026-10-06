@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import ast
 import asyncio
-import base64
 import builtins
 import inspect
 import io
@@ -20,7 +19,6 @@ import textwrap
 import time
 import traceback
 import typing
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -50,22 +48,10 @@ _DOC_URLS: dict[str, str] = yaml.safe_load(
 
 @dataclass
 class ExecResult:
-    """Outcome of running one snippet.
-
-    `arrow` (base64, since this whole result is JSON) is set instead of
-    `value` when the trailing expression downloaded its own data and wants
-    the client to render it from that - see _maybe_arrow() below; `value`
-    still gets a plain repr() alongside it, for a client that doesn't know
-    to look at `arrow` to still show something. `arrow_truncated` mirrors
-    that value's own `.truncated` (e.g. a capped SqlResult) - unrelated to
-    `truncated` below, which is about *this text* being cut down to
-    MAX_OUTPUT_CHARS, not about the query that produced it.
-    """
+    """Outcome of running one snippet."""
 
     stdout: str = ""
     value: str | None = None
-    arrow: str | None = None
-    arrow_truncated: bool = False
     error: dict[str, str] | None = None
     duration: float = 0.0
     truncated: bool = False
@@ -74,8 +60,6 @@ class ExecResult:
         return {
             "stdout": self.stdout,
             "value": self.value,
-            "arrow": self.arrow,
-            "arrow_truncated": self.arrow_truncated,
             "error": self.error,
             "duration": self.duration,
             "truncated": self.truncated,
@@ -123,29 +107,14 @@ class Session:
                 value = await (asyncio.wait_for(coro, timeout) if timeout else coro)
                 if value is not None:
                     self.globals_["_"] = value
-                    arrow_bytes = _maybe_arrow(value)
-                    if arrow_bytes is not None:
-                        # This value downloaded its own data (sql()'s
-                        # SqlResult today, duck-typed rather than
-                        # isinstance-checked - see _maybe_arrow()) - the
-                        # client renders *that*, not a server-side repr.
-                        result.arrow = base64.b64encode(arrow_bytes).decode("ascii")
-                        result.arrow_truncated = bool(
-                            getattr(value, "truncated", False)
-                        )
-                        result.value = repr(value)
-                    else:
-                        # A value that already knows how to render itself as
-                        # a rich renderable is shown as-is instead of being
-                        # wrapped in Pretty's generic repr-style rendering,
-                        # which would just dump its attributes instead of
-                        # rendering it properly.
-                        renderable = (
-                            value
-                            if hasattr(value, "__rich_console__")
-                            else Pretty(value)
-                        )
-                        result.value = _render(renderable, color=color, width=width)
+                    # A value that already knows how to render itself as a
+                    # rich renderable is shown as-is instead of being wrapped
+                    # in Pretty's generic repr-style rendering, which would
+                    # just dump its attributes instead of rendering it properly.
+                    renderable = (
+                        value if hasattr(value, "__rich_console__") else Pretty(value)
+                    )
+                    result.value = _render(renderable, color=color, width=width)
             except asyncio.CancelledError:
                 # Cancellation of the caller must propagate, not be reported as a result.
                 raise
@@ -224,25 +193,6 @@ def warm_rich_unicode_data() -> None:
     import rich._unicode_data
 
     rich._unicode_data.load()
-
-
-def _maybe_arrow(value: Any) -> bytes | None:
-    """`value.arrow()`'s bytes, if it has a no-arg method by that name -
-    duck-typed, not isinstance-checked, so this module stays free of
-    Home Assistant/sql.py imports (see this module's own docstring). Only
-    sql.py's SqlResult exposes this today, but nothing here hard-codes
-    that: anything that downloads its own data and wants the client to
-    render it from that, rather than from a server-side repr, just needs
-    the same method.
-    """
-    method = getattr(value, "arrow", None)
-    if not callable(method):
-        return None
-    try:
-        data = method()
-    except Exception:  # noqa: BLE001 - fall back to a normal repr, not a crash
-        return None
-    return data if isinstance(data, bytes) else None
 
 
 def _render(renderable: Any, *, color: bool, width: int) -> str:
@@ -576,45 +526,33 @@ def _format_error(err: BaseException, *, color: bool, width: int) -> dict[str, s
     }
 
 
-@dataclass(frozen=True)
-class PerSession:
-    """Wraps a zero-arg factory for a binding that needs its own instance in
-    every session - e.g. sql's mutable `.limit`, which would otherwise leak
-    between sessions since `hass`/`obj` and friends are deliberately one
-    shared instance for all of them. SessionManager.get() calls the factory
-    once, the first time each session is created.
-    """
-
-    factory: Callable[[], Any]
-
-
 class SessionManager:
     """Holds sessions by name; a session lives until reset or process restart."""
 
-    def __init__(self, bindings: dict[str, Any]) -> None:
+    def __init__(
+        self, bindings: dict[str, Any], features: frozenset[str] = frozenset()
+    ) -> None:
         self._bindings = bindings
+        self._features = features
         self._sessions: dict[str, Session] = {}
 
     def get(self, name: str) -> Session:
         if (session := self._sessions.get(name)) is None:
-            resolved = {
-                k: (v.factory() if isinstance(v, PerSession) else v)
-                for k, v in self._bindings.items()
-            }
             globals_ = {
                 "__name__": "__ha_repl__",
                 "__builtins__": builtins,
-                **resolved,
+                **self._bindings,
             }
-            session = self._sessions[name] = Session(name, globals_, resolved)
+            session = self._sessions[name] = Session(
+                name, globals_, dict(self._bindings)
+            )
         return session
 
-    def has_binding(self, name: str) -> bool:
-        """Whether this name is bound into sessions at all (e.g. "sql" is
-        left out when the integration's expose_sql option is off) - for the
-        websocket commands that serve a binding's data directly rather than
-        through exec, to honour the same switch."""
-        return name in self._bindings
+    def has_feature(self, name: str) -> bool:
+        """Whether an optional capability that isn't a session binding is
+        switched on - "sql" (the integration's expose_sql option) is served
+        by its own websocket commands, not through exec."""
+        return name in self._features
 
     def reset(self, name: str) -> bool:
         return self._sessions.pop(name, None) is not None

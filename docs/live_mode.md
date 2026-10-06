@@ -31,6 +31,13 @@ Also, `sql` gives you query access to the primary HomeAssistant database.
 
 Get help on the arguments in the usual way.
 
+`hass` and `sql` can get combined like this, note the separate rows, the two 'magic' variables can't be combined yet into a single statement.
+
+```python
+>>> r = sql("select entity_id from states_meta", max_rows=3)
+{row[0]: hass.states.get(row[0]).state for row in r}
+```
+
 ## What Runs Where
 
 The live shell is an ordinary Python session on your own machine. Import whatever you have installed, define functions, keep dataframes around - none of that touches Home Assistant.
@@ -41,7 +48,7 @@ The live shell is an ordinary Python session on your own machine. Import whateve
 | `hass_api` | Local. A REST API client |
 | `hass`, `obj` | Inside Home Assistant |
 
-Since `hass` and `obj` only exist inside Home Assistant, any command that uses one of them is sent there whole and run there, with its output sent back as text. A variable assigned by such a command stays there too, and later commands that use it follow it:
+Since `hass` and `obj` only exist inside Home Assistant, any statement that uses one of them is sent there and run there, with its output sent back as text. A variable assigned by such a statement stays there too, and later statements that use it follow it:
 
 ```python
 >>> import polars as pl                      # local
@@ -51,7 +58,17 @@ Since `hass` and `obj` only exist inside Home Assistant, any command that uses o
 'below_horizon'
 ```
 
-Local values can be used in a command that runs inside Home Assistant when they are plain data (strings, numbers, and lists or dicts of them) - they are copied over first. Modules you imported locally are imported there under the same name. Anything else local, such as a dataframe or a function, can't cross; the shell says so rather than running the command. Nothing is copied back the other way.
+Local values can be used in a statement that runs inside Home Assistant when they are plain data (strings, numbers, and lists or dicts of them) - they are copied over first. Modules you imported locally are imported there under the same name. Anything else local, such as a dataframe or a function, can't cross; the shell says so rather than running the statement. Nothing is copied back the other way.
+
+A `sql` result is the one exception: it crosses as its rows (a list of lists), so you can loop over one to call into `hass`:
+
+```python
+>>> r = sql("select entity_id from states_meta")
+>>> {row[0]: hass.states.get(row[0]).state for row in r}
+```
+
+!!! warning
+    Assign the result first, as above. `sql` itself doesn't exist inside Home Assistant, so one statement that both calls `sql(...)` and uses `hass` or `obj` fails there with a `NameError`. Only the rows cross, not the result's methods, and only up to about 100,000 characters of data - trim a large result first with `project()` or a slice.
 
 ```python
 >>> eid = "sun.sun"                          # local
@@ -59,7 +76,27 @@ Local values can be used in a command that runs inside Home Assistant when they 
 'below_horizon'
 ```
 
-If a name exists on both sides, the local one is used. `ha-repl exec` is unchanged: the whole snippet runs inside Home Assistant.
+A variable lives wherever it was last assigned. The decision is made per statement, so several lines pasted or run together can mix both sides.
+
+## One-Shot Snippets and Agents
+
+`ha-repl exec` runs a snippet exactly as the live shell would - local Python and `sql` on your side, `hass` and `obj` statements inside Home Assistant - then exits. The exit status is 1 if the snippet raised.
+
+```bash
+ha-repl exec 'sql("select * from states_meta").show()'
+ha-repl exec - <<'PY'
+ids = [row[0] for row in sql("select entity_id from states_meta", max_rows=3)]
+{i: hass.states.get(i).state for i in ids}
+PY
+```
+
+Add `--json` for output meant for a program or an agent rather than a person: one JSON object with `stdout`, `value` (the last expression), `error`, `duration` (seconds) and `truncated` (true if output from inside Home Assistant hit its size limit). A `sql` result becomes its data, as `{"columns": [...], "rows": [[...], ...], "rowcount": n, "truncated": false}`; other local values are passed through when they are already JSON-shaped. A value from inside Home Assistant arrives as its printed text.
+
+```bash
+ha-repl --json exec 'sql("select count(*) as n from states")'
+```
+
+Variables on the Home Assistant side persist between `exec` calls (per `--session`, until `ha-repl reset`); local ones last only for the one call.
 
 
 ## Running from a clone/fork of this repo

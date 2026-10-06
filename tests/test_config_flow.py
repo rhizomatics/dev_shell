@@ -99,7 +99,7 @@ async def test_options_flow_updates_entry_options_and_reloads(
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    assert "sql" in hass.data[DOMAIN].get("default").globals_
+    assert hass.data[DOMAIN].has_feature("sql")
 
     result = await hass.config_entries.options.async_init(entry.entry_id)
     result = await hass.config_entries.options.async_configure(
@@ -110,5 +110,5 @@ async def test_options_flow_updates_entry_options_and_reloads(
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options == {"expose_hass": True, "expose_sql": False}
     # OptionsFlowWithReload reloaded the entry - the session manager was
-    # rebuilt with the new bindings, not the old ones.
-    assert "sql" not in hass.data[DOMAIN].get("default").globals_
+    # rebuilt with the new settings, not the old ones.
+    assert not hass.data[DOMAIN].has_feature("sql")
