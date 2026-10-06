@@ -49,5 +49,5 @@ $ ipython
 
 ## Marimo Example
 
-![Example Marimo Import and Usage](assets/screenshots/marimo.png)
+![Example Marimo Import and Usage](assets/screenshots/marimo.png){width=500}
 
