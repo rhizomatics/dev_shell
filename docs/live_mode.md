@@ -80,24 +80,7 @@ A variable lives wherever it was last assigned. The decision is made per stateme
 
 ## One-Shot Snippets and Agents
 
-`ha-repl exec` runs a snippet exactly as the live shell would - local Python and `sql` on your side, `hass` and `obj` statements inside Home Assistant - then exits. The exit status is 1 if the snippet raised.
-
-```bash
-ha-repl exec 'sql("select * from states_meta").show()'
-ha-repl exec - <<'PY'
-ids = [row[0] for row in sql("select entity_id from states_meta", max_rows=3)]
-{i: hass.states.get(i).state for i in ids}
-PY
-```
-
-Add `--json` for output meant for a program or an agent rather than a person: one JSON object with `stdout`, `value` (the last expression), `error`, `duration` (seconds) and `truncated` (true if output from inside Home Assistant hit its size limit). A `sql` result becomes its data, as `{"columns": [...], "rows": [[...], ...], "rowcount": n, "truncated": false}`; other local values are passed through when they are already JSON-shaped. A value from inside Home Assistant arrives as its printed text.
-
-```bash
-ha-repl --json exec 'sql("select count(*) as n from states")'
-```
-
-Variables on the Home Assistant side persist between `exec` calls (per `--session`, until `ha-repl reset`); local ones last only for the one call.
-
+`ha-repl exec` runs a snippet exactly as the live shell would, then exits - see [Exec Mode](exec_mode.md), which covers its JSON output and use by coding agents.
 
 ## Running from a clone/fork of this repo
 

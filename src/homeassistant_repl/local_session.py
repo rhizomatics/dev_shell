@@ -200,11 +200,13 @@ async def _run_code(code: Any, globals_: dict[str, Any]) -> Any:
 
 
 def _user_traceback(err: BaseException) -> Any:
+    # Drop the shell's own leading frames so the traceback starts at user
+    # code (compiled under /ha_repl/, see _execute) - whichever module of
+    # ours called in. An error with no user frame at all is left whole.
     tb = err.__traceback__
-    # Drop the frames belonging to this module so the traceback starts at user code.
-    while tb is not None and tb.tb_frame.f_code.co_filename == __file__:
+    while tb is not None and not tb.tb_frame.f_code.co_filename.startswith("/ha_repl/"):
         tb = tb.tb_next
-    return tb
+    return tb or err.__traceback__
 
 
 def format_error(err: BaseException) -> dict[str, str]:

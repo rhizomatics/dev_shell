@@ -94,6 +94,11 @@ This switch controls trade-off between shell convenience and ability to trial wo
   - `homeassistant-repl`
 - Allow it to be set up easily inside any python code (async compatibility)? [DONE]
   - `homeassistant_repl.connect()`
+- Efficient transfer of large `sql` results
+    - Today a result is built whole in Home Assistant's memory several times over (fetched rows, Arrow arrays, Arrow IPC bytes, base64 text) and sent as one JSON websocket message, about a third larger than the data. `max_rows` is the only protection for a large recorder database
+    - Move it to a separate HTTP endpoint in the server component that streams raw Arrow record batches as binary, built chunk by chunk from the database cursor, so server memory stays at one chunk and nothing is base64 encoded
+    - Registered as a Home Assistant HTTP view, it keeps what the websocket gave: same port, and Home Assistant's own token authentication
+    - Client reads the batches as they arrive and hands them to polars without copying, opening the way to lazy or paged results
 - Remove `rich` from the server side
     - Tracebacks from inside Home Assistant are rendered there as rich text and shipped as a string; send the raw traceback data and render on the client instead ([debuglater](https://github.com/ploomber/debuglater) may be an option for serializing it)
     - Same for values and `help()` output, so `ha-repl --json exec` gets clean data from both sides
