@@ -117,6 +117,10 @@ This switch controls trade-off between shell convenience and ability to trial wo
     - https://developers.home-assistant.io/docs/api/rest/
 - REPL improvements
   - `rich` formatting [DONE]
+  - [iPython features](https://ipython.org/features/)
+    - magic commands
+    - object introspection -`?` for help, `??` for source code
+  - bottom toolbar (prompt-toolkit supports)
 - User plugins/extensions
   - python scripts in a directory
   - functions
