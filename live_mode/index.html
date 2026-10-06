@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://homeassistant-repl.rhizomatics.org.uk/live_mode/">
       
       
-        <link rel="prev" href="../changelog/">
+        <link rel="prev" href="../exec_mode/">
       
       
         <link rel="next" href="../obj_tree/">
@@ -266,6 +266,25 @@
   
   
   
+  
+    <li class="md-tabs__item">
+      <a href="../exec_mode/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Exec Mode
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
     
   
   
@@ -459,6 +478,33 @@
     
   
     What's New
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exec_mode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exec Mode
   
 
     
@@ -699,10 +745,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
             
   
   
@@ -720,8 +766,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -787,10 +833,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7_2" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8_2" >
         
           
-          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8_2" id="__nav_8_2_label" tabindex="0">
             
   
   
@@ -808,8 +854,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1002,37 +1048,27 @@
 </span></code></pre></div>
 <p>A variable lives wherever it was last assigned. The decision is made per statement, so several lines pasted or run together can mix both sides.</p>
 <h2 id="one-shot-snippets-and-agents">One-Shot Snippets and Agents<a class="headerlink" href="#one-shot-snippets-and-agents" title="Permanent link">&para;</a></h2>
-<p><code>ha-repl exec</code> runs a snippet exactly as the live shell would - local Python and <code>sql</code> on your side, <code>hass</code> and <code>obj</code> statements inside Home Assistant - then exits. The exit status is 1 if the snippet raised.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s1">'sql("select * from states_meta").show()'</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;'PY'</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="s">ids = [row[0] for row in sql("select entity_id from states_meta", max_rows=3)]</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="s">{i: hass.states.get(i).state for i in ids}</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="s">PY</span>
-</span></code></pre></div>
-<p>Add <code>--json</code> for output meant for a program or an agent rather than a person: one JSON object with <code>stdout</code>, <code>value</code> (the last expression), <code>error</code>, <code>duration</code> (seconds) and <code>truncated</code> (true if output from inside Home Assistant hit its size limit). A <code>sql</code> result becomes its data, as <code>{"columns": [...], "rows": [[...], ...], "rowcount": n, "truncated": false}</code>; other local values are passed through when they are already JSON-shaped. A value from inside Home Assistant arrives as its printed text.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>ha-repl<span class="w"> </span>--json<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s1">'sql("select count(*) as n from states")'</span>
-</span></code></pre></div>
-<p>Variables on the Home Assistant side persist between <code>exec</code> calls (per <code>--session</code>, until <code>ha-repl reset</code>); local ones last only for the one call.</p>
+<p><code>ha-repl exec</code> runs a snippet exactly as the live shell would, then exits - see <a href="../exec_mode/">Exec Mode</a>, which covers its JSON output and use by coding agents.</p>
 <h2 id="running-from-a-clonefork-of-this-repo">Running from a clone/fork of this repo<a class="headerlink" href="#running-from-a-clonefork-of-this-repo" title="Permanent link">&para;</a></h2>
 <p>If you do have this repo checked out, you can also use a direct <code>run</code> which means you can also tinker locally with <code>homeassistant_repl</code> code.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w">         </span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w">         </span>
 </span></code></pre></div>
 <h3 id="install-local-home-assistant-with-the-live-server">Install Local Home Assistant with the Live Server<a class="headerlink" href="#install-local-home-assistant-with-the-live-server" title="Permanent link">&para;</a></h3>
 <p>The <code>homeassistant-repl</code> repo has a <a href="https://containers.dev">DevContainer</a> defined, and helper scripts in the <code>/dev</code> directory to manage it.</p>
 <p>Dev instance (devcontainer, or directly on a host with Python 3.14):</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>dev/setup.sh<span class="w">                 </span><span class="c1"># installs HA into its own venv + the CLI (devcontainer runs this)</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>dev/restart-ha.sh<span class="w">            </span><span class="c1"># Kill current HA instance and start a new</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>dev/run-ha.sh<span class="w">                </span><span class="c1"># HA on :8123 with custom_components/ha_repl_server symlinked in</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>dev/bootstrap.py<span class="w">   </span><span class="c1"># onboard (user dev/dev) and write dev/.env with a token</span>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>dev/setup.sh<span class="w">                 </span><span class="c1"># installs HA into its own venv + the CLI (devcontainer runs this)</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>dev/restart-ha.sh<span class="w">            </span><span class="c1"># Kill current HA instance and start a new</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>dev/run-ha.sh<span class="w">                </span><span class="c1"># HA on :8123 with custom_components/ha_repl_server symlinked in</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>dev/bootstrap.py<span class="w">   </span><span class="c1"># onboard (user dev/dev) and write dev/.env with a token</span>
 </span></code></pre></div>
 <p>Using it (host or container):</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nb">set</span><span class="w"> </span>-a<span class="p">;</span><span class="w"> </span>.<span class="w"> </span>dev/.env<span class="p">;</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>+a
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w">                                         </span><span class="c1"># interactive</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s1">'hass.states.get("sun.sun")'</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;'PY'</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="s">await hass.services.async_call("light", "toggle", {"entity_id": "light.kitchen_lights"}, blocking=True)</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="s">hass.states.get("light.kitchen_lights").state</span>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="s">PY</span>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nb">set</span><span class="w"> </span>-a<span class="p">;</span><span class="w"> </span>.<span class="w"> </span>dev/.env<span class="p">;</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>+a
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w">                                         </span><span class="c1"># interactive</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s1">'hass.states.get("sun.sun")'</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;'PY'</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="s">await hass.services.async_call("light", "toggle", {"entity_id": "light.kitchen_lights"}, blocking=True)</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="s">hass.states.get("light.kitchen_lights").state</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="s">PY</span>
 </span></code></pre></div>
 
 

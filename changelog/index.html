@@ -16,7 +16,7 @@
         <link rel="prev" href="../alternative_integration/">
       
       
-        <link rel="next" href="../live_mode/">
+        <link rel="next" href="../exec_mode/">
       
       
         
@@ -270,6 +270,25 @@
   
   
     <li class="md-tabs__item">
+      <a href="../exec_mode/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Exec Mode
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
       <a href="../live_mode/" class="md-tabs__link">
         
   
@@ -488,6 +507,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../exec_mode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exec Mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../live_mode/" class="md-nav__link">
         
   
@@ -590,10 +636,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
             
   
   
@@ -611,8 +657,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -678,10 +724,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7_2" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8_2" >
         
           
-          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8_2" id="__nav_8_2_label" tabindex="0">
             
   
   
@@ -699,8 +745,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -824,15 +870,15 @@
 
 <h1 id="whats-new">What's New<a class="headerlink" href="#whats-new" title="Permanent link">&para;</a></h1>
 <h1 id="070">0.7.0<a class="headerlink" href="#070" title="Permanent link">&para;</a></h1>
-<h2 id="live-mode">Live Mode<a class="headerlink" href="#live-mode" title="Permanent link">&para;</a></h2>
+<h2 id="live-shell">Live Shell<a class="headerlink" href="#live-shell" title="Permanent link">&para;</a></h2>
 <ul>
 <li>The live mode is now local first, so arbitrary local imports can be made.</li>
 <li><code>obj</code> and <code>hass</code> are the only fake objects, redirecting their inputs and outputs to the real equivalents inside the live server</li>
-<li>Both these objects are limited to accepting local primitive values only as arguments</li>
+<li>Both these objects are limited to accepting local primitive values only as arguments, and can't be combined in a single statement</li>
 </ul>
 <h2 id="sql">SQL<a class="headerlink" href="#sql" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Results object has new features</li>
+<li>Results object has new features:</li>
 <li>It can now be sliced like a list, e.g. <code>[:-10]</code> for last 10 rows, <code>[:10]</code> for first 10</li>
 <li><code>project()</code> method which takes a list of columns and produces same table with just those columns</li>
 <li><code>sample()</code> returns a random sample of rows from the table, defaulting to 20, overridable with <code>count=</code> </li>
@@ -842,6 +888,7 @@
     <code>for e in sql('select * from events'):
         print(e[0],e[5])</code></li>
 <li>The Apache Arrow / Feather data is available as <code>arrow()</code> using the PyCapsule interface for max compatibility</li>
+<li>Internally the data is more efficiently stored, as single native Arrow object</li>
 <li>Queries all executed under <code>read_only</code> session scope so no commits expected (this is not a security measure)</li>
 </ul>
 <h2 id="live-server">Live Server<a class="headerlink" href="#live-server" title="Permanent link">&para;</a></h2>

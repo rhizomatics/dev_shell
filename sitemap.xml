@@ -16,6 +16,11 @@
         <changefreq>daily</changefreq>
     </url>
     <url>
+        <loc>https://homeassistant-repl.rhizomatics.org.uk/exec_mode/</loc>
+        <lastmod>2026-10-06</lastmod>
+        <changefreq>daily</changefreq>
+    </url>
+    <url>
         <loc>https://homeassistant-repl.rhizomatics.org.uk/live_mode/</loc>
         <lastmod>2026-10-06</lastmod>
         <changefreq>daily</changefreq>
