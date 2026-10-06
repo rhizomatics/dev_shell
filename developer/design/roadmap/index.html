@@ -1135,6 +1135,11 @@
 <li><code>homeassistant-repl</code></li>
 <li>Allow it to be set up easily inside any python code (async compatibility)? [DONE]</li>
 <li><code>homeassistant_repl.connect()</code></li>
+<li>Remove <code>rich</code> from the server side<ul>
+<li>Tracebacks from inside Home Assistant are rendered there as rich text and shipped as a string; send the raw traceback data and render on the client instead (<a href="https://github.com/ploomber/debuglater">debuglater</a> may be an option for serializing it)</li>
+<li>Same for values and <code>help()</code> output, so <code>ha-repl --json exec</code> gets clean data from both sides</li>
+</ul>
+</li>
 </ul>
 <h2 id="other-ideas">Other Ideas<a class="headerlink" href="#other-ideas" title="Permanent link">&para;</a></h2>
 <ul>

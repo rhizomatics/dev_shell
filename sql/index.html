@@ -942,7 +942,7 @@
 <h3 id="result-objects">Result Objects<a class="headerlink" href="#result-objects" title="Permanent link">&para;</a></h3>
 <p>On the result object, <code>show()</code> will display data in tabular form at the command, using the <code>rich</code> library's table support. </p>
 <p>The result will have both its rows and columns automatically limited, so it doesn't look like a mess or lock up the console. Use <code>max_rows</code> or <code>max_cols</code> to override this, or <code>columns</code> to set the list of columns specifically.</p>
-<p>The results can also be sliced like a Python list, so <code>[:10]</code> for the first 10 rows or <code>[-10:]</code> for the last 10. You can also call <code>len()</code> on the results to get the number of rows.</p>
+<p>The results can also be sliced like a Python list, so <code>[:10]</code> for the first 10 rows or <code>[-10:]</code> for the last 10. Slices share the downloaded data rather than copying it. For anything more advanced - a step, filtering, sorting, joins - turn the result into a dataframe with <code>to_polars()</code>, which also uses the downloaded Arrow data directly. You can also call <code>len()</code> on the results to get the number of rows.</p>
 <table>
 <thead>
 <tr>
@@ -962,10 +962,6 @@
 <tr>
 <td><code>table</code></td>
 <td>The <code>Table</code> object describing this table, or <code>None</code> if the columns don't identify a single table</td>
-</tr>
-<tr>
-<td><code>columns</code></td>
-<td>The data itself: a <code>dict</code> of Arrow arrays, one per column, by name</td>
 </tr>
 <tr>
 <td><code>column_names</code></td>
@@ -989,11 +985,15 @@
 </tr>
 <tr>
 <td><code>arrow()</code></td>
-<td>The result as an Arrow array, for Arrow-aware libraries, e.g. <code>polars.from_arrow(r.arrow())</code></td>
+<td>The result as an Arrow array, for Arrow-aware libraries, e.g. <code>polars.DataFrame(r.arrow())</code> or <code>pyarrow.table(r.arrow())</code></td>
 </tr>
 <tr>
 <td><code>arrow_ipc()</code></td>
 <td>The result as Arrow IPC stream bytes, e.g. to save to a file</td>
+</tr>
+<tr>
+<td><code>to_json()</code></td>
+<td>The results as a JSON string of <code>columns</code>, <code>rows</code>, <code>rowcount</code> and <code>truncated</code></td>
 </tr>
 <tr>
 <td><code>to_dicts()</code></td>

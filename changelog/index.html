@@ -824,6 +824,12 @@
 
 <h1 id="whats-new">What's New<a class="headerlink" href="#whats-new" title="Permanent link">&para;</a></h1>
 <h1 id="070">0.7.0<a class="headerlink" href="#070" title="Permanent link">&para;</a></h1>
+<h2 id="live-mode">Live Mode<a class="headerlink" href="#live-mode" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The live mode is now local first, so arbitrary local imports can be made.</li>
+<li><code>obj</code> and <code>hass</code> are the only fake objects, redirecting their inputs and outputs to the real equivalents inside the live server</li>
+<li>Both these objects are limited to accepting local primitive values only as arguments</li>
+</ul>
 <h2 id="sql">SQL<a class="headerlink" href="#sql" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Results object has new features</li>
@@ -835,7 +841,7 @@
 <li>The results can be iterated over with a list of values per row
     <code>for e in sql('select * from events'):
         print(e[0],e[5])</code></li>
-<li>The Apache Arrow / Feather data is available as <code>arrow()</code></li>
+<li>The Apache Arrow / Feather data is available as <code>arrow()</code> using the PyCapsule interface for max compatibility</li>
 <li>Queries all executed under <code>read_only</code> session scope so no commits expected (this is not a security measure)</li>
 </ul>
 <h2 id="live-server">Live Server<a class="headerlink" href="#live-server" title="Permanent link">&para;</a></h2>
