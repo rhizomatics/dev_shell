@@ -967,8 +967,24 @@
 
 
 <h1 id="whats-new">What's New<a class="headerlink" href="#whats-new" title="Permanent link">&para;</a></h1>
-<h1 id="070">0.7.0<a class="headerlink" href="#070" title="Permanent link">&para;</a></h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For live mode, generally the client and server component have to be on the same version. Different versions <em>might</em> work
+with each other for point releases</p>
+</div>
+<h1 id="080">0.8.0<a class="headerlink" href="#080" title="Permanent link">&para;</a></h1>
+<h2 id="live-server">Live Server<a class="headerlink" href="#live-server" title="Permanent link">&para;</a></h2>
+<ul>
+<li>No longer uses <code>rich</code>, so installing no longer upgrades the much older <code>rich</code> bundled with Home Assistant 2026.10 - which could fail setup with <code>cannot import name 'SyntaxPosition' from 'rich.syntax'</code> until a second restart</li>
+<li>Values and errors are now sent to the client as data, and rendered there</li>
+<li>Needs a matching client: an older <code>ha-repl</code> still works, but shows plain values and tracebacks</li>
+</ul>
 <h2 id="live-shell">Live Shell<a class="headerlink" href="#live-shell" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Fix for a class whose body calls something (e.g. a <code>dataclasses.field()</code> default) failing with <code>'await' outside function</code></li>
+</ul>
+<h1 id="070">0.7.0<a class="headerlink" href="#070" title="Permanent link">&para;</a></h1>
+<h2 id="live-shell_1">Live Shell<a class="headerlink" href="#live-shell_1" title="Permanent link">&para;</a></h2>
 <ul>
 <li>The live mode is now local first, so arbitrary local imports can be made.</li>
 <li><code>obj</code> and <code>hass</code> are the only fake objects, redirecting their inputs and outputs to the real equivalents inside the live server</li>
@@ -989,7 +1005,7 @@
 <li>Internally the data is more efficiently stored, as single native Arrow object</li>
 <li>Queries all executed under <code>read_only</code> session scope so no commits expected (this is not a security measure)</li>
 </ul>
-<h2 id="live-server">Live Server<a class="headerlink" href="#live-server" title="Permanent link">&para;</a></h2>
+<h2 id="live-server_1">Live Server<a class="headerlink" href="#live-server_1" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Config switches now to optionally switch off <code>sql</code> and/or <code>hass</code> access</li>
 </ul>
