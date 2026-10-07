@@ -21,6 +21,7 @@ import ast
 import asyncio
 import codeop
 import contextlib
+import copy
 import io
 import json
 import sys
@@ -49,6 +50,8 @@ REMOTE_ONLY = frozenset({"hass", "obj"})
 
 # Local values bigger than this (as source text) aren't copied to the server.
 _MAX_SHIPPED_CHARS = 100_000
+
+_LIST_ITERATOR: type = type(iter([]))
 
 _LITERAL_TYPES = (
     str,
@@ -84,6 +87,7 @@ class _Chunk:
     start: int  # first source line, 1-based
     end: int  # last source line, inclusive
     names: _Names
+    count: int = 1  # statements
 
 
 @dataclass
@@ -95,13 +99,15 @@ class LiveSession:
     (`s = hass.states.get("sun.sun")`, then `s.state`). Everything else
     runs locally. A name lives wherever it was last assigned.
 
-    The two namespaces are otherwise separate. The one thing that crosses
-    is local -> server, for a server-side statement that uses local names:
-    plain data (strings, numbers, lists/dicts of them) is copied over, and
-    an imported module is imported there under the same name. Anything else
-    local (a dataframe, a SqlResult, a function) can't follow, and the
-    statement is refused with an explanation rather than failing over there
-    with a puzzling NameError.
+    The two namespaces are otherwise separate, and only plain data
+    (strings, numbers, lists/dicts of them) crosses between them. Local ->
+    server, for a server-side statement that uses local names: plain data
+    is copied over, and an imported module is imported there under the same
+    name. Server -> local: a variable a server-side statement assigns comes
+    back, and is local from then on, if what it holds is plain data. Anything
+    else local (a dataframe, a function, `sql` or `hass_api` themselves)
+    can't follow, and the statement is refused with an explanation rather
+    than failing over there with a puzzling NameError.
     """
 
     client: Any
@@ -132,58 +138,69 @@ class LiveSession:
             tree = ast.parse(source)
         except SyntaxError, ValueError:
             return await self._run_local(source, echo=True)  # reports the error
-        chunks = self._plan(tree)
-        if len(chunks) <= 1:
-            # Untouched, so comments and layout survive into tracebacks.
-            texts = [source]
-        else:
-            lines = source.splitlines()
-            texts = ["\n".join(lines[c.start - 1 : c.end]) for c in chunks]
-        for i, (chunk, text) in enumerate(zip(chunks, texts, strict=False)):
-            echo = i == len(chunks) - 1
+        if not tree.body:
+            return await self._run_local(source, echo=True)
+        lines = source.splitlines()
+        body = tree.body
+        whole = True
+        while body:
+            # Planned one step at a time: where the rest runs depends on
+            # what this step leaves behind, and on which side.
+            chunk = self._next_chunk(body)
+            body = body[chunk.count :]
+            # Untouched if it's all there is, so comments and layout survive
+            # into tracebacks.
+            text = (
+                source
+                if whole and not body
+                else "\n".join(lines[chunk.start - 1 : chunk.end])
+            )
+            whole = False
             if chunk.remote:
-                ok = await self._run_remote(text, chunk.names, echo=echo)
-                for name in chunk.names.assigned:
-                    self.local.globals_.pop(name, None)
-                self.remote_names |= chunk.names.assigned
+                ok = await self._run_remote(text, chunk.names, echo=not body)
             else:
-                ok = await self._run_local(text, echo=echo)
+                ok = await self._run_local(text, echo=not body)
                 self.remote_names -= chunk.names.assigned
             if not ok:
                 return False
-        if not chunks:
-            return await self._run_local(source, echo=True)
         return True
 
-    def _plan(self, tree: ast.Module) -> list[_Chunk]:
+    def _next_chunk(self, body: list[ast.stmt]) -> _Chunk:
+        """The leading statements of `body` that run together: a run of
+        local ones, or a single server-side one - what a server-side
+        statement assigns may come back as local data (see _run_remote),
+        which changes where the statements after it belong."""
         local = self._local_names()
         remote = (REMOTE_ONLY | self.remote_names) - local
-        chunks: list[_Chunk] = []
-        for stmt in tree.body:
+        chunk: _Chunk | None = None
+        for stmt in body:
             names = _Names()
             names.visit(stmt)
             is_remote = bool(names.loaded & remote)
-            if is_remote:
-                remote |= names.assigned
-                local -= names.assigned
-            else:
-                local |= names.assigned
-                remote -= names.assigned
             start = min([
                 stmt.lineno,
                 *(d.lineno for d in getattr(stmt, "decorator_list", [])),
             ])
             end = stmt.end_lineno or stmt.lineno
-            last = chunks[-1] if chunks else None
-            # Two statements sharing a line (`a = 1; hass.x`) can't be cut
-            # apart by line, so they go together - to the server if either does.
-            if last and (last.remote == is_remote or start <= last.end):
-                last.remote = last.remote or is_remote
-                last.end = max(last.end, end)
-                last.names.merge(names)
+            if chunk is None:
+                chunk = _Chunk(is_remote, start, end, names)
+            elif start <= chunk.end:
+                # Two statements sharing a line (`a = 1; hass.x`) can't be cut
+                # apart by line, so they go together - to the server if either does.
+                chunk.remote = chunk.remote or is_remote
+                chunk.end = max(chunk.end, end)
+                chunk.names.merge(names)
+                chunk.count += 1
+            elif not chunk.remote and not is_remote:
+                chunk.end = end
+                chunk.names.merge(names)
+                chunk.count += 1
             else:
-                chunks.append(_Chunk(is_remote, start, end, names))
-        return chunks
+                break
+            local |= names.assigned
+            remote -= names.assigned
+        assert chunk is not None
+        return chunk
 
     async def _run_local(self, source: str, *, echo: bool) -> bool:
         if self.capture is None:
@@ -210,6 +227,19 @@ class LiveSession:
 
     async def _run_remote(self, source: str, names: _Names, *, echo: bool) -> bool:
         local_names = self._local_names()
+        via = ", ".join(
+            f"`{n}`" for n in sorted(names.loaded & (REMOTE_ONLY | self.remote_names))
+        )
+        local_only = sorted(names.loaded & self.shared & local_names)
+        if local_only:
+            self._refuse(
+                f"not run - {', '.join(f'`{n}`' for n in local_only)} only "
+                f"work{'s' if len(local_only) == 1 else ''} locally and {via} only "
+                "inside Home Assistant, so one statement can't use both. Assign "
+                "the Home Assistant part to a variable in a statement of its own "
+                "first - plain data (strings, numbers, lists/dicts of them) comes back."
+            )
+            return False
         preamble: list[str] = []
         stuck: list[str] = []
         for name in sorted(names.loaded & (local_names - self.shared)):
@@ -219,10 +249,6 @@ class LiveSession:
             elif name not in names.bound:
                 stuck.append(name)
         if stuck:
-            via = ", ".join(
-                f"`{n}`"
-                for n in sorted(names.loaded & (REMOTE_ONLY | self.remote_names))
-            )
             self._refuse(
                 f"not run - this would run inside Home Assistant (it uses {via}), but "
                 f"{', '.join(f'`{n}`' for n in stuck)} only "
@@ -230,16 +256,33 @@ class LiveSession:
                 "be copied over (only plain data, small sql results and imported modules can)."
             )
             return False
-        if preamble and not await self._exec_remote("\n".join(preamble), echo=False):
-            return False
-        ok = await self._exec_remote(source, echo=echo)
+        if preamble:
+            copied = await self._exec_remote("\n".join(preamble), echo=False)
+            if copied is None:
+                return False
+        # What it assigns lives on the server afterwards - except plain data,
+        # which the server hands back and is local from here on.
+        returned = await self._exec_remote(
+            source, echo=echo, fetch=sorted(names.assigned)
+        )
+        ok = returned is not None
+        for name in names.assigned:
+            self.local.globals_.pop(name, None)
+        self.remote_names |= names.assigned
+        for name, tree in (returned or {}).items():
+            self.local.globals_[name] = decode_value(tree)
+            self.remote_names.discard(name)
         if echo:
             # `_` is whichever side answered last.
             self.local.globals_.pop("_", None)
             self.remote_names.add("_")
         return ok
 
-    async def _exec_remote(self, source: str, *, echo: bool) -> bool:
+    async def _exec_remote(
+        self, source: str, *, echo: bool, fetch: list[str] | None = None
+    ) -> dict[str, Any] | None:
+        """Run source in the server-side session. None if it raised;
+        otherwise those of the `fetch` variables that came back as data."""
         payload: dict[str, Any] = {
             "code": source,
             "session": self.session_name,
@@ -248,6 +291,8 @@ class LiveSession:
         }
         if self.timeout:
             payload["timeout"] = self.timeout
+        if fetch:
+            payload["fetch"] = fetch
         if self.capture is not None:
             # Escape codes inside a JSON string are just noise for a consumer
             # that asked for machine-readable output.
@@ -269,7 +314,7 @@ class LiveSession:
                 k: v for k, v in result["error"].items() if k != "stacks"
             }
             self.capture.truncated |= bool(result.get("truncated"))
-        return not result["error"]
+        return None if result["error"] else result.get("names") or {}
 
     def _refuse(self, message: str) -> None:
         if self.capture is None:
@@ -367,6 +412,12 @@ def _ship(name: str, value: Any) -> str | None:
         # Crosses as its rows, a list of lists - enough for the loop or
         # comprehension over a result that calls into `hass` per row.
         value = list(value)
+    template = "{}"
+    if type(value) is _LIST_ITERATOR:
+        # What obj.find_names()/find_paths() hand back: recreated from the
+        # items it has left, read from a copy so this one isn't used up.
+        remaining: Any = copy.copy(value)
+        value, template = list(remaining), "iter({})"
     if not isinstance(value, _LITERAL_TYPES):
         return None
     try:
@@ -375,7 +426,7 @@ def _ship(name: str, value: Any) -> str | None:
             return None
     except Exception:  # noqa: BLE001 - any failure just means "can't be copied"
         return None
-    return f"{name} = {text}"
+    return f"{name} = {template.format(text)}"
 
 
 async def connect_live(

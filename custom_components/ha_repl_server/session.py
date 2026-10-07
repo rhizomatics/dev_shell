@@ -9,6 +9,7 @@ import ast
 import asyncio
 import builtins
 import collections
+import copy
 import dataclasses
 import inspect
 import io
@@ -24,6 +25,7 @@ import textwrap
 import time
 import traceback
 import typing
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -35,6 +37,9 @@ from pygments.formatters.terminal import TerminalFormatter
 from pygments.lexers.python import PythonLexer
 
 MAX_OUTPUT_CHARS = 1_000_000
+
+# Variables bigger than this (as a tree) aren't handed back to the client.
+MAX_FETCHED_CHARS = 100_000
 
 # Source lines sent either side of each traceback frame's own.
 _CONTEXT_LINES = 3
@@ -64,6 +69,9 @@ class ExecResult:
     # for the client to pretty-print itself.
     value: str | None = None
     value_tree: Any = None
+    # The variables the caller asked after that turned out to be plain data,
+    # each as a tree like value_tree.
+    names: dict[str, Any] = field(default_factory=dict)
     error: dict[str, Any] | None = None
     duration: float = 0.0
     truncated: bool = False
@@ -73,6 +81,7 @@ class ExecResult:
             "stdout": self.stdout,
             "value": self.value,
             "value_tree": self.value_tree,
+            "names": self.names,
             "error": self.error,
             "duration": self.duration,
             "truncated": self.truncated,
@@ -99,8 +108,11 @@ class Session:
         color: bool = False,
         width: int = 88,
         auto_await: bool = True,
+        fetch: Iterable[str] = (),
     ) -> ExecResult:
-        """Execute source in this session, returning captured output and the last value."""
+        """Execute source in this session, returning captured output and the
+        last value - and, of the variables named in `fetch`, those that hold
+        plain data afterwards."""
         async with self._lock:
             self.last_used = time.time()
             self.executions += 1
@@ -130,6 +142,11 @@ class Session:
             finally:
                 result.duration = time.perf_counter() - start
             result.stdout = out.getvalue()
+            for name in fetch:
+                if name in self.globals_ and name not in self.protected:
+                    tree = _encode_plain(self.globals_[name])
+                    if tree is not _NOT_PLAIN:
+                        result.names[name] = tree
             for attr in ("stdout", "value"):
                 text = getattr(result, attr)
                 if text is not None and len(text) > MAX_OUTPUT_CHARS:
@@ -199,15 +216,44 @@ def _encode_value(value: Any) -> Any:
     themselves never leave this process, so this is as close as the far end
     gets. None, bools, strings and ordinary ints/floats are sent as
     themselves and a list as a JSON list; everything else is a `{"t": ...}`
-    node: the other builtin containers by kind, a dataclass, attrs instance
-    or namedtuple as its class name and fields ("obj"), and whatever is left
-    as just its repr() ("repr"). None when the value is too big to send
+    node: the other builtin containers by kind, an iterator over a list as
+    the items it has left ("iter"), a dataclass, attrs instance or namedtuple
+    as its class name and fields ("obj"), and whatever is left as just its
+    repr() ("repr"). None when the value is too big to send
     this way - the caller's plain text then stands in for it.
     """
     try:
         return _encode(value, [MAX_OUTPUT_CHARS], set())
     except _TooBig, RecursionError:
         return None
+
+
+_NOT_PLAIN: Any = object()
+
+
+def _encode_plain(value: Any) -> Any:
+    """The same tree, but only for a value that survives the trip whole -
+    builtin containers (or an iterator over a list), strings, numbers and
+    None, all the way down - and isn't too big to be worth sending.
+    _NOT_PLAIN otherwise.
+    """
+    try:
+        tree = _encode(value, [MAX_FETCHED_CHARS], set())
+    except _TooBig, RecursionError:
+        return _NOT_PLAIN
+    return tree if _is_plain(tree) else _NOT_PLAIN
+
+
+def _is_plain(tree: Any) -> bool:
+    if isinstance(tree, list):
+        return all(_is_plain(item) for item in tree)
+    if not isinstance(tree, dict):
+        return True
+    if tree["t"] in ("repr", "obj"):
+        return False
+    if tree["t"] == "dict":
+        return all(_is_plain(k) and _is_plain(v) for k, v in tree["v"])
+    return _is_plain(tree["v"])
 
 
 def _encode(value: Any, budget: list[int], ancestors: set[int]) -> Any:
@@ -263,6 +309,7 @@ def _encode_repr(value: Any, budget: list[int]) -> str:
     return text
 
 
+_LIST_ITERATOR: type = type(iter([]))
 _BUILTIN_CONTAINERS: tuple[tuple[str, type], ...] = (
     ("list", list),
     ("tuple", tuple),
@@ -285,6 +332,9 @@ def _parts(value: Any, kind: type) -> tuple[str, str, Any] | None:
             kind.__name__,
             list(zip(getattr(kind, "_fields", ()), value, strict=True)),
         )
+    if kind is _LIST_ITERATOR:
+        # What it has left to give, read from a copy so it isn't used up.
+        return "iter", "", list(copy.copy(value))
     if isinstance(value, dict):
         return ("dict", "", value.items()) if kind.__repr__ is dict.__repr__ else None
     for tag, base in _BUILTIN_CONTAINERS:

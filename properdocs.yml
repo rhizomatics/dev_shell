@@ -40,6 +40,8 @@ hooks:
   # heading anchors match GitHub (incl. non-ASCII), so translated README links work
   - docs_hooks/slugs.py
   - docs_hooks/llmstxt_hooks.py
+  # the live mode page's examples, from the file the tests run them from
+  - docs_hooks/blended_examples.py
 
 plugins:
   - search

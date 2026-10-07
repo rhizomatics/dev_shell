@@ -57,6 +57,7 @@ def _manager(
             vol.Optional("color", default=False): bool,
             vol.Optional("width", default=88): vol.Coerce(int),
             vol.Optional("auto_await", default=True): bool,
+            vol.Optional("fetch", default=list): [str],
         },
     )
 )
@@ -72,6 +73,7 @@ async def ws_exec(
         color=msg["color"],
         width=msg["width"],
         auto_await=msg["auto_await"],
+        fetch=msg["fetch"],
     )
     connection.send_result(msg["id"], result.as_dict())
 

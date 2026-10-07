@@ -63,6 +63,8 @@ def decode_value(node: Any) -> Any:
         return _Repr(node["r"])
     if tag == "dict":
         return {decode_value(k): decode_value(v) for k, v in node["v"]}
+    if tag == "iter":
+        return iter([decode_value(item) for item in node["v"]])
     if tag == "obj":
         # A class of its own, since rich takes the name to show from the type.
         cls = type(node["n"], (_Struct,), {})

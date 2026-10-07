@@ -18,7 +18,6 @@ from homeassistant.helpers.typing import ConfigType
 from . import websocket_api
 from .const import DOMAIN
 from .objtree import ObjTree
-from .rest import HassApiUnavailable, connect_hass_api, warm_urllib3_lazy_imports
 from .session import SessionManager
 
 _LOGGER = logging.getLogger(__name__)
@@ -40,18 +39,11 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    await hass.async_add_executor_job(warm_urllib3_lazy_imports)
-    try:
-        hass_api = await connect_hass_api()
-    except HassApiUnavailable as err:
-        _LOGGER.warning("Home Assistant REPL: `hass_api` unavailable: %s", err)
-        hass_api = None
-
     # In entry.options, not entry.data: editable after setup via Configure
     # (see config_flow.py's HaReplServerOptionsFlow), not fixed at creation.
     # Missing (not just False) means an entry from before these existed -
     # both default on, matching that version's always-on behaviour.
-    bindings: dict[str, Any] = {"obj": ObjTree(hass), "hass_api": hass_api}
+    bindings: dict[str, Any] = {"obj": ObjTree(hass)}
     if entry.options.get("expose_hass", True):
         bindings["hass"] = hass
     # sql isn't a session binding: the client's own `sql` object fetches

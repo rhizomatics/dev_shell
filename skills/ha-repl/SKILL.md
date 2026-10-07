@@ -54,23 +54,23 @@ runs in the local `ha-repl` process.
 
 - Plain local data (strings, numbers, lists, dicts) and `sql` results can be used in a statement
   that runs inside Home Assistant. A `sql` result arrives as a list of rows.
-- Nothing comes back the other way. A variable assigned by a statement that used `hass` or `obj`
-  stays inside Home Assistant.
-- Don't call `sql(...)` in the same statement as `hass` or `obj`. Assign the result on its own
-  line first.
+- A variable assigned by a statement that used `hass` or `obj` comes back, and is local
+  afterwards, if it holds plain data. Anything else stays inside Home Assistant.
+- Don't use `sql` or `hass_api` in the same statement as `hass` or `obj` - it is refused. Assign
+  one part on its own line first.
 
 ## Getting data back
 
-A value from inside Home Assistant comes back in `value` as a string of its printed form, so
-`hass.states.get("sun.sun").state` gives `"'below_horizon'"`. For real data, print JSON and read
-`stdout`:
+A value from inside Home Assistant comes back in `value` as data when it is plain data (strings,
+numbers, lists and dicts of them), so shape the answer that way as the last expression:
 
 ```bash
 ha-repl --json exec -t 30 - <<'PY'
-import json
-print(json.dumps({s.entity_id: s.state for s in hass.states.async_all("light")}))
+{s.entity_id: s.state for s in hass.states.async_all("light")}
 PY
 ```
+
+Anything else - a state object, or a list containing one - comes back as a string of its `repr()`.
 
 A `sql` result as the last expression comes back as data: `columns`, `rows`, `rowcount` and
 `truncated`.

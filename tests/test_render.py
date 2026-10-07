@@ -38,3 +38,10 @@ def test_no_traceback_without_frames():
     assert (
         remote_traceback({"type": "E", "message": "m", "traceback": "E: m\n"}) is None
     )
+
+
+def test_decode_rebuilds_an_iterator():
+    assert list(decode_value({"t": "iter", "v": [1, {"t": "tuple", "v": [2]}]})) == [
+        1,
+        (2,),
+    ]

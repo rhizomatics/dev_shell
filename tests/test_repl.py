@@ -127,10 +127,11 @@ async def test_mixed_snippet_is_split_by_statement():
     )
 
     assert ok
-    # One preamble copying `eid` over, then both server statements together.
+    # One preamble copying `eid` over, then each server statement on its own.
     assert client.executed == [
         "eid = 'sun.sun'",
-        "s = hass.states.get(eid)\nstate = s.state",
+        "s = hass.states.get(eid)",
+        "state = s.state",
     ]
     assert live.local.globals_["local_only"] == "[1]"
 
@@ -243,13 +244,38 @@ async def test_uncopyable_local_name_rebound_by_the_command_is_ignored():
     assert client.executed == ["[s.entity_id for s in hass.states.async_all()]"]
 
 
-async def test_shared_bindings_are_not_copied_over():
+async def test_statement_mixing_a_local_only_binding_with_hass_is_refused(capsys):
     client = FakeClient()
     live = _live(client, sql=object(), hass_api=None)
 
-    await live.run("hass, sql, hass_api")
+    assert not await live.run("hass, sql, hass_api")
 
-    assert client.executed == ["hass, sql, hass_api"]
+    assert client.executed == []
+    err = capsys.readouterr().err
+    assert "`hass_api`, `sql` only work locally and `hass` only inside" in err
+
+
+async def test_plain_data_assigned_on_the_server_comes_back_as_local():
+    class Answering(FakeClient):
+        async def call(self, type_: str, **payload: Any) -> Any:
+            result = await super().call(type_, **payload)
+            if type_ == "ha_repl_server/exec" and "names" in payload["code"]:
+                assert payload["fetch"] == ["names", "state"]
+                result["names"] = {"names": ["sun.sun", {"t": "tuple", "v": [1]}]}
+            return result
+
+    client = Answering()
+    live = _live(client)
+
+    await live.run("names = obj.find_names(); state = hass.states.get(names[0])")
+    await live.run("first = names[0]")
+
+    # `names` came back, so using it is a local matter; `state` didn't.
+    assert live.local.globals_["names"] == ["sun.sun", (1,)]
+    assert live.local.globals_["first"] == "sun.sun"
+    assert "names" not in live.remote_names
+    assert "state" in live.remote_names
+    assert len(client.executed) == 1
 
 
 async def test_underscore_follows_whichever_side_answered_last():
@@ -348,3 +374,17 @@ async def test_local_auto_await_does_not_rewrite_class_bodies():
     )
 
     assert await local.evaluate(code) == [[], 4]
+
+
+async def test_iterator_that_came_back_is_copied_over_without_being_used_up():
+    client = FakeClient()
+    live = _live(client)
+    live.local.globals_["names"] = iter(["a", "b"])
+
+    await live.run("[hass.states.get(n) for n in names]")
+
+    assert client.executed == [
+        "names = iter(['a', 'b'])",
+        "[hass.states.get(n) for n in names]",
+    ]
+    assert list(live.local.globals_["names"]) == ["a", "b"]

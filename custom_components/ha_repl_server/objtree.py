@@ -567,12 +567,14 @@ class ObjTree(Mapping[str, "Entity | ApiEntity | ObjTree"]):
     ) -> Iterator[str]:
         """Just the tree-path strings from find() (e.g.
         "/demo/light/kitchen_lights") - see _find() for the filters."""
-        return (
+        # All found up front, not lazily: an iterator over a list is one the
+        # shell can hand back to the client (see session.py's _encode_plain).
+        return iter([
             found.path
             for found in self._find(
                 path, platform=platform, domain=domain, area=area, label=label
             )
-        )
+        ])
 
     def find_names(
         self,
@@ -587,12 +589,14 @@ class ObjTree(Mapping[str, "Entity | ApiEntity | ObjTree"]):
         "light.kitchen_lights") - see _find() for the filters. Not the same
         as find_paths(): this is the flat entity_id, not this tree's
         /integration/domain/object_id path."""
-        return (
+        # All found up front, not lazily: an iterator over a list is one the
+        # shell can hand back to the client (see session.py's _encode_plain).
+        return iter([
             found.entity_id
             for found in self._find(
                 path, platform=platform, domain=domain, area=area, label=label
             )
-        )
+        ])
 
     def show(self, path: str) -> dict[str, Any]:
         """The registry entry's own fields (minus _cache and other data this

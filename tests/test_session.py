@@ -478,6 +478,32 @@ async def test_oversized_value_has_no_tree_just_truncated_text(manager):
     assert len(result.value) == session_mod.MAX_OUTPUT_CHARS
 
 
+async def test_fetch_hands_back_only_plain_data(manager):
+    code = (
+        "plain = {'a': [1, (2, 3)], 4: {5}}\n"
+        "names = iter(['x', 'y', 'z'])\n"
+        "next(names)\n"
+        "state = object()\n"
+        "mixed = [1, object()]\n"
+        "big = 'x' * 200_000\n"
+        "lazy = (n for n in 'ab')"
+    )
+    wanted = ["plain", "names", "state", "mixed", "big", "lazy", "hass", "nope"]
+    result = await run(manager, code, fetch=wanted)
+    assert result.names == {
+        "plain": {
+            "t": "dict",
+            "v": [
+                ["a", [1, {"t": "tuple", "v": [2, 3]}]],
+                [4, {"t": "set", "v": [5]}],
+            ],
+        },
+        # What an iterator over a list has left - without using it up.
+        "names": {"t": "iter", "v": ["y", "z"]},
+    }
+    assert (await run(manager, "list(names)")).value == "['y', 'z']"
+
+
 async def test_error_frames_carry_their_source_and_position(manager):
     code = "def boom(n):\n    return 1 / n\n\nboom(0)"
     error = (await run(manager, code)).error

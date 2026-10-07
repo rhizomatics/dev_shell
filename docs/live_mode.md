@@ -31,12 +31,7 @@ Also, `sql` gives you query access to the primary HomeAssistant database.
 
 Get help on the arguments in the usual way.
 
-`hass` and `sql` can get combined like this, note the separate rows, the two 'magic' variables can't be combined yet into a single statement.
-
-```python
->>> r = sql("select entity_id from states_meta", max_rows=3)
-{row[0]: hass.states.get(row[0]).state for row in r}
-```
+`hass` and `sql` can be used together in a limited way, a statement at a time - see [Mixing Both Sides](#mixing-both-sides).
 
 ## What Runs Where
 
@@ -48,7 +43,7 @@ The live shell is an ordinary Python session on your own machine. Import whateve
 | `hass_api` | Local. A REST API client |
 | `hass`, `obj` | Inside Home Assistant |
 
-Since `hass` and `obj` only exist inside Home Assistant, any statement that uses one of them is sent there and run there, with its output sent back as text. A variable assigned by such a statement stays there too, and later statements that use it follow it:
+Since `hass` and `obj` only exist inside Home Assistant, any statement that uses one of them is sent there and run there, with its result sent back to be displayed. A variable assigned by such a statement stays there too, and later statements that use it follow it:
 
 ```python
 >>> import polars as pl                      # local
@@ -58,25 +53,25 @@ Since `hass` and `obj` only exist inside Home Assistant, any statement that uses
 'below_horizon'
 ```
 
-Local values can be used in a statement that runs inside Home Assistant when they are plain data (strings, numbers, and lists or dicts of them) - they are copied over first. Modules you imported locally are imported there under the same name. Anything else local, such as a dataframe or a function, can't cross; the shell says so rather than running the statement. Nothing is copied back the other way.
+The decision is made per statement, so several lines pasted or run together can use both sides.
 
-A `sql` result is the one exception: it crosses as its rows (a list of lists), so you can loop over one to call into `hass`:
+## Mixing Both Sides
 
-```python
->>> r = sql("select entity_id from states_meta")
->>> {row[0]: hass.states.get(row[0]).state for row in r}
-```
+The two sides are separate Python sessions, and the shell does a small amount of work to let a statement on one side use a value from the other. Treat it as a convenience for simple cases rather than something to build on: it is deliberately limited, and anything it can't do is refused rather than attempted.
 
-!!! warning
-    Assign the result first, as above. `sql` itself doesn't exist inside Home Assistant, so one statement that both calls `sql(...)` and uses `hass` or `obj` fails there with a `NameError`. Only the rows cross, not the result's methods, and only up to about 100,000 characters of data - trim a large result first with `project()` or a slice.
+What it does:
 
-```python
->>> eid = "sun.sun"                          # local
->>> hass.states.get(eid).state               # `eid` is copied over first
-'below_horizon'
-```
+- **Only plain data crosses** - strings, numbers, `None`, and lists, tuples, sets and dicts of them, up to about 100,000 characters.
+- **Local to Home Assistant** - a local variable holding plain data is copied over before a statement that uses it. A module you imported locally is imported there under the same name. A `sql` result crosses as its rows, a list of lists.
+- **Home Assistant to local** - a variable assigned inside Home Assistant comes back, and is local from then on, when what it holds is plain data. So does what `obj.find_names()` and `obj.find_paths()` return: an iterator over strings, good for going through once.
+- **Everything else stays where it is** - states, entities, dataframes, functions and classes don't cross in either direction.
+- **One statement, one side** - `sql` and `hass_api` are local only, `hass` and `obj` are Home Assistant only, so a single statement can't use both. Assign one part to a variable first.
 
-A variable lives wherever it was last assigned. The decision is made per statement, so several lines pasted or run together can mix both sides.
+A value that crosses is a copy. Changing it on one side doesn't change it on the other.
+
+### Examples
+
+<!-- blended-examples -->
 
 ## One-Shot Snippets and Agents
 

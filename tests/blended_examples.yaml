@@ -1,0 +1,98 @@
+# Examples of mixing local Python with code that runs inside Home Assistant,
+# in the live shell and `ha-repl exec`.
+#
+# Each one is run by tests/test_blended_examples.py, and shown in the docs
+# (docs/live_mode.md, by docs_hooks/blended_examples.py) - so adding an entry
+# here adds both a test and a docs example.
+#
+#   title    heading in the docs
+#   about    a sentence or two for the docs
+#   code     what to run, one statement per line or block
+#   runs     where each statement ends up running, in order: `local` or
+#            `server` (consecutive local statements count once)
+#   value    optional: what the last statement evaluates to
+#   refused  instead of runs/value: true if the shell declines to run it
+#
+# The world they run against is small and fixed - see the fakes at the top
+# of the test: lights `light.kitchen` (on) and `light.hall` (off) under
+# /demo, plus `sun.sun` (above_horizon).
+
+- title: Entity names from `obj`, used locally
+  about: >
+    What `find_names()` and `find_paths()` return comes back, so the next
+    statement can go through it with anything local - here, the REST client.
+  code: |
+    names = obj.find_names(domain="light")
+    {n: hass_api.get_state(entity_id=n).state for n in names}
+  runs: [server, local]
+  value: {light.kitchen: "on", light.hall: "off"}
+
+- title: Tree paths from `obj`, filtered locally
+  about: Once the paths are back, going through them is ordinary local Python.
+  code: |
+    paths = obj.find_paths("/demo")
+    sorted(p for p in paths if "kitchen" in p)
+  runs: [server, local]
+  value: [/demo/light/kitchen]
+
+- title: A local list, used inside Home Assistant
+  about: Plain local data is copied over before the statement that needs it.
+  code: |
+    wanted = ["light.kitchen", "sun.sun"]
+    {n: hass.states.get(n).state for n in wanted}
+  runs: [local, server]
+  value: {light.kitchen: "on", sun.sun: above_horizon}
+
+- title: A number worked out inside Home Assistant
+  about: Numbers and strings come back just as lists of them do.
+  code: |
+    count = len(hass.states.async_all())
+    count * 2
+  runs: [server, local]
+  value: 6
+
+- title: Rows from `sql`, looked up in `hass`
+  about: >
+    A `sql` result is local, and crosses as its rows - a list of lists - when
+    a statement inside Home Assistant loops over it.
+  code: |
+    r = sql("select entity_id from states_meta")
+    {row[0]: hass.states.get(row[0]).state for row in r}
+  runs: [local, server]
+  value: {light.kitchen: "on", sun.sun: above_horizon}
+
+- title: Objects stay inside Home Assistant
+  about: >
+    A state, an entity, or anything else that isn't plain data stays where
+    it is, and later statements that use it run there too.
+  code: |
+    hass.states.get("sun.sun").state
+  runs: [server]
+  value: above_horizon
+
+- title: Both sides in one statement
+  about: >
+    `hass_api` and `sql` only exist locally, `hass` and `obj` only inside
+    Home Assistant, and a statement runs in one place. Split it in two, as
+    in the first example.
+  code: |
+    {n: hass_api.get_state(entity_id=n).state for n in obj.find_names()}
+  refused: true
+
+- title: A local function, called on something from `hass`
+  about: Only data crosses - functions, classes and dataframes don't.
+  code: |
+    def shout(text):
+        return text.upper()
+    shout(hass.states.get("sun.sun").state)
+  refused: true
+
+- title: Entity names from `obj`, found in one statement and used in `hass` in another
+  about: >
+    The names come back as local data, and are copied over again for the
+    statement that needs them inside Home Assistant.
+  code: |
+    names = obj.find_names(domain="light")
+    {n: hass.states.get(n).state for n in names}
+  runs: [server, server]
+  value: {light.kitchen: "on", light.hall: "off"}

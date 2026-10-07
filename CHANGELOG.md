@@ -4,6 +4,14 @@
     For live mode, generally the client and server component have to be on the same version. Different versions *might* work
     with each other for point releases
 
+# 0.9.0
+## Live Server
+- No longer needs `homeassistant-api`: `hass_api` is the shell's own local REST client, and is no longer also bound inside Home Assistant
+## Live Shell
+- A variable assigned inside Home Assistant now comes back, and is local afterwards, when it holds plain data - so `names = obj.find_names(...)` can be followed by local code using `names`. See *Mixing Both Sides* in the live mode docs
+- A statement using `sql` or `hass_api` together with `hass` or `obj` is refused with an explanation, rather than failing inside Home Assistant
+- `ha-repl --json exec` reports a plain-data value from inside Home Assistant as data, not as its printed form
+
 # 0.8.0
 ## Live Server
 - No longer uses `rich`, so installing no longer upgrades the much older `rich` bundled with Home Assistant 2026.10 - which could fail setup with `cannot import name 'SyntaxPosition' from 'rich.syntax'` until a second restart
@@ -11,6 +19,7 @@
   - Needs a matching client: an older `ha-repl` still works, but shows plain values and tracebacks
 ## Live Shell
 - Fix for a class whose body calls something (e.g. a `dataclasses.field()` default) failing with `'await' outside function`
+- New gallery of examples of blending local and server side objects, the gallery also acts as a set of automated tests
 
 # 0.7.0
 ## Live Shell
