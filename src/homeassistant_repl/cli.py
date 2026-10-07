@@ -31,7 +31,11 @@ import sys
 import time
 from typing import Any
 
+from rich.pretty import Pretty
+
 from .client import Client, HaReplError, resolve_token, resolve_url
+from .local_session import console, error_console
+from .render import decode_value, remote_traceback
 
 
 def main() -> None:
@@ -181,7 +185,8 @@ async def _exec(client: Client, args: argparse.Namespace) -> int:
 
 
 def display_options() -> dict[str, Any]:
-    """Color/width hints for the server to render values and tracebacks with.
+    """Color/width hints for what the server does still lay out itself:
+    help() output, and the plain-text form of a value.
 
     Decided here, not there: the server only sees a websocket, not a terminal,
     and stdout here might be piped (a script, a redirected log) rather than a
@@ -198,9 +203,18 @@ def print_result(result: dict[str, Any]) -> None:
         if not result["stdout"].endswith("\n"):
             sys.stdout.write("\n")
     if result["value"] is not None:
-        print(result["value"])
+        tree = result.get("value_tree")
+        if tree is None:
+            # Too big to have been sent as a tree, or an older server.
+            print(result["value"])
+        else:
+            console.print(Pretty(decode_value(tree)))
     if result["error"]:
-        sys.stderr.write(result["error"]["traceback"])
+        traceback = remote_traceback(result["error"])
+        if traceback is None:
+            sys.stderr.write(result["error"]["traceback"])
+        else:
+            error_console.print(traceback)
     if result.get("truncated"):
         print("[ha-repl: output truncated]", file=sys.stderr)
     sys.stdout.flush()

@@ -3,7 +3,7 @@ process, not on a remote Home Assistant session - there's no server to send
 code to, since API client mode talks to Home Assistant only through its
 standard API (see api_objtree.py). Deliberately mirrors
 custom_components/ha_repl_server/session.py's exec model (top-level await,
-trailing-expression echo via rich, rich tracebacks) rather than importing it:
+trailing-expression echo) rather than importing it:
 that module lives in a separate HACS-deployed package with its own packaging
 boundary, and duplicating ~100 lines here is simpler than bridging it.
 
@@ -31,8 +31,8 @@ from rich.traceback import Traceback
 
 _cell_counter = itertools.count(1)
 
-_console = Console()
-_error_console = Console(stderr=True)
+console = Console()
+error_console = Console(stderr=True)
 
 
 @dataclass
@@ -68,7 +68,7 @@ class LocalSession:
             rich_aware = not isinstance(value, type) and (
                 hasattr(value, "__rich__") or hasattr(value, "__rich_console__")
             )
-            _console.print(value if rich_aware else Pretty(value))
+            console.print(value if rich_aware else Pretty(value))
         return True
 
     async def evaluate(self, source: str, *, echo: bool = True) -> Any:
@@ -162,6 +162,18 @@ class _AutoAwait(ast.NodeTransformer):
     def visit_Lambda(self, node: ast.Lambda) -> ast.Lambda:
         return node
 
+    def visit_ClassDef(self, node: ast.ClassDef) -> ast.ClassDef:
+        # A class body runs synchronously, so nothing evaluated in it can be
+        # awaited: not its own statements, nor its decorators and bases, nor
+        # the decorators and defaults of its methods. Only what's inside an
+        # async method's body can be.
+        for stmt in node.body:
+            if isinstance(stmt, ast.AsyncFunctionDef):
+                stmt.body = [self.visit(inner) for inner in stmt.body]
+            elif isinstance(stmt, ast.ClassDef):
+                self.visit(stmt)
+        return node
+
     def visit_Await(self, node: ast.Await) -> ast.Await:
         # Already explicit: don't double-await this call, but still rewrite
         # anything nested inside its own arguments.
@@ -230,4 +242,4 @@ def _print_error(err: BaseException) -> None:
             file=sys.stderr,
         )
         return
-    _error_console.print(Traceback.from_exception(type(err), err, tb))
+    error_console.print(Traceback.from_exception(type(err), err, tb))

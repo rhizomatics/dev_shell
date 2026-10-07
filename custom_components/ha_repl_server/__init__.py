@@ -19,7 +19,7 @@ from . import websocket_api
 from .const import DOMAIN
 from .objtree import ObjTree
 from .rest import HassApiUnavailable, connect_hass_api, warm_urllib3_lazy_imports
-from .session import SessionManager, warm_rich_unicode_data
+from .session import SessionManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,7 +40,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    await hass.async_add_executor_job(warm_rich_unicode_data)
     await hass.async_add_executor_job(warm_urllib3_lazy_imports)
     try:
         hass_api = await connect_hass_api()

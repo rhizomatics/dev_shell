@@ -2,6 +2,7 @@
 
 import asyncio
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -115,6 +116,31 @@ async def test_auto_await_does_not_rewrite_nested_function_bodies(manager):
     result = await run(manager, code)
     assert result.error is None
     assert result.value == "1"
+
+
+async def test_auto_await_does_not_rewrite_class_bodies(manager):
+    # `await` in a class body is a SyntaxError, wherever in it the call is:
+    # a field default, a decorator, a base class, a method's default.
+    code = (
+        "import asyncio, dataclasses\n"
+        "def deco(arg):\n"
+        "    return lambda cls: cls\n"
+        "def base():\n"
+        "    return object\n"
+        "@deco(1)\n"
+        "@dataclasses.dataclass\n"
+        "class P(base()):\n"
+        "    xs: list = dataclasses.field(default_factory=list)\n"
+        "    class Inner:\n"
+        "        n = len('abc')\n"
+        "    async def twice(self, n=int('2')):\n"
+        "        return asyncio.sleep(0, result=n * 2)\n"
+        "[P().xs, P.Inner.n, P().twice()]"
+    )
+    result = await run(manager, code)
+    assert result.error is None
+    # The async method's own body is still rewritten, as is the call to it.
+    assert result.value == "[[], 3, 4]"
 
 
 async def test_unawait_returns_bare_coroutine(manager):
@@ -372,3 +398,156 @@ async def test_help_on_method_keeps_its_docstring(manager):
     )
     result = await run(manager, code)
     assert "Distance to another point." in result.stdout
+
+
+async def test_value_is_also_sent_as_a_tree_for_the_client_to_render(manager):
+    code = (
+        "import collections, dataclasses\n"
+        "hidden = dataclasses.field(default=0, repr=False)\n"
+        "P = dataclasses.make_dataclass('P', [('x', int), ('hidden', int, hidden)])\n"
+        "N = collections.namedtuple('N', 'a b')\n"
+        "class Odd:\n"
+        "    def __repr__(self):\n"
+        "        return '<odd>'\n"
+        "[1, 'a', None, True, 2.5, (1, 2), {'k': {3}}, frozenset(), P(1), N(1, 2), Odd()]"
+    )
+    assert (await run(manager, code)).value_tree == [
+        1,
+        "a",
+        None,
+        True,
+        2.5,
+        {"t": "tuple", "v": [1, 2]},
+        {"t": "dict", "v": [["k", {"t": "set", "v": [3]}]]},
+        {"t": "frozenset", "v": []},
+        {"t": "obj", "n": "P", "f": [["x", 1]]},
+        {"t": "obj", "n": "N", "f": [["a", 1], ["b", 2]]},
+        {"t": "repr", "r": "<odd>"},
+    ]
+
+
+async def test_value_tree_keeps_to_what_json_can_carry(manager):
+    # Home Assistant's websocket serialiser has no nan/inf or >64-bit ints.
+    result = await run(manager, "[float('nan'), 2**70, b'x']")
+    assert result.value_tree == [
+        {"t": "repr", "r": "nan"},
+        {"t": "repr", "r": "1180591620717411303424"},
+        {"t": "repr", "r": "b'x'"},
+    ]
+
+
+async def test_value_tree_honours_a_custom_repr_on_a_container_or_dataclass(manager):
+    code = (
+        "import dataclasses\n"
+        "class L(list):\n"
+        "    def __repr__(self):\n"
+        "        return 'L!'\n"
+        "@dataclasses.dataclass\n"
+        "class D:\n"
+        "    x: int\n"
+        "    def __repr__(self):\n"
+        "        return 'D!'\n"
+        "class Plain(dict):\n"
+        "    pass\n"
+        "[L([1]), D(1), Plain(a=1)]"
+    )
+    assert (await run(manager, code)).value_tree == [
+        {"t": "repr", "r": "L!"},
+        {"t": "repr", "r": "D!"},
+        {"t": "dict", "v": [["a", 1]]},
+    ]
+
+
+async def test_value_tree_survives_cycles_and_broken_reprs(manager):
+    assert (await run(manager, "l = []\nl.append(l)\nl")).value_tree == [
+        {"t": "repr", "r": "..."}
+    ]
+    code = (
+        "class Bad:\n    def __repr__(self):\n        raise RuntimeError('no')\nBad()"
+    )
+    result = await run(manager, code)
+    assert result.error is None
+    assert result.value_tree == {"t": "repr", "r": "<repr-error 'no'>"}
+    assert result.value == "<repr-error 'no'>"
+
+
+async def test_oversized_value_has_no_tree_just_truncated_text(manager):
+    result = await run(manager, "['x' * 600_000, 'y' * 600_000]")
+    assert result.value_tree is None
+    assert result.truncated
+    assert len(result.value) == session_mod.MAX_OUTPUT_CHARS
+
+
+async def test_error_frames_carry_their_source_and_position(manager):
+    code = "def boom(n):\n    return 1 / n\n\nboom(0)"
+    error = (await run(manager, code)).error
+    [stack] = error["stacks"]
+    assert (stack["type"], stack["message"]) == (
+        "ZeroDivisionError",
+        "division by zero",
+    )
+    outer, inner = stack["frames"]
+    assert (outer["name"], outer["line"]) == ("<module>", 4)
+    assert (inner["name"], inner["line"], inner["first"]) == ("boom", 2, 1)
+    assert inner["file"] == outer["file"]
+    assert inner["source"][inner["line"] - inner["first"]] == "    return 1 / n\n"
+    assert inner["position"] == [2, 11, 2, 16]
+    # Where the outer frame *was*, not where it has got to since.
+    assert outer["position"] == [4, 0, 4, 7]
+
+
+async def test_error_chain_is_sent_outermost_first(manager):
+    code = (
+        "try:\n"
+        "    1 / 0\n"
+        "except ZeroDivisionError as err:\n"
+        "    err.add_note('careful')\n"
+        "    raise ValueError('bad') from err"
+    )
+    raised, cause = (await run(manager, code)).error["stacks"]
+    assert (raised["type"], raised["is_cause"]) == ("ValueError", False)
+    assert (cause["type"], cause["is_cause"]) == ("ZeroDivisionError", True)
+    assert cause["notes"] == ["careful"]
+
+
+async def test_long_traceback_drops_its_middle_frames(manager):
+    error = (await run(manager, "def r(n):\n    return r(n + 1)\nr(0)")).error
+    [stack] = error["stacks"]
+    assert len(stack["frames"]) == session_mod._MAX_FRAMES
+    assert stack["hidden"] > 0
+    assert stack["frames"][0]["name"] == "<module>"
+
+
+async def test_syntax_error_and_exception_group_have_only_the_plain_traceback(manager):
+    syntax = (await run(manager, "def (")).error
+    assert "stacks" not in syntax
+    assert "def (" in syntax["traceback"]
+    group = (await run(manager, "raise ExceptionGroup('g', [ValueError('v')])")).error
+    assert "stacks" not in group
+    assert "ValueError: v" in group["traceback"]
+
+
+async def test_help_summary_is_coloured_only_when_asked(manager):
+    code = "class K:\n    def m(self, a: int = 1) -> str: ...\nhelp(K)"
+    plain = (await run(manager, code)).stdout
+    assert "\x1b[" not in plain
+    assert "  m(a: int=1) -> str" in plain
+    coloured = (await run(manager, code, color=True)).stdout
+    assert "\x1b[1;4mMethods:\x1b[0m" in coloured
+
+
+def test_server_side_code_does_not_import_rich():
+    # Home Assistant bundles a rich of its own choosing; needing a newer one
+    # here means upgrading it under a running process.
+    for source in _path.parent.glob("*.py"):
+        assert "rich" not in {
+            line.split()[1].partition(".")[0]
+            for line in source.read_text().splitlines()
+            if line.lstrip().startswith(("import ", "from "))
+        }, source.name
+    assert not any(
+        "rich" in r
+        for r in json.loads((_path.parent / "manifest.json").read_text())[
+            "requirements"
+        ]
+    )

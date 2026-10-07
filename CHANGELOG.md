@@ -1,5 +1,17 @@
 # What's New
 
+!!! note
+    For live mode, generally the client and server component have to be on the same version. Different versions *might* work
+    with each other for point releases
+
+# 0.8.0
+## Live Server
+- No longer uses `rich`, so installing no longer upgrades the much older `rich` bundled with Home Assistant 2026.10 - which could fail setup with `cannot import name 'SyntaxPosition' from 'rich.syntax'` until a second restart
+  - Values and errors are now sent to the client as data, and rendered there
+  - Needs a matching client: an older `ha-repl` still works, but shows plain values and tracebacks
+## Live Shell
+- Fix for a class whose body calls something (e.g. a `dataclasses.field()` default) failing with `'await' outside function`
+
 # 0.7.0
 ## Live Shell
 - The live mode is now local first, so arbitrary local imports can be made.

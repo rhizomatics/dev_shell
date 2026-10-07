@@ -8,12 +8,17 @@ from __future__ import annotations
 import ast
 import asyncio
 import builtins
+import collections
+import dataclasses
 import inspect
 import io
 import itertools
 import linecache
+import math
+import pprint
 import pydoc
 import re
+import reprlib
 import sys
 import textwrap
 import time
@@ -24,15 +29,18 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from pygments import format as format_tokens
 from pygments import lex
+from pygments.formatters.terminal import TerminalFormatter
 from pygments.lexers.python import PythonLexer
-from rich.console import Console, Group
-from rich.pretty import Pretty
-from rich.syntax import Syntax
-from rich.text import Text
-from rich.traceback import Traceback
 
 MAX_OUTPUT_CHARS = 1_000_000
+
+# Source lines sent either side of each traceback frame's own.
+_CONTEXT_LINES = 3
+# Frames kept per exception; the middle of anything longer (a runaway
+# recursion, typically) is dropped.
+_MAX_FRAMES = 100
 
 _cell_counter = itertools.count(1)
 
@@ -51,8 +59,12 @@ class ExecResult:
     """Outcome of running one snippet."""
 
     stdout: str = ""
+    # The trailing expression's value twice over: as plain text, and (unless
+    # it's too big to be worth shipping) as the tree _encode_value() builds
+    # for the client to pretty-print itself.
     value: str | None = None
-    error: dict[str, str] | None = None
+    value_tree: Any = None
+    error: dict[str, Any] | None = None
     duration: float = 0.0
     truncated: bool = False
 
@@ -60,6 +72,7 @@ class ExecResult:
         return {
             "stdout": self.stdout,
             "value": self.value,
+            "value_tree": self.value_tree,
             "error": self.error,
             "duration": self.duration,
             "truncated": self.truncated,
@@ -107,19 +120,13 @@ class Session:
                 value = await (asyncio.wait_for(coro, timeout) if timeout else coro)
                 if value is not None:
                     self.globals_["_"] = value
-                    # A value that already knows how to render itself as a
-                    # rich renderable is shown as-is instead of being wrapped
-                    # in Pretty's generic repr-style rendering, which would
-                    # just dump its attributes instead of rendering it properly.
-                    renderable = (
-                        value if hasattr(value, "__rich_console__") else Pretty(value)
-                    )
-                    result.value = _render(renderable, color=color, width=width)
+                    result.value = _plain_text(value, width=width)
+                    result.value_tree = _encode_value(value)
             except asyncio.CancelledError:
                 # Cancellation of the caller must propagate, not be reported as a result.
                 raise
             except BaseException as err:  # noqa: BLE001 - report everything, incl. SystemExit
-                result.error = _format_error(err, color=color, width=width)
+                result.error = _format_error(err)
             finally:
                 result.duration = time.perf_counter() - start
             result.stdout = out.getvalue()
@@ -131,18 +138,12 @@ class Session:
             return result
 
     async def _execute(self, source: str, *, auto_await: bool = True) -> Any:
-        # Not "<ha_repl-N>": rich.traceback refuses to show source for any
-        # filename starting with "<" (treats it like "<stdin>"), no matter what
-        # linecache holds. An absolute-looking path sidesteps that - rich joins a
-        # relative one onto the cwd before the linecache lookup, which would miss.
+        # Named the way the client names its own cells (local_session.py).
         filename = f"/ha_repl/cell_{next(_cell_counter)}"
         # Register the source so tracebacks can show the offending lines.
         linecache.cache[filename] = (
             len(source),
             None,
-            # Always newline-terminated: rich's traceback rendering fails
-            # ("substring not found") on a source with no newline in it at
-            # all, i.e. any one-line command.
             (source if source.endswith("\n") else source + "\n").splitlines(
                 keepends=True
             ),
@@ -178,41 +179,157 @@ class Session:
         )
 
 
-def warm_rich_unicode_data() -> None:
-    """Rich's first `Console.print()` anywhere in the process lazily
-    `import_module()`s a sizeable unicode cell-width table - cheap once
-    cached (it's behind rich's own @cache), but as a plain import that
-    otherwise happens deep inside a user's first live command, it runs
-    straight on the event loop: long enough for HA's blocking-call
-    detector to flag it, and in practice long enough to stall the loop's
-    other coroutines - including the websocket connection's own
-    keepalive, which can make a client see that as a dropped connection.
-    Call once, in the executor, at integration setup - every session's
-    later _render() then just hits the warmed cache.
+def _plain_text(value: Any, *, width: int) -> str:
+    """A value as plain text - what a client that can't use the tree
+    _encode_value() builds (too big to send, or a client that predates it)
+    shows instead, and what `ha-repl --json` reports."""
+    try:
+        return pprint.pformat(value, width=width, sort_dicts=False)
+    except Exception as err:  # noqa: BLE001 - a broken __repr__ can raise anything
+        return f"<repr-error {str(err)!r}>"
+
+
+class _TooBig(Exception):
+    """The value doesn't fit in MAX_OUTPUT_CHARS as a tree."""
+
+
+def _encode_value(value: Any) -> Any:
+    """A value as JSON the client can rebuild into something its own
+    pretty-printer lays out the way it would the real thing - the objects
+    themselves never leave this process, so this is as close as the far end
+    gets. None, bools, strings and ordinary ints/floats are sent as
+    themselves and a list as a JSON list; everything else is a `{"t": ...}`
+    node: the other builtin containers by kind, a dataclass, attrs instance
+    or namedtuple as its class name and fields ("obj"), and whatever is left
+    as just its repr() ("repr"). None when the value is too big to send
+    this way - the caller's plain text then stands in for it.
     """
-    import rich._unicode_data
+    try:
+        return _encode(value, [MAX_OUTPUT_CHARS], set())
+    except _TooBig, RecursionError:
+        return None
 
-    rich._unicode_data.load()
+
+def _encode(value: Any, budget: list[int], ancestors: set[int]) -> Any:
+    kind = type(value)
+    budget[0] -= len(value) if kind is str else 8
+    if budget[0] < 0:
+        raise _TooBig
+    if value is None or kind is bool or kind is str:
+        return value
+    # Home Assistant's websocket layer serialises with orjson, which has no
+    # integers beyond 64 bits and turns nan/inf into null.
+    if kind is int and -(2**63) <= value < 2**63:
+        return value
+    if kind is float and math.isfinite(value):
+        return value
+    if id(value) in ancestors:
+        return {"t": "repr", "r": "..."}
+    try:
+        parts = _parts(value, kind)
+    except Exception:  # noqa: BLE001 - a property or descriptor can raise anything
+        parts = None
+    if parts is None:
+        return {"t": "repr", "r": _encode_repr(value, budget)}
+    tag, name, items = parts
+    ancestors.add(id(value))
+    try:
+        if tag == "dict":
+            encoded: Any = [
+                [_encode(k, budget, ancestors), _encode(v, budget, ancestors)]
+                for k, v in items
+            ]
+        elif tag == "obj":
+            encoded = [[k, _encode(v, budget, ancestors)] for k, v in items]
+        else:
+            encoded = [_encode(item, budget, ancestors) for item in items]
+    finally:
+        ancestors.discard(id(value))
+    if tag == "list":
+        return encoded
+    if tag == "obj":
+        return {"t": "obj", "n": name, "f": encoded}
+    return {"t": tag, "v": encoded}
 
 
-def _render(renderable: Any, *, color: bool, width: int) -> str:
-    """Render a Rich renderable (a value's pretty repr, a traceback) to text.
+def _encode_repr(value: Any, budget: list[int]) -> str:
+    try:
+        text = repr(value)
+    except Exception as err:  # noqa: BLE001 - a broken __repr__ can raise anything
+        text = f"<repr-error {str(err)!r}>"
+    budget[0] -= len(text)
+    if budget[0] < 0:
+        raise _TooBig
+    return text
 
-    `force_terminal`/`no_color` are set explicitly rather than auto-detected:
-    the real terminal is on the far end of a websocket call, not this process,
-    so the caller (which does know) decides via `color`.
+
+_BUILTIN_CONTAINERS: tuple[tuple[str, type], ...] = (
+    ("list", list),
+    ("tuple", tuple),
+    ("set", set),
+    ("frozenset", frozenset),
+)
+
+
+def _parts(value: Any, kind: type) -> tuple[str, str, Any] | None:
+    """How a value breaks down into (node tag, class name, items), or None
+    for one that's only meaningful as its repr(). A class with a __repr__ of
+    its own always is: that's its author saying how it should read.
     """
-    buf = io.StringIO()
-    console = Console(
-        file=buf,
-        force_terminal=color,
-        color_system="truecolor" if color else None,
-        no_color=not color,
-        highlight=color,
-        width=width,
-    )
-    console.print(renderable, end="")
-    return buf.getvalue().rstrip("\n")
+    code = getattr(kind.__repr__, "__code__", None)
+    made_by = code.co_filename if code is not None else ""
+    if isinstance(value, tuple) and made_by == collections.__file__:
+        # collections.namedtuple's generated __repr__, so typing.NamedTuple too.
+        return (
+            "obj",
+            kind.__name__,
+            list(zip(getattr(kind, "_fields", ()), value, strict=True)),
+        )
+    if isinstance(value, dict):
+        return ("dict", "", value.items()) if kind.__repr__ is dict.__repr__ else None
+    for tag, base in _BUILTIN_CONTAINERS:
+        if isinstance(value, base):
+            return (tag, "", value) if kind.__repr__ is base.__repr__ else None
+    if dataclasses.is_dataclass(value) and made_by in (
+        dataclasses.__file__,
+        reprlib.__file__,
+    ):
+        return (
+            "obj",
+            kind.__name__,
+            [
+                (f.name, getattr(value, f.name))
+                for f in dataclasses.fields(value)
+                if f.repr
+            ],
+        )
+    attributes = getattr(kind, "__attrs_attrs__", None)
+    if attributes is not None and made_by.startswith("<attrs generated"):
+        return (
+            "obj",
+            kind.__name__,
+            [
+                (
+                    a.name,
+                    _Shown(a.repr(getattr(value, a.name)))
+                    if callable(a.repr)
+                    else getattr(value, a.name),
+                )
+                for a in attributes
+                if a.repr
+            ],
+        )
+    return None
+
+
+class _Shown:
+    """A field that an attrs class formats with its own repr= callable."""
+
+    def __init__(self, text: str) -> None:
+        self.text = text
+
+    def __repr__(self) -> str:
+        return self.text
 
 
 async def _maybe_await(value: Any) -> Any:
@@ -242,7 +359,7 @@ class _AutoAwait(ast.NodeTransformer):
     (`hass.async_foo().attr`), a comprehension, or an argument list. Leaves
     nested (synchronous) function/lambda bodies alone: `await` there is a
     SyntaxError, and those calls run later, not as part of this statement
-    anyway. `unawait(expr)` is the escape hatch - its argument is left
+    anyway. A class body is left alone for the same first reason. `unawait(expr)` is the escape hatch - its argument is left
     completely untouched for when the bare coroutine is wanted. Opt out
     entirely with `auto_await=False` on the exec call (strict mode:
     forgetting await behaves exactly as in component code).
@@ -252,6 +369,18 @@ class _AutoAwait(ast.NodeTransformer):
         return node
 
     def visit_Lambda(self, node: ast.Lambda) -> ast.Lambda:
+        return node
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> ast.ClassDef:
+        # A class body runs synchronously, so nothing evaluated in it can be
+        # awaited: not its own statements, nor its decorators and bases, nor
+        # the decorators and defaults of its methods. Only what's inside an
+        # async method's body can be.
+        for stmt in node.body:
+            if isinstance(stmt, ast.AsyncFunctionDef):
+                stmt.body = [self.visit(inner) for inner in stmt.body]
+            elif isinstance(stmt, ast.ClassDef):
+                self.visit(stmt)
         return node
 
     def visit_Await(self, node: ast.Await) -> ast.Await:
@@ -350,32 +479,30 @@ def _is_summarisable(obj: Any) -> bool:
 
 
 _SIGNATURE_LEXER = PythonLexer()
-# rich.syntax.Syntax itself renders as a block (its own padding/background
-# handling, one truecolor SGR sequence per token even with
-# background_color="default") - fine stacked one-at-a-time in a real
-# terminal, but composed many-to-a-page inside a Group it came out jumbled
-# for a class with lots of methods. Lexing with pygments directly and
-# building a plain Text keeps this a single clean inline run per line, no
-# block rendering involved, and ansi_dark's named 16-colour styles
-# (`bright_cyan` etc.) over Syntax's default truecolor theme travel through
-# a websocket/terminal pair more predictably.
-_SIGNATURE_THEME = Syntax.get_theme("ansi_dark")
+# The 16 named ANSI colours rather than a truecolor style: they follow the
+# terminal's own palette, and travel through a websocket/terminal pair more
+# predictably.
+_SIGNATURE_FORMATTER = TerminalFormatter(bg="dark")
 
 
-def _signature_line(line: str, *, width: int) -> Text:
-    """A class/method signature as a one-line syntax-highlighted Text
-    (pygments' Python lexer tokenizes it fine even though, as a bare
-    "name(args) -> ret" fragment, it isn't valid standalone Python) - so
-    type annotations, defaults and operators get real highlighting instead
-    of being one flat-coloured string.
+def _styled(text: str, codes: str, *, color: bool) -> str:
+    return f"\x1b[{codes}m{text}\x1b[0m" if color and text else text
+
+
+def _signature_line(line: str, *, color: bool, width: int) -> str:
+    """A class/method signature, syntax-highlighted (pygments' Python lexer
+    tokenizes it fine even though, as a bare "name(args) -> ret" fragment,
+    it isn't valid standalone Python) - so type annotations, defaults and
+    operators get real highlighting instead of being one flat-coloured
+    string.
 
     Home Assistant's own methods lean hard on generics (Callable[[Unpack[
     _Ts]], ...]), so a real signature routinely runs past any reasonable
     width - wrapped here with a hanging indent *before* lexing (so the
     inserted newlines/spaces are just more whitespace tokens to pygments)
-    rather than left to Rich's own word-wrap, which breaks at the console
-    width with no indent at all and reads as a jumble of unrelated lines
-    once there are dozens of methods back to back.
+    rather than left to the terminal, which breaks at its own width with no
+    indent at all and reads as a jumble of unrelated lines once there are
+    dozens of methods back to back.
     """
     wrapped = "\n".join(
         textwrap.wrap(
@@ -386,13 +513,12 @@ def _signature_line(line: str, *, width: int) -> Text:
             break_on_hyphens=False,
         )
     )
+    if not color:
+        return wrapped
     tokens = list(lex(wrapped, _SIGNATURE_LEXER))
     while tokens and not tokens[-1][1].strip():
         tokens.pop()  # pygments always appends a trailing "\n" token
-    text = Text(no_wrap=True)
-    for token_type, value in tokens:
-        text.append(value, style=_SIGNATURE_THEME.get_style_for_token(token_type))
-    return text
+    return format_tokens(tokens, _SIGNATURE_FORMATTER)
 
 
 def _class_summary(thing: Any, *, color: bool, width: int) -> str:
@@ -408,42 +534,38 @@ def _class_summary(thing: Any, *, color: bool, width: int) -> str:
         if inspect.isclass(thing)
         else f"Help on {cls.__qualname__} object in module {cls.__module__}:"
     )
-    parts: list[Any] = [Text(header, style="bold"), Text("")]
+    parts = [_styled(header, "1", color=color), ""]
     doc = inspect.getdoc(cls)
     if doc:
-        parts += [Text(doc), Text("")]
+        parts += [doc, ""]
     # A constructor "returning Self" is implied, not useful to state.
     ctor_sig = f"{cls.__qualname__}{_format_signature(cls, drop_return=(typing.Self,))}"
-    parts.append(_signature_line(ctor_sig, width=width))
+    parts.append(_signature_line(ctor_sig, color=color, width=width))
     method_names = sorted(
         name
         for name in dir(cls)
         if not name.startswith("_") and _is_plain_method(getattr(cls, name, None))
     )
     if method_names:
-        parts += [Text(""), Text("Methods:", style="bold underline")]
+        parts += ["", _styled("Methods:", "1;4", color=color)]
         for name in method_names:
             sig = _format_signature(getattr(cls, name), drop_self=True)
-            parts.append(_signature_line(f"  {name}{sig}", width=width))
+            parts.append(_signature_line(f"  {name}{sig}", color=color, width=width))
     property_names = sorted(
         name
         for name in dir(cls)
         if not name.startswith("_") and isinstance(getattr(cls, name, None), property)
     )
     if property_names:
-        parts += [Text(""), Text("Properties:", style="bold underline")]
+        parts += ["", _styled("Properties:", "1;4", color=color)]
         for name in property_names:
             doc = inspect.getdoc(getattr(cls, name))
             summary = doc.strip().splitlines()[0] if doc else ""
             line = f"  {name}" + (f" - {summary}" if summary else "")
             parts.append(
-                Text(
-                    textwrap.fill(
-                        line, width=max(width, 20), subsequent_indent="      "
-                    )
-                )
+                textwrap.fill(line, width=max(width, 20), subsequent_indent="      ")
             )
-    return _render(Group(*parts), color=color, width=width)
+    return "\n".join(parts)
 
 
 def _is_plain_method(obj: Any) -> bool:
@@ -504,25 +626,92 @@ def _format_signature(
     return re.sub(r"\s*=\s*", "=", text)
 
 
-def _format_error(err: BaseException, *, color: bool, width: int) -> dict[str, str]:
+def _format_error(err: BaseException) -> dict[str, Any]:
+    """An error as data: its type and message, the standard traceback text,
+    and - for the client to draw a fuller traceback from - each exception in
+    its cause/context chain as "stacks", outermost (the one raised) first.
+    """
     tb = err.__traceback__
     # Drop the frames belonging to this module so the traceback starts at user code.
     while tb is not None and tb.tb_frame.f_code.co_filename == __file__:
         tb = tb.tb_next
+    error: dict[str, Any] = {"type": type(err).__name__, "message": str(err)}
     if isinstance(err, SyntaxError):
-        # No frames worth showing for this one, just the offending line and caret -
-        # a plain rendering already does that job, so it skips the Rich treatment.
-        text = "".join(traceback.format_exception_only(type(err), err))
-    else:
-        text = _render(
-            Traceback.from_exception(type(err), err, tb, width=width),
-            color=color,
-            width=width,
-        )
+        # No frames worth showing for this one, just the offending line and caret.
+        error["traceback"] = "".join(traceback.format_exception_only(type(err), err))
+        return error
+    error["traceback"] = "".join(traceback.format_exception(type(err), err, tb))
+    stacks = _stacks(err, tb)
+    if stacks is not None:
+        error["stacks"] = stacks
+    return error
+
+
+def _stacks(err: BaseException, tb: Any) -> list[dict[str, Any]] | None:
+    """None if there's an exception group anywhere in the chain: the
+    standard traceback text already lays those out as the tree they are."""
+    stacks: list[dict[str, Any]] = []
+    seen: set[int] = set()
+    is_cause = False
+    current: BaseException | None = err
+    while current is not None and id(current) not in seen:
+        if isinstance(current, BaseExceptionGroup):
+            return None
+        seen.add(id(current))
+        frames = []
+        while tb is not None:
+            if tb.tb_frame.f_code.co_filename != __file__:
+                frames.append(_frame(tb))
+            tb = tb.tb_next
+        hidden = max(len(frames) - _MAX_FRAMES, 0)
+        if hidden:
+            del frames[_MAX_FRAMES // 2 : _MAX_FRAMES // 2 + hidden]
+        try:
+            message = str(current)
+        except Exception:  # noqa: BLE001 - a broken __str__ can raise anything
+            message = "<exception str() failed>"
+        stacks.append({
+            "type": type(current).__name__,
+            "message": message,
+            "is_cause": is_cause,
+            "notes": [str(n) for n in getattr(current, "__notes__", None) or ()],
+            "frames": frames,
+            "hidden": hidden,
+        })
+        if current.__cause__ is not None:
+            current, is_cause = current.__cause__, True
+        elif not current.__suppress_context__:
+            current, is_cause = current.__context__, False
+        else:
+            break
+        tb = current.__traceback__ if current is not None else None
+    return stacks
+
+
+def _frame(tb: Any) -> dict[str, Any]:
+    code = tb.tb_frame.f_code
+    lineno = tb.tb_lineno
+    # Where in the line(s) it went wrong, for the client to mark. tb_lasti,
+    # not the frame's own f_lasti: an outer frame has usually moved on (into
+    # an except block, say) by the time anyone looks.
+    start_line, end_line, start_col, end_col = next(
+        itertools.islice(code.co_positions(), tb.tb_lasti // 2, None),
+        (None, None, None, None),
+    )
+    position = (
+        None
+        if None in (start_line, end_line, start_col, end_col)
+        else [start_line, start_col, end_line, end_col]
+    )
+    first = max(lineno - _CONTEXT_LINES, 1)
+    last = max(lineno, min(end_line or lineno, lineno + 10)) + _CONTEXT_LINES
     return {
-        "type": type(err).__name__,
-        "message": str(err),
-        "traceback": text,
+        "file": code.co_filename,
+        "line": lineno,
+        "name": code.co_name,
+        "first": first,
+        "source": linecache.getlines(code.co_filename)[first - 1 : last],
+        "position": position,
     }
 
 

@@ -314,3 +314,37 @@ async def test_local_sql_result_crosses_to_the_server_as_its_rows():
     ]
     # Still the real result locally.
     assert isinstance(live.local.globals_["r"], SqlResult)
+
+
+async def test_capture_takes_a_server_value_as_data_and_drops_error_frames():
+    class Answering(FakeClient):
+        async def call(self, type_: str, **payload: Any) -> Any:
+            result = await super().call(type_, **payload)
+            if type_ == "ha_repl_server/exec":
+                result["value"] = "text form"
+                result["value_tree"] = {"t": "dict", "v": [["a", [1, 2]]]}
+                result["error"] = {"type": "E", "traceback": "E\n", "stacks": [{}]}
+            return result
+
+    live = _live(Answering())
+    live.capture = Captured()
+
+    await live.run("hass.states")
+
+    assert live.capture.value == {"a": [1, 2]}
+    assert live.capture.error == {"type": "E", "traceback": "E\n"}
+
+
+async def test_local_auto_await_does_not_rewrite_class_bodies():
+    local = LocalSession({})
+    code = (
+        "import asyncio, dataclasses\n"
+        "@dataclasses.dataclass\n"
+        "class P:\n"
+        "    xs: list = dataclasses.field(default_factory=list)\n"
+        "    async def twice(self, n=int('2')):\n"
+        "        return asyncio.sleep(0, result=n * 2)\n"
+        "[P().xs, P().twice()]"
+    )
+
+    assert await local.evaluate(code) == [[], 4]

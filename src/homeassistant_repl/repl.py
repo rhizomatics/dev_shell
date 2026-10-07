@@ -38,6 +38,7 @@ from rich.console import Console
 from .cli import display_options, print_result
 from .client import Client, HaReplError, client_version
 from .local_session import LocalSession, format_error
+from .render import decode_value
 from .rest import hass_api
 from .sql import SqlResult, SqlTool
 
@@ -259,8 +260,14 @@ class LiveSession:
         else:
             if result["stdout"] is not None:
                 self.capture.stdout += result["stdout"]
-            self.capture.value = result["value"]
-            self.capture.error = result["error"]
+            tree = result.get("value_tree")
+            self.capture.value = (
+                result["value"] if tree is None else _jsonable(decode_value(tree))
+            )
+            # The frames are for drawing a traceback, not for a JSON consumer.
+            self.capture.error = result["error"] and {
+                k: v for k, v in result["error"].items() if k != "stacks"
+            }
             self.capture.truncated |= bool(result.get("truncated"))
         return not result["error"]
 

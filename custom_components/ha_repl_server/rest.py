@@ -35,9 +35,8 @@ def warm_urllib3_lazy_imports() -> None:
     they're used - cheap once cached in sys.modules, but as a plain import
     straight on the event loop (connect_hass_api() runs during
     async_setup_entry, before anything's offloaded to an executor), HA's
-    blocking-call detector flags it. Same fix as session.py's
-    warm_rich_unicode_data(): call once, in the executor, at setup, so the
-    real call later just hits the cache.
+    blocking-call detector flags it. So: call once, in the executor, at
+    setup, and the real call later just hits the cache.
     """
     importlib.import_module(".system", "urllib3.contrib.resolver._async")
     importlib.import_module(".protocols.http1", "urllib3.contrib.hface")
