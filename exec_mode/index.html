@@ -1230,16 +1230,17 @@
 <ul>
 <li>A <code>sql</code> result is its data: <code>columns</code>, <code>rows</code> (one list per row), <code>rowcount</code>, and its own <code>truncated</code>, which is <code>true</code> when the query hit <code>max_rows</code> and there were more rows to fetch.</li>
 <li>Any other local value that is already JSON-shaped (numbers, strings, lists, dicts) is passed through as it is. Anything else is its <code>repr()</code>.</li>
-<li>A value from inside Home Assistant is always a string holding its printed form, so <code>hass.states.get("sun.sun").state</code> gives <code>"'below_horizon'"</code>. To get real data back, <code>print(json.dumps(...))</code> inside the snippet and read <code>stdout</code>, or shape the answer into plain data and keep the final step local.</li>
+<li>A value from inside Home Assistant follows the same rule when it is plain data, so <code>hass.states.get("sun.sun").state</code> gives <code>"below_horizon"</code>. Anything else - a state object, or a list containing one - is a string holding its <code>repr()</code>, so shape the answer into plain data inside the snippet.</li>
 </ul>
 <h2 id="what-runs-where">What Runs Where<a class="headerlink" href="#what-runs-where" title="Permanent link">&para;</a></h2>
 <p>A snippet is ordinary Python running in the <code>ha-repl</code> process, with whatever is installed there. Statements that use <code>hass</code> or <code>obj</code> are the exception: they are sent to Home Assistant and run inside it. The rules are the same as the interactive shell and are described in full under <a href="../live_mode/#what-runs-where">What Runs Where</a>. The points that matter most for a script:</p>
 <ul>
 <li><code>sql</code> and <code>hass_api</code> are local. A query's result is downloaded, and everything done with it afterwards happens locally.</li>
 <li>Plain local data (strings, numbers, lists and dicts of them) and <code>sql</code> results can be used in a statement that runs inside Home Assistant. A <code>sql</code> result arrives there as a list of rows.</li>
-<li>Nothing comes back the other way. A variable assigned by a statement that used <code>hass</code> or <code>obj</code> stays inside Home Assistant, and later statements that use it run there too.</li>
-<li>Don't call <code>sql(...)</code> in the same statement as <code>hass</code> or <code>obj</code>. Assign the result on its own line first.</li>
+<li>A variable assigned by a statement that used <code>hass</code> or <code>obj</code> comes back, and is local afterwards, if it holds plain data. Anything else stays inside Home Assistant, and later statements that use it run there too.</li>
+<li>Don't use <code>sql</code> or <code>hass_api</code> in the same statement as <code>hass</code> or <code>obj</code> - it is refused. Assign one part on its own line first.</li>
 </ul>
+<p><a href="../live_mode/#mixing-both-sides">Mixing Both Sides</a> has the details and worked examples.</p>
 <h2 id="state-between-calls">State Between Calls<a class="headerlink" href="#state-between-calls" title="Permanent link">&para;</a></h2>
 <p>Each <code>exec</code> call starts a new local Python process, so local variables and imports do not carry over. Variables inside Home Assistant do: they live in the named session until it is reset or Home Assistant restarts.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s1">'entry = hass.config_entries.async_entries("sun")[0]'</span>

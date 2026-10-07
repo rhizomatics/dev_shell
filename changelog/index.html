@@ -972,19 +972,31 @@
 <p>For live mode, generally the client and server component have to be on the same version. Different versions <em>might</em> work
 with each other for point releases</p>
 </div>
-<h1 id="080">0.8.0<a class="headerlink" href="#080" title="Permanent link">&para;</a></h1>
+<h1 id="090">0.9.0<a class="headerlink" href="#090" title="Permanent link">&para;</a></h1>
 <h2 id="live-server">Live Server<a class="headerlink" href="#live-server" title="Permanent link">&para;</a></h2>
+<ul>
+<li>No longer needs <code>homeassistant-api</code>: <code>hass_api</code> is the shell's own local REST client, and is no longer also bound inside Home Assistant</li>
+</ul>
+<h2 id="live-shell">Live Shell<a class="headerlink" href="#live-shell" title="Permanent link">&para;</a></h2>
+<ul>
+<li>A variable assigned inside Home Assistant now comes back, and is local afterwards, when it holds plain data - so <code>names = obj.find_names(...)</code> can be followed by local code using <code>names</code>. See <em>Mixing Both Sides</em> in the live mode docs</li>
+<li>A statement using <code>sql</code> or <code>hass_api</code> together with <code>hass</code> or <code>obj</code> is refused with an explanation, rather than failing inside Home Assistant</li>
+<li><code>ha-repl --json exec</code> reports a plain-data value from inside Home Assistant as data, not as its printed form</li>
+</ul>
+<h1 id="080">0.8.0<a class="headerlink" href="#080" title="Permanent link">&para;</a></h1>
+<h2 id="live-server_1">Live Server<a class="headerlink" href="#live-server_1" title="Permanent link">&para;</a></h2>
 <ul>
 <li>No longer uses <code>rich</code>, so installing no longer upgrades the much older <code>rich</code> bundled with Home Assistant 2026.10 - which could fail setup with <code>cannot import name 'SyntaxPosition' from 'rich.syntax'</code> until a second restart</li>
 <li>Values and errors are now sent to the client as data, and rendered there</li>
 <li>Needs a matching client: an older <code>ha-repl</code> still works, but shows plain values and tracebacks</li>
 </ul>
-<h2 id="live-shell">Live Shell<a class="headerlink" href="#live-shell" title="Permanent link">&para;</a></h2>
+<h2 id="live-shell_1">Live Shell<a class="headerlink" href="#live-shell_1" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Fix for a class whose body calls something (e.g. a <code>dataclasses.field()</code> default) failing with <code>'await' outside function</code></li>
+<li>New gallery of examples of blending local and server side objects, the gallery also acts as a set of automated tests</li>
 </ul>
 <h1 id="070">0.7.0<a class="headerlink" href="#070" title="Permanent link">&para;</a></h1>
-<h2 id="live-shell_1">Live Shell<a class="headerlink" href="#live-shell_1" title="Permanent link">&para;</a></h2>
+<h2 id="live-shell_2">Live Shell<a class="headerlink" href="#live-shell_2" title="Permanent link">&para;</a></h2>
 <ul>
 <li>The live mode is now local first, so arbitrary local imports can be made.</li>
 <li><code>obj</code> and <code>hass</code> are the only fake objects, redirecting their inputs and outputs to the real equivalents inside the live server</li>
@@ -1005,7 +1017,7 @@ with each other for point releases</p>
 <li>Internally the data is more efficiently stored, as single native Arrow object</li>
 <li>Queries all executed under <code>read_only</code> session scope so no commits expected (this is not a security measure)</li>
 </ul>
-<h2 id="live-server_1">Live Server<a class="headerlink" href="#live-server_1" title="Permanent link">&para;</a></h2>
+<h2 id="live-server_2">Live Server<a class="headerlink" href="#live-server_2" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Config switches now to optionally switch off <code>sql</code> and/or <code>hass</code> access</li>
 </ul>

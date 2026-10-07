@@ -102,7 +102,7 @@ What `value` holds depends on where the last expression ran:
 
 - A `sql` result is its data: `columns`, `rows` (one list per row), `rowcount`, and its own `truncated`, which is `true` when the query hit `max_rows` and there were more rows to fetch.
 - Any other local value that is already JSON-shaped (numbers, strings, lists, dicts) is passed through as it is. Anything else is its `repr()`.
-- A value from inside Home Assistant is always a string holding its printed form, so `hass.states.get("sun.sun").state` gives `"'below_horizon'"`. To get real data back, `print(json.dumps(...))` inside the snippet and read `stdout`, or shape the answer into plain data and keep the final step local.
+- A value from inside Home Assistant follows the same rule when it is plain data, so `hass.states.get("sun.sun").state` gives `"below_horizon"`. Anything else - a state object, or a list containing one - is a string holding its `repr()`, so shape the answer into plain data inside the snippet.
 
 ## What Runs Where
 
@@ -110,8 +110,10 @@ A snippet is ordinary Python running in the `ha-repl` process, with whatever is 
 
 - `sql` and `hass_api` are local. A query's result is downloaded, and everything done with it afterwards happens locally.
 - Plain local data (strings, numbers, lists and dicts of them) and `sql` results can be used in a statement that runs inside Home Assistant. A `sql` result arrives there as a list of rows.
-- Nothing comes back the other way. A variable assigned by a statement that used `hass` or `obj` stays inside Home Assistant, and later statements that use it run there too.
-- Don't call `sql(...)` in the same statement as `hass` or `obj`. Assign the result on its own line first.
+- A variable assigned by a statement that used `hass` or `obj` comes back, and is local afterwards, if it holds plain data. Anything else stays inside Home Assistant, and later statements that use it run there too.
+- Don't use `sql` or `hass_api` in the same statement as `hass` or `obj` - it is refused. Assign one part on its own line first.
+
+[Mixing Both Sides](https://homeassistant-repl.rhizomatics.org.uk/live_mode/#mixing-both-sides) has the details and worked examples.
 
 ## State Between Calls
 
