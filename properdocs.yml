@@ -72,7 +72,15 @@ plugins:
         core Python API as `hass`.
       sections:
         Start here:
-          - index.md: Overview of what Home Assistant REPL does, api vs custom mode, and getting started
+          - index.md: Overview of what Home Assistant REPL does, api vs live mode, and getting started
+          - exec_mode.md: Running one-shot snippets with `ha-repl exec` - options, JSON output, exit codes, sessions and tips for coding agents
+        Reference:
+          - live_mode.md: Installing the server component, the live shell, and which statements run locally or inside Home Assistant
+          - obj_tree.md: The `obj` object tree - path and entity id lookup, `find()` filters and `show()`
+          - sql.md: The `sql` object for querying the Recorder database, and its result and table objects
+          - alternative_integration.md: Using `homeassistant_repl.connect()` from plain Python, ipython or Marimo instead of the shell
+        Optional:
+          - developer/design/design_principles.md: Design principles behind the client/server split
         # changelog and roadmap left out - old or planned behaviour an agent would take as current
   #- minify:
   #    minify_html: true

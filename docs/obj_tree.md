@@ -1,8 +1,8 @@
 # The Object Tree
 
-All of the objects (only entities for now) are arranged in a giant tree, like a file system, exposed as the global variable `objs` and implemented as Python [Mapping](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping) object (which provides the [MappingView](https://docs.python.org/3/library/collections.abc.html#collections.abc.MappingView) views [ItemsView](https://docs.python.org/3/library/collections.abc.html#collections.abc.ItemsView) and [KeysView](https://docs.python.org/3/library/collections.abc.html#collections.abc.KeysView))
+All of the objects (only entities for now) are arranged in a giant tree, like a file system, exposed as the global variable `obj` and implemented as Python [Mapping](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping) object (which provides the [MappingView](https://docs.python.org/3/library/collections.abc.html#collections.abc.MappingView) views [ItemsView](https://docs.python.org/3/library/collections.abc.html#collections.abc.ItemsView) and [KeysView](https://docs.python.org/3/library/collections.abc.html#collections.abc.KeysView))
 
-`objs` offers:
+`obj` offers:
 
 - Dictionary style access, using `[]`
   - Raises `KeyError` if entity or sub-path doesn't exist
@@ -84,9 +84,9 @@ In API Client mode, `find()` returns a local proxy for the remote class, normali
 Identical to `obj.find()` except it only returns an iterable of the object paths rather than the objects themselves. Ideal for plugging into some logic that will then call `obj[path]` on each one.
 
 ```python
->>> list(objs.find(area="kitchen"))  # list names of all entities in kitchen
->>> sorted(objs.find(area=["kitchen", "shed"]))
->>> list(objs.find(".*_leak"))
+>>> list(obj.find(area="kitchen"))  # list names of all entities in kitchen
+>>> sorted(obj.find(area=["kitchen", "shed"]))
+>>> list(obj.find(".*_leak"))
 ```
 
 #### `obj.find_names(..)`

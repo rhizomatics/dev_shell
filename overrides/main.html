@@ -6,3 +6,12 @@
     <link rel="alternate" type="text/markdown" href="{{ page.meta.markdown_url }}">
   {% endif %}
 {% endblock %}
+
+{% block content %}
+  {% if page and page.meta.markdown_url %}
+    <a href="{{ page.meta.markdown_url }}" title="View this page as Markdown" class="md-content__button md-icon">
+      {% include ".icons/octicons/markdown-16.svg" %}
+    </a>
+  {% endif %}
+  {{ super() }}
+{% endblock %}

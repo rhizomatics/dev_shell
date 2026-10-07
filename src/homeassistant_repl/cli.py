@@ -72,7 +72,7 @@ def _parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command")
 
     exec_ = sub.add_parser(
-        "exec", help="run code and print output and result (custom mode only)"
+        "exec", help="run code and print output and result (live mode only)"
     )
     exec_.add_argument("code", nargs="?", help="code to run, or - for stdin")
     exec_.add_argument("-f", "--file", help="run the contents of a file")

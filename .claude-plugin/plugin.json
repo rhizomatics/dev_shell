@@ -1,0 +1,12 @@
+{
+  "name": "homeassistant-repl",
+  "description": "Teaches an agent to run Python against a running Home Assistant with ha-repl, for custom component development",
+  "author": {
+    "name": "Rhizomatics",
+    "url": "https://github.com/rhizomatics"
+  },
+  "homepage": "https://homeassistant-repl.rhizomatics.org.uk",
+  "repository": "https://github.com/rhizomatics/homeassistant-repl",
+  "license": "Apache-2.0",
+  "keywords": ["home-assistant", "repl", "custom-component"]
+}

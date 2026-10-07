@@ -18,8 +18,29 @@ Both can also go in a `.env` file in the directory the agent runs from. Then tel
 ```markdown
 Use `ha-repl --json exec '<python>'` to run Python against the development
 Home Assistant. `hass` is the live HomeAssistant object, `obj` the object tree,
-`sql("select ...")` queries the recorder. See docs/exec_mode.md.
+`sql("select ...")` queries the recorder. See [Exec Mode](https://homeassistant-repl.rhizomatics.org.uk/exec_mode/) documentation.
 ```
+
+### Agent Skill
+
+The repo also ships an [Agent Skill](https://agentskills.io), [`skills/ha-repl`](https://github.com/rhizomatics/homeassistant-repl/tree/main/skills/ha-repl), which teaches an agent the command, its JSON output and the rules on this page, so you don't have to write the instructions yourself. Install it in the project where you develop your component.
+
+For Claude Code, as a plugin:
+
+```bash
+claude plugin marketplace add rhizomatics/agent-plugins
+claude plugin install homeassistant-repl@rhizomatics
+```
+
+For other agents that support skills, copy the `skills/ha-repl` directory into the agent's skills directory (for example `.claude/skills/` or `.agents/skills/`), or use the [skills](https://github.com/vercel-labs/skills) installer:
+
+```bash
+npx skills add rhizomatics/homeassistant-repl
+```
+
+### Documentation for Agents
+
+Every page of this site is also published as Markdown: add `index.md` to a page's address, or use the Markdown button at the top of the page. [`llms.txt`](https://homeassistant-repl.rhizomatics.org.uk/llms.txt) lists the pages with a line on each, and [`llms-full.txt`](https://homeassistant-repl.rhizomatics.org.uk/llms-full.txt) is all of them in one file.
 
 ## Running a Snippet
 
