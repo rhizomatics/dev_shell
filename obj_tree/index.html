@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="All of the objects (only entities for now) are arranged in a giant tree, like a file system, exposed as the global variable objs and implemented as Python Mapping object (which provides the MappingView views ItemsView and KeysView)">
+        <meta name="description" content="All of the objects (only entities for now) are arranged in a giant tree, like a file system, exposed as the global variable obj and implemented as Python Mapping object (which provides the MappingView views ItemsView and KeysView)">
       
       
       
@@ -67,6 +67,8 @@
     
     
   
+  
+    <link rel="alternate" type="text/markdown" href="https://homeassistant-repl.rhizomatics.org.uk/obj_tree/index.md">
   
 
   </head>
@@ -976,6 +978,12 @@
               
               <article class="md-content__inner md-typeset" data-pagefind-body>
                 
+  
+    <a href="https://homeassistant-repl.rhizomatics.org.uk/obj_tree/index.md" title="View this page as Markdown" class="md-content__button md-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M14.85 3c.63 0 1.15.52 1.14 1.15v7.7c0 .63-.51 1.15-1.15 1.15H1.15C.52 13 0 12.48 0 11.84V4.15C0 3.52.52 3 1.15 3ZM9 11V5H7L5.5 7 4 5H2v6h2V8l1.5 1.92L7 8v3Zm2.99.5L14.5 8H13V5h-2v3H9.5Z"/></svg>
+    </a>
+  
+  
                   
   
     <a href="https://github.com/rhizomatics/homeassistant-repl/edit/main/docs/obj_tree.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
@@ -995,8 +1003,8 @@
 
 
 <h1 id="the-object-tree">The Object Tree<a class="headerlink" href="#the-object-tree" title="Permanent link">&para;</a></h1>
-<p>All of the objects (only entities for now) are arranged in a giant tree, like a file system, exposed as the global variable <code>objs</code> and implemented as Python <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a> object (which provides the <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.MappingView">MappingView</a> views <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.ItemsView">ItemsView</a> and <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.KeysView">KeysView</a>)</p>
-<p><code>objs</code> offers:</p>
+<p>All of the objects (only entities for now) are arranged in a giant tree, like a file system, exposed as the global variable <code>obj</code> and implemented as Python <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a> object (which provides the <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.MappingView">MappingView</a> views <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.ItemsView">ItemsView</a> and <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.KeysView">KeysView</a>)</p>
+<p><code>obj</code> offers:</p>
 <ul>
 <li>Dictionary style access, using <code>[]</code></li>
 <li>Raises <code>KeyError</code> if entity or sub-path doesn't exist</li>
@@ -1056,9 +1064,9 @@
 <p>In API Client mode, <code>find()</code> returns a local proxy for the remote class, normalized to look more like the same object you'd get in live mode. Switching <code>raw=True</code> will bypass this and you'll get the object untouched as it was received from the API.</p>
 <h4 id="objfind_paths"><code>obj.find_paths(..)</code><a class="headerlink" href="#objfind_paths" title="Permanent link">&para;</a></h4>
 <p>Identical to <code>obj.find()</code> except it only returns an iterable of the object paths rather than the objects themselves. Ideal for plugging into some logic that will then call <code>obj[path]</code> on each one.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="nb">list</span><span class="p">(</span><span class="n">objs</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">area</span><span class="o">=</span><span class="s2">"kitchen"</span><span class="p">))</span>  <span class="c1"># list names of all entities in kitchen</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">objs</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">area</span><span class="o">=</span><span class="p">[</span><span class="s2">"kitchen"</span><span class="p">,</span> <span class="s2">"shed"</span><span class="p">]))</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="nb">list</span><span class="p">(</span><span class="n">objs</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">".*_leak"</span><span class="p">))</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="nb">list</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">area</span><span class="o">=</span><span class="s2">"kitchen"</span><span class="p">))</span>  <span class="c1"># list names of all entities in kitchen</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">area</span><span class="o">=</span><span class="p">[</span><span class="s2">"kitchen"</span><span class="p">,</span> <span class="s2">"shed"</span><span class="p">]))</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="nb">list</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">".*_leak"</span><span class="p">))</span>
 </span></code></pre></div>
 <h4 id="objfind_names"><code>obj.find_names(..)</code><a class="headerlink" href="#objfind_names" title="Permanent link">&para;</a></h4>
 <p>Same as <code>obj.find_paths()</code> except it returns the object bare name, as it would appear in Home Assistant, e.g. <code>sensor.bathroom_humidity</code></p>
@@ -1079,6 +1087,7 @@
 
 
                 
+
               </article>
             </div>
           

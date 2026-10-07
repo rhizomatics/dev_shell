@@ -154,3 +154,507 @@ These are all current with Python v3, there are others like dreampie that didn't
 - [bpython](https://bpython-interpreter.org) - Syntax help, auto-complete, improved history
 - [xon.sh](https://xon.sh) - python-centric shell
 - [IDLE](https://docs.python.org/3/library/idle.html) - the original Python Foundation enhanced shell, colourized text, multi-window etc
+
+# Exec Mode
+
+`ha-repl exec` runs one snippet of Python against a running Home Assistant and exits. It is the non-interactive form of [live mode](https://homeassistant-repl.rhizomatics.org.uk/live_mode/index.md), and its main use is giving a coding agent a way to check its ideas against a real instance: read an entity's state, query the recorder, call a service, inspect an object, then decide what to do next.
+
+It needs the same server component as live mode - read the warnings on the [live mode](https://homeassistant-repl.rhizomatics.org.uk/live_mode/index.md) page first: an agent with `exec` can run any Python inside Home Assistant. Point it at a devcontainer or development instance, not the one running your house.
+
+## Setup
+
+The agent needs the `ha-repl` command and two environment variables:
+
+```bash
+export HASS_SERVER=http://homeassistant.local:8123
+export HASS_TOKEN=<long lived access token>
+```
+
+Both can also go in a `.env` file in the directory the agent runs from. Then tell the agent the command exists, for example in its project instructions:
+
+```markdown
+Use `ha-repl --json exec '<python>'` to run Python against the development
+Home Assistant. `hass` is the live HomeAssistant object, `obj` the object tree,
+`sql("select ...")` queries the recorder. See [Exec Mode](https://homeassistant-repl.rhizomatics.org.uk/exec_mode/) documentation.
+```
+
+### Agent Skill
+
+The repo also ships an [Agent Skill](https://agentskills.io), [`skills/ha-repl`](https://github.com/rhizomatics/homeassistant-repl/tree/main/skills/ha-repl), which teaches an agent the command, its JSON output and the rules on this page, so you don't have to write the instructions yourself. Install it in the project where you develop your component.
+
+For Claude Code, as a plugin:
+
+```bash
+claude plugin marketplace add rhizomatics/agent-plugins
+claude plugin install homeassistant-repl@rhizomatics
+```
+
+For other agents that support skills, copy the `skills/ha-repl` directory into the agent's skills directory (for example `.claude/skills/` or `.agents/skills/`), or use the [skills](https://github.com/vercel-labs/skills) installer:
+
+```bash
+npx skills add rhizomatics/homeassistant-repl
+```
+
+### Documentation for Agents
+
+Every page of this site is also published as Markdown: add `index.md` to a page's address, or use the Markdown button at the top of the page. [`llms.txt`](https://homeassistant-repl.rhizomatics.org.uk/llms.txt) lists the pages with a line on each, and [`llms-full.txt`](https://homeassistant-repl.rhizomatics.org.uk/llms-full.txt) is all of them in one file.
+
+## Running a Snippet
+
+Pass the code as an argument, from a file, or on standard input. Standard input avoids shell quoting problems and is the best form for anything longer than a line.
+
+```bash
+ha-repl exec 'hass.states.get("sun.sun").state'
+ha-repl exec -f snippet.py
+ha-repl exec - <<'PY'
+r = sql("select entity_id from states_meta", max_rows=3)
+{row[0]: hass.states.get(row[0]).state for row in r}
+PY
+```
+
+The value of the last expression is printed, as at a Python prompt. `await` works at the top level, and a call to an async function is awaited for you if you leave the `await` out.
+
+| Option                            | Effect                                                                            |
+| --------------------------------- | --------------------------------------------------------------------------------- |
+| `--json`                          | Print one JSON object instead of text. Goes before `exec`                         |
+| `-s NAME`, `--session NAME`       | Use a named session inside Home Assistant (default `default`). Goes before `exec` |
+| `-t SECONDS`, `--timeout SECONDS` | Give up after this long                                                           |
+| `--reset`                         | Clear the session inside Home Assistant before running                            |
+| `-f FILE`                         | Read the snippet from a file                                                      |
+
+The exit status is `0` on success, `1` if the snippet raised or timed out, and `2` if Home Assistant could not be reached or the arguments were wrong.
+
+## JSON Output
+
+With `--json` the result is one object on standard output, whether or not the snippet succeeded:
+
+```bash
+ha-repl --json exec 'sql("select * from states_meta", max_rows=2)'
+```
+
+```json
+{
+  "stdout": "",
+  "value": {
+    "columns": ["metadata_id", "entity_id"],
+    "rows": [[1, "zone.home"], [2, "conversation.home_assistant"]],
+    "rowcount": 2,
+    "truncated": true
+  },
+  "error": null,
+  "duration": 0.004,
+  "truncated": false
+}
+```
+
+| Field       | Content                                                               |
+| ----------- | --------------------------------------------------------------------- |
+| `stdout`    | Everything the snippet printed                                        |
+| `value`     | The last expression, or `null` if the snippet ended in a statement    |
+| `error`     | `null`, or an object with `type`, `message` and `traceback`           |
+| `duration`  | Seconds the snippet took                                              |
+| `truncated` | `true` if output from inside Home Assistant was cut at its size limit |
+
+What `value` holds depends on where the last expression ran:
+
+- A `sql` result is its data: `columns`, `rows` (one list per row), `rowcount`, and its own `truncated`, which is `true` when the query hit `max_rows` and there were more rows to fetch.
+- Any other local value that is already JSON-shaped (numbers, strings, lists, dicts) is passed through as it is. Anything else is its `repr()`.
+- A value from inside Home Assistant is always a string holding its printed form, so `hass.states.get("sun.sun").state` gives `"'below_horizon'"`. To get real data back, `print(json.dumps(...))` inside the snippet and read `stdout`, or shape the answer into plain data and keep the final step local.
+
+## What Runs Where
+
+A snippet is ordinary Python running in the `ha-repl` process, with whatever is installed there. Statements that use `hass` or `obj` are the exception: they are sent to Home Assistant and run inside it. The rules are the same as the interactive shell and are described in full under [What Runs Where](https://homeassistant-repl.rhizomatics.org.uk/live_mode/#what-runs-where). The points that matter most for a script:
+
+- `sql` and `hass_api` are local. A query's result is downloaded, and everything done with it afterwards happens locally.
+- Plain local data (strings, numbers, lists and dicts of them) and `sql` results can be used in a statement that runs inside Home Assistant. A `sql` result arrives there as a list of rows.
+- Nothing comes back the other way. A variable assigned by a statement that used `hass` or `obj` stays inside Home Assistant, and later statements that use it run there too.
+- Don't call `sql(...)` in the same statement as `hass` or `obj`. Assign the result on its own line first.
+
+## State Between Calls
+
+Each `exec` call starts a new local Python process, so local variables and imports do not carry over. Variables inside Home Assistant do: they live in the named session until it is reset or Home Assistant restarts.
+
+```bash
+ha-repl exec 'entry = hass.config_entries.async_entries("sun")[0]'
+ha-repl exec 'entry.state'          # still there
+ha-repl sessions                    # list sessions and their variables
+ha-repl reset                       # clear the default session
+```
+
+Give each agent, or each task, its own `--session` name if several run against the same instance, so they don't overwrite each other's variables.
+
+## Errors
+
+Without `--json`, a traceback goes to standard error and the exit status is `1`. With `--json`, `error` is filled in and `stdout` still holds whatever was printed before the failure:
+
+```json
+{
+  "stdout": "",
+  "value": null,
+  "error": {
+    "type": "ZeroDivisionError",
+    "message": "division by zero",
+    "traceback": "Traceback (most recent call last):\n  File \"/ha_repl/api_cell_1\", line 1, in <module>\n    x = 1/0\n        ~^~\nZeroDivisionError: division by zero\n"
+  },
+  "duration": 0.001,
+  "truncated": false
+}
+```
+
+A snippet stops at the first statement that fails. Statements before it have already run, including any that changed something inside Home Assistant.
+
+For an error raised inside Home Assistant, `type` and `message` are plain, but `traceback` is formatted for a terminal with box-drawing characters. Rely on `type` and `message` when parsing.
+
+A rejected query raises `SqlError`. Only a single `SELECT` statement is accepted.
+
+## Tips for Agents
+
+- Use `--json`, and send the snippet on standard input.
+- Always set `-t`. A snippet that waits on something that never happens otherwise blocks forever.
+- Keep `max_rows` small while exploring. The default is 1000 rows; `sql.tables` lists the tables and their columns without running a query.
+- Prefer reading to writing. `hass.states.get(...)`, `obj[...]` and `sql(...)` are safe to repeat; service calls and direct changes to `hass` objects take effect immediately on the instance.
+- `help(thing)` on an object inside Home Assistant prints a summary of its methods and properties, which is often quicker than reading the source.
+# Reference
+
+# Live Mode
+
+Live mode is the most powerful, flexible and dangerous way to play around with Home Assistant. Use it with a devcontainer Home Assistant or development instance unless you really know what you're doing, and even then ...
+
+## Installation
+
+Install via [HACS](https://hacs.xyz):
+
+- it's not in the default HACS repository, so you'll have to add `https://github.com/rhizomatics/homeassistant-repl` as a Custom Repository from the top-right dot menu first
+- Search for *Home Assistant REPL* in the HACS menu and choose *Download*
+- Restart Home Assistant for it to recognize the new custom component available
+- From **Settings → Devices & services → Add integration** find **Home Assistant REPL Server** in the list and install, there's no further config needed
+- The component will quiz you first to make sure you know what you're doing
+- Alternatively add `ha_repl_server:` to `configuration.yaml`, which is imported as a config entry)
+
+## Using the Live REPL
+
+Run `ha-repl` with the `live` argument
+
+The quickest way to run the shell is using *uv*, which you can do without cloning this repo or making any other downloads.
+
+```bash
+uv run --with homeassistant-repl ha-repl live
+```
+
+Once you're in, `hass` gives you direct access to the running instance of the [HomeAssistant](https://developers.home-assistant.io/docs/dev_101_hass) class, from which everything else is accessible, its the ultimate god object for the platform.
+
+Also, `sql` gives you query access to the primary HomeAssistant database.
+
+Get help on the arguments in the usual way.
+
+`hass` and `sql` can get combined like this, note the separate rows, the two 'magic' variables can't be combined yet into a single statement.
+
+```python
+>>> r = sql("select entity_id from states_meta", max_rows=3)
+{row[0]: hass.states.get(row[0]).state for row in r}
+```
+
+## What Runs Where
+
+The live shell is an ordinary Python session on your own machine. Import whatever you have installed, define functions, keep dataframes around - none of that touches Home Assistant.
+
+| Name          | Where it lives                                                                                                                                                                                   |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `sql`         | Local. Sends the query to Home Assistant, downloads the result as Arrow data, and gives you a local result object - see [SQL Access](https://homeassistant-repl.rhizomatics.org.uk/sql/index.md) |
+| `hass_api`    | Local. A REST API client                                                                                                                                                                         |
+| `hass`, `obj` | Inside Home Assistant                                                                                                                                                                            |
+
+Since `hass` and `obj` only exist inside Home Assistant, any statement that uses one of them is sent there and run there, with its output sent back as text. A variable assigned by such a statement stays there too, and later statements that use it follow it:
+
+```python
+>>> import polars as pl                      # local
+>>> df = sql("select * from states").to_polars()   # local, on downloaded data
+>>> s = hass.states.get("sun.sun")           # runs inside Home Assistant
+>>> s.state                                  # so does this - `s` lives there
+'below_horizon'
+```
+
+Local values can be used in a statement that runs inside Home Assistant when they are plain data (strings, numbers, and lists or dicts of them) - they are copied over first. Modules you imported locally are imported there under the same name. Anything else local, such as a dataframe or a function, can't cross; the shell says so rather than running the statement. Nothing is copied back the other way.
+
+A `sql` result is the one exception: it crosses as its rows (a list of lists), so you can loop over one to call into `hass`:
+
+```python
+>>> r = sql("select entity_id from states_meta")
+>>> {row[0]: hass.states.get(row[0]).state for row in r}
+```
+
+Warning
+
+Assign the result first, as above. `sql` itself doesn't exist inside Home Assistant, so one statement that both calls `sql(...)` and uses `hass` or `obj` fails there with a `NameError`. Only the rows cross, not the result's methods, and only up to about 100,000 characters of data - trim a large result first with `project()` or a slice.
+
+```python
+>>> eid = "sun.sun"                          # local
+>>> hass.states.get(eid).state               # `eid` is copied over first
+'below_horizon'
+```
+
+A variable lives wherever it was last assigned. The decision is made per statement, so several lines pasted or run together can mix both sides.
+
+## One-Shot Snippets and Agents
+
+`ha-repl exec` runs a snippet exactly as the live shell would, then exits - see [Exec Mode](https://homeassistant-repl.rhizomatics.org.uk/exec_mode/index.md), which covers its JSON output and use by coding agents.
+
+## Running from a clone/fork of this repo
+
+If you do have this repo checked out, you can also use a direct `run` which means you can also tinker locally with `homeassistant_repl` code.
+
+```bash
+uv run ha-repl
+```
+
+### Install Local Home Assistant with the Live Server
+
+The `homeassistant-repl` repo has a [DevContainer](https://containers.dev) defined, and helper scripts in the `/dev` directory to manage it.
+
+Dev instance (devcontainer, or directly on a host with Python 3.14):
+
+```sh
+dev/setup.sh                 # installs HA into its own venv + the CLI (devcontainer runs this)
+dev/restart-ha.sh            # Kill current HA instance and start a new
+dev/run-ha.sh                # HA on :8123 with custom_components/ha_repl_server symlinked in
+uv run python dev/bootstrap.py   # onboard (user dev/dev) and write dev/.env with a token
+```
+
+Using it (host or container):
+
+```sh
+set -a; . dev/.env; set +a
+uv run ha-repl                                         # interactive
+uv run ha-repl exec 'hass.states.get("sun.sun")'
+uv run ha-repl exec - <<'PY'
+await hass.services.async_call("light", "toggle", {"entity_id": "light.kitchen_lights"}, blocking=True)
+hass.states.get("light.kitchen_lights").state
+PY
+```
+
+# The Object Tree
+
+All of the objects (only entities for now) are arranged in a giant tree, like a file system, exposed as the global variable `obj` and implemented as Python [Mapping](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping) object (which provides the [MappingView](https://docs.python.org/3/library/collections.abc.html#collections.abc.MappingView) views [ItemsView](https://docs.python.org/3/library/collections.abc.html#collections.abc.ItemsView) and [KeysView](https://docs.python.org/3/library/collections.abc.html#collections.abc.KeysView))
+
+`obj` offers:
+
+- Dictionary style access, using `[]`
+- Raises `KeyError` if entity or sub-path doesn't exist
+- Each level of the tree returns a sub-tree
+- `keys()`,`values()`,`items()` of the sub-tree shows only that level
+- An `OrderedView` is used rather than plain `MappingView` so can be accessed like a `list` and items are alphabetically organized
+- `find()`
+- Returns a flat iterable of the entire tree
+- Optionally restrict by `platform`,`area`,`label`
+- `show()`
+- Dump the most useful info on an object to console
+
+All the usual Python tricks can of course also be used, iterators, comprehensions, classes, lambdas or a simple `len()`.
+
+### `obj[]`
+
+This allows dictionary ('Mapping') access to the object tree. It can also accept a simple entity name and bypass the tree structure altogether.
+
+In the example tree below, the objects and subtrees of objects can be accessed like:
+
+```python
+>>> obj["/rflink/sensor/shed_temperature"].state  # prints out temperature
+>>> obj[
+    "/rflink/sensor/shed_temperature"
+].state_attributes  # prints out additional attributes
+>>> obj["/rflink"]  # the 'light','binary_sensor' and 'sensor' subtrees for rflink
+>>> obj["/rflink/sensor"]  # all the sensors for rflink
+>>> len(obj["/rflink/sensor"])  # count of rflink sensors in this example
+>>> obj["sensor.shed_temperature"] # non-path simple entity name mode
+```
+
+##### Example Tree
+
+```text
+...
+- mqtt
+- rflink
+  - light
+    - staircase_ceiling
+    - shed
+  - switch
+    - upstairs_pixie
+  - binary_sensor
+    - porch_pir
+    - shed_door
+  - sensor
+    - shed_temperature
+    - kitchen_humidity
+...
+```
+
+Note
+
+In the roadmap, there will be a visual Object Browser to view and select entities. For now, it is accessible only via Python code. It also may extend beyond entities, to things like areas, users, categories and devices.
+
+#### `obj.find('..')`
+
+Where the dictionary access gives a nested directory view of the object tree, `find` provides a flat iteration with no order guarantees, so its fast and simple and can be sorted the usual Python way if needed.
+
+`find` functions can accept a full or partial path, or a regular expression.
+
+`find` also has built in filters, to narrow the big list of objects by one or more `platform`,`domain`,`area`,`label` - each of these will take a single string or list of strings, and they can be combined to narrow down the list.
+
+```python
+>>> {(o.entity_id, o.state) for o in obj.find(domain="binary_sensor")}
+```
+
+Or using a regular expression:
+
+```python
+>>> {(o.entity_id, o.state) for o in obj.find("/rflink/binary_sensor/*._leak")}
+```
+
+##### Raw Objects
+
+In API Client mode, `find()` returns a local proxy for the remote class, normalized to look more like the same object you'd get in live mode. Switching `raw=True` will bypass this and you'll get the object untouched as it was received from the API.
+
+#### `obj.find_paths(..)`
+
+Identical to `obj.find()` except it only returns an iterable of the object paths rather than the objects themselves. Ideal for plugging into some logic that will then call `obj[path]` on each one.
+
+```python
+>>> list(obj.find(area="kitchen"))  # list names of all entities in kitchen
+>>> sorted(obj.find(area=["kitchen", "shed"]))
+>>> list(obj.find(".*_leak"))
+```
+
+#### `obj.find_names(..)`
+
+Same as `obj.find_paths()` except it returns the object bare name, as it would appear in Home Assistant, e.g. `sensor.bathroom_humidity`
+
+#### `obj.show(..)`
+
+The `show` function will give a pretty version of an object where it knows how. For entities this means it combines the `RegistryEntry` and `Entity` information, drops some boring internal stuff, filters out all the `None` values and turns `datetime.datetime` structures into local date times.
+
+```yaml
+obj.show('/unifi/sensor/kitchen_wifi_cpu_utilization')
+```
+
+# SQL Access
+
+Home Assistant has an internal SQL database front-ended by the [Recorder](https://www.home-assistant.io/integrations/recorder/) integration. It holds, history, activity, long term statistics and more. Underneath it can by Sqlite (most common), MariaDB, MySQL or PostgreSQL.
+
+When in `live` mode, the `ha-repl` exposes an `sql` variable, which allows access to this database, via the Recorder interface.
+
+`sql` and its results are local objects. A query is sent to Home Assistant, the rows come back as one download, and everything after that - `show()`, slicing, dataframes, CSV export - works on that local copy, with whatever libraries you have installed locally. Nothing extra needs installing in Home Assistant.
+
+Info
+
+Data is serialized as Apache Arrow using the `nanofeather` library - this provides column-oriented data for good compression, zero-copy reuse into dataframes and good compatibility with popular data libraries like `polars` and `pandas`.
+
+### `sql` Object
+
+| Operation        | Description                                                                  |
+| ---------------- | ---------------------------------------------------------------------------- |
+| `sql("<query>")` | Send a query to the database and wait for results                            |
+| `sql.max_rows`   | Read/write property to set the default row limit for results in this session |
+| `sql.tables`     | Returns a list of `Table` objects that describe each table and its contents  |
+
+For example this will show the size of the `statistics` table.
+
+```python
+>>> results=sql('select * from event_types')
+>>> sql('select count(*) from statistics').show()
+```
+
+### Result Objects
+
+On the result object, `show()` will display data in tabular form at the command, using the `rich` library's table support.
+
+The result will have both its rows and columns automatically limited, so it doesn't look like a mess or lock up the console. Use `max_rows` or `max_cols` to override this, or `columns` to set the list of columns specifically.
+
+The results can also be sliced like a Python list, so `[:10]` for the first 10 rows or `[-10:]` for the last 10. Slices share the downloaded data rather than copying it. For anything more advanced - a step, filtering, sorting, joins - turn the result into a dataframe with `to_polars()`, which also uses the downloaded Arrow data directly. You can also call `len()` on the results to get the number of rows.
+
+| Operation.     | Description                                                                                                               |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `rowcount`     | Size of result set, may not be size of table due to row limits                                                            |
+| `truncated`    | `True` if results were truncated due to row limits                                                                        |
+| `table`        | The `Table` object describing this table, or `None` if the columns don't identify a single table                          |
+| `column_names` | List of the column names in the table, in order                                                                           |
+| `show()`       | Dump the table data to the console                                                                                        |
+| `project()`    | Create a new result object with a limited set of columns based on this one                                                |
+| `sample()`     | Randomly sample selected quantity of rows out of the result set                                                           |
+| `export_csv()` | Write the results to a local CSV file, by default named after the table (`result.csv` if there isn't one)                 |
+| `arrow()`      | The result as an Arrow array, for Arrow-aware libraries, e.g. `polars.DataFrame(r.arrow())` or `pyarrow.table(r.arrow())` |
+| `arrow_ipc()`  | The result as Arrow IPC stream bytes, e.g. to save to a file                                                              |
+| `to_json()`    | The results as a JSON string of `columns`, `rows`, `rowcount` and `truncated`                                             |
+| `to_dicts()`   | Extract a `list` of `dict` objects from the results                                                                       |
+| `to_pandas()`  | Turn the results into a *pandas* dataframe, if pandas installed                                                           |
+| `to_polars()`  | Turn the results into a *polars* dataframe, if polars installed                                                           |
+
+### Table Objects
+
+On the `Table` object, call `columns()` or `column_names()` to learn more about the structure.
+
+### More Help
+
+Use `help(sql)` or call `help(..)` on a result object to get reminded of the API.
+
+# Alternative Integration
+
+Other ways of using Home Assistant REPL without using the supplied shell.
+
+## Using `homeassistant_repl` from Plain Python
+
+The `api` mode REPL above is just a thin wrapper around `homeassistant_repl.connect()` - the same call works from a one-off script, a notebook, or an interactive `python -m asyncio` session (the standard library's REPL that supports top-level `await`, unlike plain `python`), with no dependency on the `ha-repl` executable at all.
+
+Install the package first (`pip install homeassistant-repl`, or `uv add homeassistant-repl` in a project) - the importable package is named `homeassistant_repl`.
+
+```bash
+$ python -m asyncio
+>>> import homeassistant_repl
+>>> obj = await homeassistant_repl.connect()  # reads $HASS_SERVER/$HASS_TOKEN, same as the CLI
+>>> obj["/rflink/binary_sensor/hall_pir"].state
+'off'
+>>> [e.entity_id for e in obj.find(domain="light")]
+['light.kitchen_lights', 'light.shed']
+```
+
+Or pass the URL/token explicitly rather than via environment variables, and use it in a script with `asyncio.run`:
+
+```python
+import asyncio
+import homeassistant_repl
+
+
+async def main() -> None:
+    obj = await homeassistant_repl.connect(
+        url="http://homeassistant.local:8123", token="..."
+    )
+    print(obj["/rflink/binary_sensor/hall_pir"].state)
+
+
+asyncio.run(main())
+```
+
+`obj` behaves identically to the one bound in the REPL - everything under The Object Tree below applies. `connect()` only gets you `api` mode (read-only, no `hass`); `live` mode's live object tree requires the `ha_repl_server` HACS component and talks to it over the same underlying `Client`, but isn't exposed as a standalone importable helper.
+
+By default the cached snapshot is reused for 30 seconds (`ttl=` to change that) and the websocket connection is left open for the life of the process; call `await obj.cache.refresh()` for a fresh snapshot on demand, or `await obj.cache.client.close()` when you're done with it if that matters for your script.
+
+## iPython Example
+
+```bash
+$ ipython
+>>> import homeassistant_repl
+>>> obj = await homeassistant_repl.connect()
+```
+
+## Marimo Example
+# Optional
+
+1. Safe-ish by default, full power for those who can handle it
+1. No pickling unless unavoidable
+   - SQL results are sent back to client as `feather` Apache Arrow dataframes
+   - Home Assistant API calls as REST API and interpreted on client
+   - `hass` needs client side objects serialized when arguments, and server-side responses
+1. Maximum freedom for the developer on the client, maximum restrictions on the server side
+   - No limits on memory, CPU, package loading, (within reason) Python versions on the client side REPL.
+   - Server side code is all regrettable, every dependency brings some extra risk to the running instance
+1. Agents are first-class users. They can benefit from real world feedback of code and ideas, so live mode is likely to be the most useful, and also the most dangerous unless restricted to devcontainer type environments.
+   - In commercial environments, cloning - ideally CoW or zero-copy style - of production environments to development ones is a common way to get realistic or even repro environments accessible safely.

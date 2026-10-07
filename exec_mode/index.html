@@ -68,6 +68,8 @@
     
   
   
+    <link rel="alternate" type="text/markdown" href="https://homeassistant-repl.rhizomatics.org.uk/exec_mode/index.md">
+  
 
   </head>
   
@@ -565,6 +567,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#agent-skill" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Skill
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation-for-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation for Agents
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -964,6 +994,12 @@
               
               <article class="md-content__inner md-typeset" data-pagefind-body>
                 
+  
+    <a href="https://homeassistant-repl.rhizomatics.org.uk/exec_mode/index.md" title="View this page as Markdown" class="md-content__button md-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M14.85 3c.63 0 1.15.52 1.14 1.15v7.7c0 .63-.51 1.15-1.15 1.15H1.15C.52 13 0 12.48 0 11.84V4.15C0 3.52.52 3 1.15 3ZM9 11V5H7L5.5 7 4 5H2v6h2V8l1.5 1.92L7 8v3Zm2.99.5L14.5 8H13V5h-2v3H9.5Z"/></svg>
+    </a>
+  
+  
                   
   
     <a href="https://github.com/rhizomatics/homeassistant-repl/edit/main/docs/exec_mode.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
@@ -993,16 +1029,27 @@
 <p>Both can also go in a <code>.env</code> file in the directory the agent runs from. Then tell the agent the command exists, for example in its project instructions:</p>
 <div class="language-markdown highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Use <span class="sb">`ha-repl --json exec '&lt;python&gt;'`</span> to run Python against the development
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>Home Assistant. <span class="sb">`hass`</span> is the live HomeAssistant object, <span class="sb">`obj`</span> the object tree,
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="sb">`sql("select ...")`</span> queries the recorder. See docs/exec_mode.md.
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="sb">`sql("select ...")`</span> queries the recorder. See [<span class="nt">Exec Mode</span>](<span class="na">https://homeassistant-repl.rhizomatics.org.uk/exec_mode/</span>) documentation.
 </span></code></pre></div>
+<h3 id="agent-skill">Agent Skill<a class="headerlink" href="#agent-skill" title="Permanent link">&para;</a></h3>
+<p>The repo also ships an <a href="https://agentskills.io">Agent Skill</a>, <a href="https://github.com/rhizomatics/homeassistant-repl/tree/main/skills/ha-repl"><code>skills/ha-repl</code></a>, which teaches an agent the command, its JSON output and the rules on this page, so you don't have to write the instructions yourself. Install it in the project where you develop your component.</p>
+<p>For Claude Code, as a plugin:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>claude<span class="w"> </span>plugin<span class="w"> </span>marketplace<span class="w"> </span>add<span class="w"> </span>rhizomatics/agent-plugins
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>claude<span class="w"> </span>plugin<span class="w"> </span>install<span class="w"> </span>homeassistant-repl@rhizomatics
+</span></code></pre></div>
+<p>For other agents that support skills, copy the <code>skills/ha-repl</code> directory into the agent's skills directory (for example <code>.claude/skills/</code> or <code>.agents/skills/</code>), or use the <a href="https://github.com/vercel-labs/skills">skills</a> installer:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>npx<span class="w"> </span>skills<span class="w"> </span>add<span class="w"> </span>rhizomatics/homeassistant-repl
+</span></code></pre></div>
+<h3 id="documentation-for-agents">Documentation for Agents<a class="headerlink" href="#documentation-for-agents" title="Permanent link">&para;</a></h3>
+<p>Every page of this site is also published as Markdown: add <code>index.md</code> to a page's address, or use the Markdown button at the top of the page. <a href="https://homeassistant-repl.rhizomatics.org.uk/llms.txt"><code>llms.txt</code></a> lists the pages with a line on each, and <a href="https://homeassistant-repl.rhizomatics.org.uk/llms-full.txt"><code>llms-full.txt</code></a> is all of them in one file.</p>
 <h2 id="running-a-snippet">Running a Snippet<a class="headerlink" href="#running-a-snippet" title="Permanent link">&para;</a></h2>
 <p>Pass the code as an argument, from a file, or on standard input. Standard input avoids shell quoting problems and is the best form for anything longer than a line.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s1">'hass.states.get("sun.sun").state'</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-f<span class="w"> </span>snippet.py
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;'PY'</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="s">r = sql("select entity_id from states_meta", max_rows=3)</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="s">{row[0]: hass.states.get(row[0]).state for row in r}</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="s">PY</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s1">'hass.states.get("sun.sun").state'</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-f<span class="w"> </span>snippet.py
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;'PY'</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="s">r = sql("select entity_id from states_meta", max_rows=3)</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="s">{row[0]: hass.states.get(row[0]).state for row in r}</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="s">PY</span>
 </span></code></pre></div>
 <p>The value of the last expression is printed, as at a Python prompt. <code>await</code> works at the top level, and a call to an async function is awaited for you if you leave the <code>await</code> out.</p>
 <table>
@@ -1038,20 +1085,20 @@
 <p>The exit status is <code>0</code> on success, <code>1</code> if the snippet raised or timed out, and <code>2</code> if Home Assistant could not be reached or the arguments were wrong.</p>
 <h2 id="json-output">JSON Output<a class="headerlink" href="#json-output" title="Permanent link">&para;</a></h2>
 <p>With <code>--json</code> the result is one object on standard output, whether or not the snippet succeeded:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>ha-repl<span class="w"> </span>--json<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s1">'sql("select * from states_meta", max_rows=2)'</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>ha-repl<span class="w"> </span>--json<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s1">'sql("select * from states_meta", max_rows=2)'</span>
 </span></code></pre></div>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">"stdout"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">"value"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">"columns"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"metadata_id"</span><span class="p">,</span><span class="w"> </span><span class="s2">"entity_id"</span><span class="p">],</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nt">"rows"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s2">"zone.home"</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="s2">"conversation.home_assistant"</span><span class="p">]],</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="nt">"rowcount"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="nt">"truncated"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span><span class="p">},</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span><span class="nt">"error"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">  </span><span class="nt">"duration"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.004</span><span class="p">,</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">  </span><span class="nt">"truncated"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="p">{</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">"stdout"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="nt">"value"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="nt">"columns"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"metadata_id"</span><span class="p">,</span><span class="w"> </span><span class="s2">"entity_id"</span><span class="p">],</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span><span class="nt">"rows"</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s2">"zone.home"</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="s2">"conversation.home_assistant"</span><span class="p">]],</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="nt">"rowcount"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span><span class="nt">"truncated"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span><span class="p">},</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">  </span><span class="nt">"error"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">  </span><span class="nt">"duration"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.004</span><span class="p">,</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">  </span><span class="nt">"truncated"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="p">}</span>
 </span></code></pre></div>
 <table>
 <thead>
@@ -1099,25 +1146,25 @@
 </ul>
 <h2 id="state-between-calls">State Between Calls<a class="headerlink" href="#state-between-calls" title="Permanent link">&para;</a></h2>
 <p>Each <code>exec</code> call starts a new local Python process, so local variables and imports do not carry over. Variables inside Home Assistant do: they live in the named session until it is reset or Home Assistant restarts.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s1">'entry = hass.config_entries.async_entries("sun")[0]'</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s1">'entry.state'</span><span class="w">          </span><span class="c1"># still there</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>ha-repl<span class="w"> </span>sessions<span class="w">                    </span><span class="c1"># list sessions and their variables</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>ha-repl<span class="w"> </span>reset<span class="w">                       </span><span class="c1"># clear the default session</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s1">'entry = hass.config_entries.async_entries("sun")[0]'</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s1">'entry.state'</span><span class="w">          </span><span class="c1"># still there</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>ha-repl<span class="w"> </span>sessions<span class="w">                    </span><span class="c1"># list sessions and their variables</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>ha-repl<span class="w"> </span>reset<span class="w">                       </span><span class="c1"># clear the default session</span>
 </span></code></pre></div>
 <p>Give each agent, or each task, its own <code>--session</code> name if several run against the same instance, so they don't overwrite each other's variables.</p>
 <h2 id="errors">Errors<a class="headerlink" href="#errors" title="Permanent link">&para;</a></h2>
 <p>Without <code>--json</code>, a traceback goes to standard error and the exit status is <code>1</code>. With <code>--json</code>, <code>error</code> is filled in and <code>stdout</code> still holds whatever was printed before the failure:</p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="p">{</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">"stdout"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="nt">"value"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span><span class="nt">"error"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ZeroDivisionError"</span><span class="p">,</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"division by zero"</span><span class="p">,</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span><span class="nt">"traceback"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Traceback (most recent call last):\n  File \"/ha_repl/api_cell_1\", line 1, in &lt;module&gt;\n    x = 1/0\n        ~^~\nZeroDivisionError: division by zero\n"</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span><span class="p">},</span>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">  </span><span class="nt">"duration"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.001</span><span class="p">,</span>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">  </span><span class="nt">"truncated"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="p">{</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">"stdout"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="nt">"value"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span><span class="nt">"error"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ZeroDivisionError"</span><span class="p">,</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"division by zero"</span><span class="p">,</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">    </span><span class="nt">"traceback"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Traceback (most recent call last):\n  File \"/ha_repl/api_cell_1\", line 1, in &lt;module&gt;\n    x = 1/0\n        ~^~\nZeroDivisionError: division by zero\n"</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">  </span><span class="p">},</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">  </span><span class="nt">"duration"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.001</span><span class="p">,</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">  </span><span class="nt">"truncated"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="p">}</span>
 </span></code></pre></div>
 <p>A snippet stops at the first statement that fails. Statements before it have already run, including any that changed something inside Home Assistant.</p>
 <p>For an error raised inside Home Assistant, <code>type</code> and <code>message</code> are plain, but <code>traceback</code> is formatted for a terminal with box-drawing characters. Rely on <code>type</code> and <code>message</code> when parsing.</p>
@@ -1143,6 +1190,7 @@
 
 
                 
+
               </article>
             </div>
           
