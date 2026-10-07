@@ -46,6 +46,11 @@
         <changefreq>daily</changefreq>
     </url>
     <url>
+        <loc>https://homeassistant-repl.rhizomatics.org.uk/developer/design/rfcs/0001-persistent-config/</loc>
+        <lastmod>2026-10-07</lastmod>
+        <changefreq>daily</changefreq>
+    </url>
+    <url>
         <loc>https://homeassistant-repl.rhizomatics.org.uk/developer/coverage/</loc>
         <lastmod>2026-10-07</lastmod>
         <changefreq>daily</changefreq>
