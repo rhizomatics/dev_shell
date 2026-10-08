@@ -55,19 +55,19 @@ This is primarily for developers of custom components, and their LLM agents, tho
 - Add in your own [plugins](./configuration/plugins.md) or package up a plugin with your component to help other developers
 - Usable from inside `ipython` shell, Marimo notebooks or plain `python -m asyncio`
 
-All of the above works with standard Home Assistant APIs, referred to as `api` mode.
+All of the above works with standard Home Assistant APIs, referred to as [`api` mode](./modes/api_mode.md).
 
-Home Assistant REPL also has an advanced `live` mode that taps directly into a live Home Assistant using an optional server component available via [HACS](http://hacs.xyz).
+Home Assistant REPL also has an advanced [`live` mode](./modes/live_mode.md) that taps directly into a live Home Assistant using an optional server component available via [HACS](http://hacs.xyz).
 
 Get started with a single line at [Quick Start](./quick_start.md)
 
-## Live and Exec Modes
+## Advanced Modes
 
 These modes require a custom component to be [installed](./configuration/server_install.md) on the target Home Assistant server via HACS, or use the supplied scripts to install on a local devcontainer. It adds:
 
 - Full access to the core Home Assistant Python API via `hass`
 - Read/write access to the actual objects, e.g. entities and their helpers
-- Agent friendly non-interactive mode using *Exec Mode*
+- Agent friendly non-interactive mode using [Exec Mode](./modes/exec_mode.md)
 - A frisson of danger
 
 
@@ -80,7 +80,7 @@ See the [Roadmap](./developer/design/roadmap.md) for where this might go, and yo
 
 ## Agent Support
 
-For coding agents, there is [Exec Mode](./modes/exec_mode.md) and also a [marketplace skill](./modes/exec_mode.md#agent-skill).
+For coding agents, there is [Exec Mode](./modes/exec_mode.md) and a [marketplace skill](./modes/exec_mode.md#agent-skill).
 
 ## Other Python REPLs
 

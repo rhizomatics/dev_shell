@@ -99,7 +99,7 @@ This switch controls trade-off between shell convenience and ability to trial wo
     - Move it to a separate HTTP endpoint in the server component that streams raw Arrow record batches as binary, built chunk by chunk from the database cursor, so server memory stays at one chunk and nothing is base64 encoded
     - Registered as a Home Assistant HTTP view, it keeps what the websocket gave: same port, and Home Assistant's own token authentication
     - Client reads the batches as they arrive and hands them to polars without copying, opening the way to lazy or paged results
-- Remove `rich` from the server side
+- Remove `rich` from the server side [DONE]
     - Tracebacks from inside Home Assistant are rendered there as rich text and shipped as a string; send the raw traceback data and render on the client instead ([debuglater](https://github.com/ploomber/debuglater) may be an option for serializing it)
     - Same for values and `help()` output, so `ha-repl --json exec` gets clean data from both sides
 
@@ -121,7 +121,7 @@ This switch controls trade-off between shell convenience and ability to trial wo
     - magic commands
     - object introspection -`?` for help, `??` for source code
   - bottom toolbar (prompt-toolkit supports)
-- User plugins/extensions
+- User plugins/extensions [DONE]
   - python scripts in a directory
   - functions
     - add own bindings
