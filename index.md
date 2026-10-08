@@ -36,19 +36,19 @@ This is primarily for developers of custom components, and their LLM agents, tho
 - Add in your own [plugins](https://homeassistant-repl.rhizomatics.org.uk/configuration/plugins/index.md) or package up a plugin with your component to help other developers
 - Usable from inside `ipython` shell, Marimo notebooks or plain `python -m asyncio`
 
-All of the above works with standard Home Assistant APIs, referred to as `api` mode.
+All of the above works with standard Home Assistant APIs, referred to as [`api` mode](https://homeassistant-repl.rhizomatics.org.uk/modes/api_mode/index.md).
 
-Home Assistant REPL also has an advanced `live` mode that taps directly into a live Home Assistant using an optional server component available via [HACS](http://hacs.xyz).
+Home Assistant REPL also has an advanced [`live` mode](https://homeassistant-repl.rhizomatics.org.uk/modes/live_mode/index.md) that taps directly into a live Home Assistant using an optional server component available via [HACS](http://hacs.xyz).
 
 Get started with a single line at [Quick Start](https://homeassistant-repl.rhizomatics.org.uk/quick_start/index.md)
 
-## Live and Exec Modes
+## Advanced Modes
 
 These modes require a custom component to be [installed](https://homeassistant-repl.rhizomatics.org.uk/configuration/server_install/index.md) on the target Home Assistant server via HACS, or use the supplied scripts to install on a local devcontainer. It adds:
 
 - Full access to the core Home Assistant Python API via `hass`
 - Read/write access to the actual objects, e.g. entities and their helpers
-- Agent friendly non-interactive mode using *Exec Mode*
+- Agent friendly non-interactive mode using [Exec Mode](https://homeassistant-repl.rhizomatics.org.uk/modes/exec_mode/index.md)
 - A frisson of danger
 
 ## Future Developments
@@ -61,7 +61,7 @@ It is not intended to ever be a replacement for a Python debugger, although it m
 
 ## Agent Support
 
-For coding agents, there is [Exec Mode](https://homeassistant-repl.rhizomatics.org.uk/modes/exec_mode/index.md) and also a [marketplace skill](https://homeassistant-repl.rhizomatics.org.uk/modes/exec_mode/#agent-skill).
+For coding agents, there is [Exec Mode](https://homeassistant-repl.rhizomatics.org.uk/modes/exec_mode/index.md) and a [marketplace skill](https://homeassistant-repl.rhizomatics.org.uk/modes/exec_mode/#agent-skill).
 
 ## Other Python REPLs
 

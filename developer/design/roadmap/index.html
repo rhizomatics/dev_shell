@@ -1687,7 +1687,7 @@
 <li>Client reads the batches as they arrive and hands them to polars without copying, opening the way to lazy or paged results</li>
 </ul>
 </li>
-<li>Remove <code>rich</code> from the server side<ul>
+<li>Remove <code>rich</code> from the server side [DONE]<ul>
 <li>Tracebacks from inside Home Assistant are rendered there as rich text and shipped as a string; send the raw traceback data and render on the client instead (<a href="https://github.com/ploomber/debuglater">debuglater</a> may be an option for serializing it)</li>
 <li>Same for values and <code>help()</code> output, so <code>ha-repl --json exec</code> gets clean data from both sides</li>
 </ul>
@@ -1718,7 +1718,7 @@
 </ul>
 </li>
 <li>bottom toolbar (prompt-toolkit supports)</li>
-<li>User plugins/extensions</li>
+<li>User plugins/extensions [DONE]</li>
 <li>python scripts in a directory</li>
 <li>functions<ul>
 <li>add own bindings</li>

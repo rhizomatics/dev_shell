@@ -512,10 +512,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#live-and-exec-modes" class="md-nav__link">
+  <a href="#advanced-modes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Live and Exec Modes
+        Advanced Modes
       
     </span>
   </a>
@@ -1522,15 +1522,15 @@
 <li>Add in your own <a href="configuration/plugins/">plugins</a> or package up a plugin with your component to help other developers</li>
 <li>Usable from inside <code>ipython</code> shell, Marimo notebooks or plain <code>python -m asyncio</code></li>
 </ul>
-<p>All of the above works with standard Home Assistant APIs, referred to as <code>api</code> mode.</p>
-<p>Home Assistant REPL also has an advanced <code>live</code> mode that taps directly into a live Home Assistant using an optional server component available via <a href="http://hacs.xyz">HACS</a>.</p>
+<p>All of the above works with standard Home Assistant APIs, referred to as <a href="modes/api_mode/"><code>api</code> mode</a>.</p>
+<p>Home Assistant REPL also has an advanced <a href="modes/live_mode/"><code>live</code> mode</a> that taps directly into a live Home Assistant using an optional server component available via <a href="http://hacs.xyz">HACS</a>.</p>
 <p>Get started with a single line at <a href="quick_start/">Quick Start</a></p>
-<h2 id="live-and-exec-modes">Live and Exec Modes<a class="headerlink" href="#live-and-exec-modes" title="Permanent link">&para;</a></h2>
+<h2 id="advanced-modes">Advanced Modes<a class="headerlink" href="#advanced-modes" title="Permanent link">&para;</a></h2>
 <p>These modes require a custom component to be <a href="configuration/server_install/">installed</a> on the target Home Assistant server via HACS, or use the supplied scripts to install on a local devcontainer. It adds:</p>
 <ul>
 <li>Full access to the core Home Assistant Python API via <code>hass</code></li>
 <li>Read/write access to the actual objects, e.g. entities and their helpers</li>
-<li>Agent friendly non-interactive mode using <em>Exec Mode</em></li>
+<li>Agent friendly non-interactive mode using <a href="modes/exec_mode/">Exec Mode</a></li>
 <li>A frisson of danger</li>
 </ul>
 <h2 id="future-developments">Future Developments<a class="headerlink" href="#future-developments" title="Permanent link">&para;</a></h2>
@@ -1540,7 +1540,7 @@
 <p>It is not intended to ever be a replacement for a Python debugger, although it may complement one. It also does not intend to replicate <a href="https://pyscript.net">PyScript</a>, instead focusing on standard python (PyScript uses MicroPython) even at expense of general usability or home assistance access, and not a general automation script execution service. For most non-developer cases, <a href="https://pypi.org/project/homeassistant-cli/">homeassistant-cli</a> is a better choice, with pre-packaged access to devices, entities, services etc.</p>
 </div>
 <h2 id="agent-support">Agent Support<a class="headerlink" href="#agent-support" title="Permanent link">&para;</a></h2>
-<p>For coding agents, there is <a href="modes/exec_mode/">Exec Mode</a> and also a <a href="modes/exec_mode/#agent-skill">marketplace skill</a>.</p>
+<p>For coding agents, there is <a href="modes/exec_mode/">Exec Mode</a> and a <a href="modes/exec_mode/#agent-skill">marketplace skill</a>.</p>
 <h2 id="other-python-repls">Other Python REPLs<a class="headerlink" href="#other-python-repls" title="Permanent link">&para;</a></h2>
 <p>These are all current with Python v3, there are others like dreampie that didn't make it past Python 2.</p>
 <h3 id="new-default-repl-experiences">New Default REPL Experiences<a class="headerlink" href="#new-default-repl-experiences" title="Permanent link">&para;</a></h3>
