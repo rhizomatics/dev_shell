@@ -15,6 +15,8 @@ All of the objects (only entities for now) are arranged in a giant tree, like a 
 - `show()`
 - Dump the most useful info on an object to console
 
+`help(obj)` gives a summary of all of this at the prompt.
+
 All the usual Python tricks can of course also be used, iterators, comprehensions, classes, lambdas or a simple `len()`.
 
 ### `obj[]`

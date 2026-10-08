@@ -16,7 +16,7 @@
         <link rel="prev" href="../alternative_integration/">
       
       
-        <link rel="next" href="../exec_mode/">
+        <link rel="next" href="../examples/">
       
       
         
@@ -270,6 +270,25 @@
   
   
     <li class="md-tabs__item">
+      <a href="../examples/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Examples
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
       <a href="../exec_mode/" class="md-tabs__link">
         
   
@@ -507,6 +526,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../exec_mode/" class="md-nav__link">
         
   
@@ -636,10 +682,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
         
           
-          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
             
   
   
@@ -657,8 +703,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_8">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -726,10 +772,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8_2" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_2" >
         
           
-          <label class="md-nav__link" for="__nav_8_2" id="__nav_8_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_9_2" id="__nav_9_2_label" tabindex="0">
             
   
   
@@ -747,8 +793,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_8_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -840,10 +886,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8_2_3" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_2_3" >
         
           
-          <label class="md-nav__link" for="__nav_8_2_3" id="__nav_8_2_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_9_2_3" id="__nav_9_2_3_label" tabindex="0">
             
   
   
@@ -861,8 +907,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_8_2_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_8_2_3">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_9_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_2_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -972,6 +1018,32 @@
 <p>For live mode, generally the client and server component have to be on the same version. Different versions <em>might</em> work
 with each other for point releases</p>
 </div>
+<h1 id="0100">0.10.0<a class="headerlink" href="#0100" title="Permanent link">&para;</a></h1>
+<h2 id="-enhancements">✨ Enhancements<a class="headerlink" href="#-enhancements" title="Permanent link">&para;</a></h2>
+<h3 id="help">Help<a class="headerlink" href="#help" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>help()</code> on something local - <code>obj</code> in API mode, <code>sql</code> and its results, tables and rows - now gives a short summary of what it is for, its methods, properties and attributes, as it already did for objects inside Home Assistant. Special methods, inherited members, data descriptors and the method resolution order are left out</li>
+<li><code>help(thing, full=True)</code> gives Python's own full help page, on either side</li>
+<li><code>help(obj)</code> explains how to use the object tree</li>
+<li>Type annotations in the summary are no longer shown in quotes</li>
+</ul>
+<h3 id="sql">SQL<a class="headerlink" href="#sql" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>sql.table("states")</code> returns the <code>Table</code> object for a single table, by name</li>
+<li><code>Table</code> objects have <code>class_name</code> and <code>description</code>, the name and docstring of the class the Recorder maps to the table, e.g. <code>States</code> and <code>State change history.</code></li>
+<li>Legacy columns - those Home Assistant marks <code>UNUSED_LEGACY_COLUMN</code>, still in a table but no longer written to - are now told apart</li>
+<li><code>Column</code> objects have a <code>legacy</code> flag</li>
+<li><code>columns</code> and <code>column_names</code> on a <code>Table</code> leave them out, unless the table came from <code>sql.table("states", legacy=True)</code></li>
+<li>A query result keeps them out of view - in <code>show()</code>, rows, dataframes and exports - unless the query names them or <code>sql(..., legacy=True)</code> is used. Setting <code>legacy = True</code> on the result afterwards brings them into view without a new query</li>
+<li><code>show()</code> on a result no longer cuts off at 6 columns by default, so it shows the same columns as a row from <code>result[0]</code>. Use <code>max_cols</code> to cap them</li>
+<li>Indexing a result with a row number, e.g. <code>sql("select count(*) from events")[0]</code>, returns a <code>Row</code> object - its values, readable by position or column name, with its column names and <code>Table</code></li>
+<li><code>columns</code> and <code>column_names</code> on a <code>Table</code> object are now properties, not methods</li>
+</ul>
+<h2 id="-documentation">📚 Documentation<a class="headerlink" href="#-documentation" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Added help on using <code>ha-repl</code> from the <strong>Studio Code Server</strong> and <strong>Advanced SSH</strong> Home Assistant apps (aka addons), and using <code>ttyd</code></li>
+<li>Lots more examples of how to use all the builtins</li>
+</ul>
 <h1 id="090">0.9.0<a class="headerlink" href="#090" title="Permanent link">&para;</a></h1>
 <h2 id="live-server">Live Server<a class="headerlink" href="#live-server" title="Permanent link">&para;</a></h2>
 <ul>
@@ -1002,7 +1074,7 @@ with each other for point releases</p>
 <li><code>obj</code> and <code>hass</code> are the only fake objects, redirecting their inputs and outputs to the real equivalents inside the live server</li>
 <li>Both these objects are limited to accepting local primitive values only as arguments, and can't be combined in a single statement</li>
 </ul>
-<h2 id="sql">SQL<a class="headerlink" href="#sql" title="Permanent link">&para;</a></h2>
+<h2 id="sql_1">SQL<a class="headerlink" href="#sql_1" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Results object has new features:</li>
 <li>It can now be sliced like a list, e.g. <code>[:-10]</code> for last 10 rows, <code>[:10]</code> for first 10</li>

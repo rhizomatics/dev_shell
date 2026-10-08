@@ -270,6 +270,25 @@
   
   
     <li class="md-tabs__item">
+      <a href="../examples/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Examples
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
       <a href="../exec_mode/" class="md-tabs__link">
         
   
@@ -499,6 +518,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../exec_mode/" class="md-nav__link">
         
   
@@ -662,10 +708,32 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#row-objects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Row Objects
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#table-objects" class="md-nav__link">
     <span class="md-ellipsis">
       
         Table Objects
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#legacy-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Legacy Columns
       
     </span>
   </a>
@@ -719,10 +787,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
         
           
-          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
             
   
   
@@ -740,8 +808,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_8">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -809,10 +877,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8_2" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_2" >
         
           
-          <label class="md-nav__link" for="__nav_8_2" id="__nav_8_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_9_2" id="__nav_9_2_label" tabindex="0">
             
   
   
@@ -830,8 +898,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_8_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -923,10 +991,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8_2_3" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_2_3" >
         
           
-          <label class="md-nav__link" for="__nav_8_2_3" id="__nav_8_2_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_9_2_3" id="__nav_9_2_3_label" tabindex="0">
             
   
   
@@ -944,8 +1012,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_8_2_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_8_2_3">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_9_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_2_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1075,8 +1143,20 @@
 <td>Send a query to the database and wait for results</td>
 </tr>
 <tr>
+<td><code>sql("&lt;query&gt;", legacy=True)</code></td>
+<td>The same, with <a href="#legacy-columns">legacy columns</a> in view</td>
+</tr>
+<tr>
 <td><code>sql.max_rows</code></td>
 <td>Read/write property to set the default row limit for results in this session</td>
+</tr>
+<tr>
+<td><code>sql.table("&lt;name&gt;")</code></td>
+<td>Returns the <code>Table</code> object that describes the named table and its contents, or raises <code>KeyError</code> if there is no such table</td>
+</tr>
+<tr>
+<td><code>sql.table("&lt;name&gt;", legacy=True)</code></td>
+<td>The same, with the table's <a href="#legacy-columns">legacy columns</a> included</td>
 </tr>
 <tr>
 <td><code>sql.tables</code></td>
@@ -1091,8 +1171,8 @@
 <p><img alt="select count" src="../assets/screenshots/select_count.png" /></p>
 <h3 id="result-objects">Result Objects<a class="headerlink" href="#result-objects" title="Permanent link">&para;</a></h3>
 <p>On the result object, <code>show()</code> will display data in tabular form at the command, using the <code>rich</code> library's table support. </p>
-<p>The result will have both its rows and columns automatically limited, so it doesn't look like a mess or lock up the console. Use <code>max_rows</code> or <code>max_cols</code> to override this, or <code>columns</code> to set the list of columns specifically.</p>
-<p>The results can also be sliced like a Python list, so <code>[:10]</code> for the first 10 rows or <code>[-10:]</code> for the last 10. Slices share the downloaded data rather than copying it. For anything more advanced - a step, filtering, sorting, joins - turn the result into a dataframe with <code>to_polars()</code>, which also uses the downloaded Arrow data directly. You can also call <code>len()</code> on the results to get the number of rows.</p>
+<p>The result will have its rows automatically limited, so it doesn't lock up the console - use <code>max_rows</code> to override this. The columns shown are the same ones a row of the result has, so <code>show()</code> and <code>[0]</code> always agree; use <code>max_cols</code> to cap how many, or <code>columns</code> to set the list of columns specifically.</p>
+<p>A single row can be picked out by position, so <code>[0]</code> for the first row or <code>[-1]</code> for the last - see <a href="#row-objects">Row Objects</a>. The results can also be sliced like a Python list, so <code>[:10]</code> for the first 10 rows or <code>[-10:]</code> for the last 10. Slices share the downloaded data rather than copying it. For anything more advanced - a step, filtering, sorting, joins - turn the result into a dataframe with <code>to_polars()</code>, which also uses the downloaded Arrow data directly. You can also call <code>len()</code> on the results to get the number of rows.</p>
 <table>
 <thead>
 <tr>
@@ -1108,6 +1188,10 @@
 <tr>
 <td><code>truncated</code></td>
 <td><code>True</code> if results were truncated due to row limits</td>
+</tr>
+<tr>
+<td><code>legacy</code></td>
+<td>Read/write flag, set to <code>True</code> to bring <a href="#legacy-columns">legacy columns</a> into view</td>
 </tr>
 <tr>
 <td><code>table</code></td>
@@ -1159,10 +1243,91 @@
 </tr>
 </tbody>
 </table>
+<h3 id="row-objects">Row Objects<a class="headerlink" href="#row-objects" title="Permanent link">&para;</a></h3>
+<p>Indexing a result with a row number gives a <code>Row</code> object. It reads like a list of the row's values, in column order, and can also be indexed by column name.</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>values</code></td>
+<td>List of the values in the row, in column order</td>
+</tr>
+<tr>
+<td><code>column_names</code></td>
+<td>List of the column names, in the same order</td>
+</tr>
+<tr>
+<td><code>table</code></td>
+<td>The <code>Table</code> object of the result the row came from, or <code>None</code> if it had none</td>
+</tr>
+<tr>
+<td><code>to_dict()</code></td>
+<td>The row as a <code>dict</code> of column name to value</td>
+</tr>
+</tbody>
+</table>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">sql</span><span class="p">(</span><span class="s2">"select count(*) from events"</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">row</span> <span class="o">=</span> <span class="n">sql</span><span class="p">(</span><span class="s2">"select * from states_meta"</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">row</span><span class="p">[</span><span class="s2">"entity_id"</span><span class="p">]</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="p">{</span><span class="n">col</span><span class="p">:</span> <span class="n">sql</span><span class="p">(</span><span class="sa">f</span><span class="s2">"select count(distinct </span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">) from events"</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">sql</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="s2">"events"</span><span class="p">)</span><span class="o">.</span><span class="n">column_names</span><span class="p">}</span>
+</span></code></pre></div>
 <h3 id="table-objects">Table Objects<a class="headerlink" href="#table-objects" title="Permanent link">&para;</a></h3>
-<p>On the <code>Table</code> object, call <code>columns()</code> or <code>column_names()</code> to learn more about the structure.</p>
+<p>A <code>Table</code> object describes one table, using Home Assistant's own definition of it in <code>homeassistant.components.recorder.db_schema</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>The table's name in the database, e.g. <code>states</code></td>
+</tr>
+<tr>
+<td><code>class_name</code></td>
+<td>The name of the class the Recorder uses for this table, e.g. <code>States</code>, to look up in <code>db_schema</code></td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>That class's docstring, e.g. <code>State change history.</code></td>
+</tr>
+<tr>
+<td><code>columns</code></td>
+<td>List of <code>Column</code> objects, each with a <code>name</code>, <code>type</code> and <code>legacy</code> flag</td>
+</tr>
+<tr>
+<td><code>column_names</code></td>
+<td>List of the column names, in order</td>
+</tr>
+</tbody>
+</table>
+<p>Both leave out the <a href="#legacy-columns">legacy columns</a>, unless the table came from <code>sql.table("&lt;name&gt;", legacy=True)</code>.</p>
+<h3 id="legacy-columns">Legacy Columns<a class="headerlink" href="#legacy-columns" title="Permanent link">&para;</a></h3>
+<p>Some Recorder tables still have columns that Home Assistant no longer writes to, because the data moved elsewhere - <code>entity_id</code> in <code>states</code>, for example, is now in <code>states_meta</code>. Home Assistant marks these in <code>db_schema</code> as <code>UNUSED_LEGACY_COLUMN</code>, and they are empty for anything recorded recently.</p>
+<p>They are kept out of view by default, both in a <code>Table</code> and in a query's result. A query still downloads them, but the result leaves them out of everything it does - <code>show()</code>, rows, <code>column_names</code>, dataframes, exports - so <code>select * from states</code> shows only the columns in use.</p>
+<p>A legacy column is in view when:</p>
+<ul>
+<li>the query names it</li>
+<li>the query is made with <code>legacy=True</code></li>
+<li><code>legacy</code> is set to <code>True</code> on the result afterwards, which needs no new query</li>
+</ul>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">r</span> <span class="o">=</span> <span class="n">sql</span><span class="p">(</span><span class="s2">"select * from states"</span><span class="p">)</span>                 <span class="c1"># columns in use</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">r</span><span class="o">.</span><span class="n">legacy</span> <span class="o">=</span> <span class="kc">True</span>                                 <span class="c1"># now every column</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">sql</span><span class="p">(</span><span class="s2">"select * from states"</span><span class="p">,</span> <span class="n">legacy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>        <span class="c1"># every column from the start</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">sql</span><span class="p">(</span><span class="s2">"select state_id, entity_id from states"</span><span class="p">)</span>   <span class="c1"># named, so in view</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">sql</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="s2">"states"</span><span class="p">)</span><span class="o">.</span><span class="n">column_names</span>               <span class="c1"># columns in use</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">sql</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="s2">"states"</span><span class="p">,</span> <span class="n">legacy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">column_names</span>  <span class="c1"># every column</span>
+</span></code></pre></div>
+<p>A query is checked by its words rather than parsed, so a legacy column mentioned anywhere in it, such as in a <code>where</code>, is in view.</p>
 <h3 id="more-help">More Help<a class="headerlink" href="#more-help" title="Permanent link">&para;</a></h3>
-<p>Use <code>help(sql)</code> or call <code>help(..)</code> on a result object to get reminded of the API.</p>
+<p>Use <code>help(sql)</code>, or call <code>help(..)</code> on a result, row or table object, to get reminded of the API. It gives a short summary of the methods, properties and attributes; add <code>full=True</code> for Python's own full help page.</p>
 
 
 

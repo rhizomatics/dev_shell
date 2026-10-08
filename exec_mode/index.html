@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://homeassistant-repl.rhizomatics.org.uk/exec_mode/">
       
       
-        <link rel="prev" href="../changelog/">
+        <link rel="prev" href="../examples/">
       
       
         <link rel="next" href="../live_mode/">
@@ -268,6 +268,25 @@
   
   
   
+  
+    <li class="md-tabs__item">
+      <a href="../examples/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Examples
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
     
   
   
@@ -480,6 +499,33 @@
     
   
     What's New
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
   
 
     
@@ -780,10 +826,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
         
           
-          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
             
   
   
@@ -801,8 +847,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_8">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -870,10 +916,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8_2" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_2" >
         
           
-          <label class="md-nav__link" for="__nav_8_2" id="__nav_8_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_9_2" id="__nav_9_2_label" tabindex="0">
             
   
   
@@ -891,8 +937,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_8_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -984,10 +1030,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8_2_3" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_2_3" >
         
           
-          <label class="md-nav__link" for="__nav_8_2_3" id="__nav_8_2_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_9_2_3" id="__nav_9_2_3_label" tabindex="0">
             
   
   
@@ -1005,8 +1051,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_8_2_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_8_2_3">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_9_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_2_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1272,7 +1318,7 @@
 <li>Always set <code>-t</code>. A snippet that waits on something that never happens otherwise blocks forever.</li>
 <li>Keep <code>max_rows</code> small while exploring. The default is 1000 rows; <code>sql.tables</code> lists the tables and their columns without running a query.</li>
 <li>Prefer reading to writing. <code>hass.states.get(...)</code>, <code>obj[...]</code> and <code>sql(...)</code> are safe to repeat; service calls and direct changes to <code>hass</code> objects take effect immediately on the instance.</li>
-<li><code>help(thing)</code> on an object inside Home Assistant prints a summary of its methods and properties, which is often quicker than reading the source.</li>
+<li><code>help(thing)</code> prints a summary of an object's methods and properties, which is often quicker than reading the source. <code>help(thing, full=True)</code> gives Python's own full help page instead.</li>
 </ul>
 
 

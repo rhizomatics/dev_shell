@@ -30,7 +30,7 @@ This is primarily for developers of custom components, and their LLM agents, tho
 - Reuses session and history features from `prompt-toolkit`
 - Access to all entities via dictionary like interface, `obj`
 - Usual multi-line editing support and history of Python
-- Integrated with [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) as `hass_api` object, available in both modes
+- Integrated with [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) as `hass_api` object
 - Auto-awaits coroutines for easy shell use (can be switched off or overridden)
 - Dedicated shell that can be run without installation with `uv`
 - Usable from inside `ipython` shell, Marimo notebooks or plain `python -m asyncio`

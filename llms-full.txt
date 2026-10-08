@@ -39,7 +39,7 @@ This is primarily for developers of custom components, and their LLM agents, tho
 - Reuses session and history features from `prompt-toolkit`
 - Access to all entities via dictionary like interface, `obj`
 - Usual multi-line editing support and history of Python
-- Integrated with [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) as `hass_api` object, available in both modes
+- Integrated with [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) as `hass_api` object
 - Auto-awaits coroutines for easy shell use (can be switched off or overridden)
 - Dedicated shell that can be run without installation with `uv`
 - Usable from inside `ipython` shell, Marimo notebooks or plain `python -m asyncio`
@@ -315,7 +315,7 @@ A rejected query raises `SqlError`. Only a single `SELECT` statement is accepted
 - Always set `-t`. A snippet that waits on something that never happens otherwise blocks forever.
 - Keep `max_rows` small while exploring. The default is 1000 rows; `sql.tables` lists the tables and their columns without running a query.
 - Prefer reading to writing. `hass.states.get(...)`, `obj[...]` and `sql(...)` are safe to repeat; service calls and direct changes to `hass` objects take effect immediately on the instance.
-- `help(thing)` on an object inside Home Assistant prints a summary of its methods and properties, which is often quicker than reading the source.
+- `help(thing)` prints a summary of an object's methods and properties, which is often quicker than reading the source. `help(thing, full=True)` gives Python's own full help page instead.
 # Reference
 
 # Live Mode
@@ -541,6 +541,8 @@ All of the objects (only entities for now) are arranged in a giant tree, like a 
 - `show()`
 - Dump the most useful info on an object to console
 
+`help(obj)` gives a summary of all of this at the prompt.
+
 All the usual Python tricks can of course also be used, iterators, comprehensions, classes, lambdas or a simple `len()`.
 
 ### `obj[]`
@@ -642,11 +644,14 @@ Data is serialized as Apache Arrow using the `nanofeather` library - this provid
 
 ### `sql` Object
 
-| Operation        | Description                                                                  |
-| ---------------- | ---------------------------------------------------------------------------- |
-| `sql("<query>")` | Send a query to the database and wait for results                            |
-| `sql.max_rows`   | Read/write property to set the default row limit for results in this session |
-| `sql.tables`     | Returns a list of `Table` objects that describe each table and its contents  |
+| Operation                          | Description                                                                                                                |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `sql("<query>")`                   | Send a query to the database and wait for results                                                                          |
+| `sql("<query>", legacy=True)`      | The same, with [legacy columns](#legacy-columns) in view                                                                   |
+| `sql.max_rows`                     | Read/write property to set the default row limit for results in this session                                               |
+| `sql.table("<name>")`              | Returns the `Table` object that describes the named table and its contents, or raises `KeyError` if there is no such table |
+| `sql.table("<name>", legacy=True)` | The same, with the table's [legacy columns](#legacy-columns) included                                                      |
+| `sql.tables`                       | Returns a list of `Table` objects that describe each table and its contents                                                |
 
 For example this will show the size of the `statistics` table.
 
@@ -659,14 +664,15 @@ For example this will show the size of the `statistics` table.
 
 On the result object, `show()` will display data in tabular form at the command, using the `rich` library's table support.
 
-The result will have both its rows and columns automatically limited, so it doesn't look like a mess or lock up the console. Use `max_rows` or `max_cols` to override this, or `columns` to set the list of columns specifically.
+The result will have its rows automatically limited, so it doesn't lock up the console - use `max_rows` to override this. The columns shown are the same ones a row of the result has, so `show()` and `[0]` always agree; use `max_cols` to cap how many, or `columns` to set the list of columns specifically.
 
-The results can also be sliced like a Python list, so `[:10]` for the first 10 rows or `[-10:]` for the last 10. Slices share the downloaded data rather than copying it. For anything more advanced - a step, filtering, sorting, joins - turn the result into a dataframe with `to_polars()`, which also uses the downloaded Arrow data directly. You can also call `len()` on the results to get the number of rows.
+A single row can be picked out by position, so `[0]` for the first row or `[-1]` for the last - see [Row Objects](#row-objects). The results can also be sliced like a Python list, so `[:10]` for the first 10 rows or `[-10:]` for the last 10. Slices share the downloaded data rather than copying it. For anything more advanced - a step, filtering, sorting, joins - turn the result into a dataframe with `to_polars()`, which also uses the downloaded Arrow data directly. You can also call `len()` on the results to get the number of rows.
 
 | Operation.     | Description                                                                                                               |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `rowcount`     | Size of result set, may not be size of table due to row limits                                                            |
 | `truncated`    | `True` if results were truncated due to row limits                                                                        |
+| `legacy`       | Read/write flag, set to `True` to bring [legacy columns](#legacy-columns) into view                                       |
 | `table`        | The `Table` object describing this table, or `None` if the columns don't identify a single table                          |
 | `column_names` | List of the column names in the table, in order                                                                           |
 | `show()`       | Dump the table data to the console                                                                                        |
@@ -680,13 +686,64 @@ The results can also be sliced like a Python list, so `[:10]` for the first 10 r
 | `to_pandas()`  | Turn the results into a *pandas* dataframe, if pandas installed                                                           |
 | `to_polars()`  | Turn the results into a *polars* dataframe, if polars installed                                                           |
 
+### Row Objects
+
+Indexing a result with a row number gives a `Row` object. It reads like a list of the row's values, in column order, and can also be indexed by column name.
+
+| Operation      | Description                                                                  |
+| -------------- | ---------------------------------------------------------------------------- |
+| `values`       | List of the values in the row, in column order                               |
+| `column_names` | List of the column names, in the same order                                  |
+| `table`        | The `Table` object of the result the row came from, or `None` if it had none |
+| `to_dict()`    | The row as a `dict` of column name to value                                  |
+
+```python
+>>> sql("select count(*) from events")[0][0]
+>>> row = sql("select * from states_meta")[0]
+>>> row["entity_id"]
+>>> {col: sql(f"select count(distinct {col}) from events")[0][0] for col in sql.table("events").column_names}
+```
+
 ### Table Objects
 
-On the `Table` object, call `columns()` or `column_names()` to learn more about the structure.
+A `Table` object describes one table, using Home Assistant's own definition of it in `homeassistant.components.recorder.db_schema`.
+
+| Operation      | Description                                                                                      |
+| -------------- | ------------------------------------------------------------------------------------------------ |
+| `name`         | The table's name in the database, e.g. `states`                                                  |
+| `class_name`   | The name of the class the Recorder uses for this table, e.g. `States`, to look up in `db_schema` |
+| `description`  | That class's docstring, e.g. `State change history.`                                             |
+| `columns`      | List of `Column` objects, each with a `name`, `type` and `legacy` flag                           |
+| `column_names` | List of the column names, in order                                                               |
+
+Both leave out the [legacy columns](#legacy-columns), unless the table came from `sql.table("<name>", legacy=True)`.
+
+### Legacy Columns
+
+Some Recorder tables still have columns that Home Assistant no longer writes to, because the data moved elsewhere - `entity_id` in `states`, for example, is now in `states_meta`. Home Assistant marks these in `db_schema` as `UNUSED_LEGACY_COLUMN`, and they are empty for anything recorded recently.
+
+They are kept out of view by default, both in a `Table` and in a query's result. A query still downloads them, but the result leaves them out of everything it does - `show()`, rows, `column_names`, dataframes, exports - so `select * from states` shows only the columns in use.
+
+A legacy column is in view when:
+
+- the query names it
+- the query is made with `legacy=True`
+- `legacy` is set to `True` on the result afterwards, which needs no new query
+
+```python
+>>> r = sql("select * from states")                 # columns in use
+>>> r.legacy = True                                 # now every column
+>>> sql("select * from states", legacy=True)        # every column from the start
+>>> sql("select state_id, entity_id from states")   # named, so in view
+>>> sql.table("states").column_names               # columns in use
+>>> sql.table("states", legacy=True).column_names  # every column
+```
+
+A query is checked by its words rather than parsed, so a legacy column mentioned anywhere in it, such as in a `where`, is in view.
 
 ### More Help
 
-Use `help(sql)` or call `help(..)` on a result object to get reminded of the API.
+Use `help(sql)`, or call `help(..)` on a result, row or table object, to get reminded of the API. It gives a short summary of the methods, properties and attributes; add `full=True` for Python's own full help page.
 
 # Alternative Integration
 
@@ -738,6 +795,84 @@ $ ipython
 ```
 
 ## Marimo Example
+
+## Web Based Terminal
+
+[ttyd](https://tsl0922.github.io/ttyd/) is available easily via Mise, Homebrew or `opkg`. The http port will be logged at startup. It can be a dangerous security hole if not carefully used.
+
+```bash
+ttyd uv run --with homeassistant-repl ha-repl api
+```
+
+Recent versions of ttyd are read-only unless started with `--writable`, and have no login unless given `--credential user:password`. Anyone who can reach the port can use the shell, and in `live` mode that means running any Python inside Home Assistant.
+
+### In a Docker Container
+
+This example image serves the live shell on port 7681, for where installing ttyd and `uv` directly isn't convenient. It hasn't been widely tested, so treat it as a starting point.
+
+```dockerfile
+FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ttyd \
+    && rm -rf /var/lib/apt/lists/*
+
+# installs the ha-repl command into /usr/local/bin
+ENV UV_TOOL_BIN_DIR=/usr/local/bin
+RUN uv tool install homeassistant-repl
+
+EXPOSE 7681
+CMD ["ttyd", "--writable", "--port", "7681", "ha-repl", "live"]
+```
+
+Build it, then run it with the address and token of the Home Assistant to connect to, published only on the local machine:
+
+```bash
+docker build -t ha-repl-web .
+docker run --rm -p 127.0.0.1:7681:7681 \
+    -e HASS_SERVER=http://homeassistant.local:8123 \
+    -e HASS_TOKEN=<long lived access token> \
+    ha-repl-web
+```
+
+The shell is then at <http://localhost:7681>. To set a login, or run `api` mode instead, give the whole command at the end of `docker run`, for example `ttyd --writable --credential me:secret ha-repl live`.
+
+## From a Home Assistant Terminal Add-on
+
+On Home Assistant OS there is no `uv`, or recent enough Python, on the host - but a terminal add-on runs in its own container, where both can be added. This gives a shell in the browser, from the Home Assistant sidebar, with nothing to install on another machine.
+
+With the [Advanced SSH & Web Terminal](https://github.com/hassio-addons/addon-ssh) add-on, add `uv` to the packages it installs each time it starts, in the add-on's configuration:
+
+```yaml
+packages:
+  - uv
+```
+
+Restart the add-on, open its terminal, and run the shell - `uv` downloads a suitable Python of its own:
+
+```bash
+uvx --from homeassistant-repl ha-repl live
+```
+
+No `HASS_SERVER` or `HASS_TOKEN` is needed if the add-on provides a `SUPERVISOR_TOKEN`, since `ha-repl` then connects through the Supervisor. Otherwise set both, as for any other machine.
+
+`uv` keeps its downloads in the home directory, which the add-on may not keep between restarts. To avoid downloading Python and the packages again each time, point `UV_CACHE_DIR` and `UV_PYTHON_INSTALL_DIR` at a directory that is kept, such as one under `/config`.
+
+### Studio Code Server
+
+The [Studio Code Server](https://github.com/hassio-addons/addon-vscode) add-on also works, from its built-in terminal, with two differences. It is based on Debian, which has no `uv` package to add to the configuration, so install `uv` with its own installer:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Its Python is also older than `ha-repl` needs, so ask `uv` for a newer one when running the shell:
+
+```bash
+uv run --python 3.14 --with homeassistant-repl ha-repl live
+```
+
+To have `uv` there each time the add-on starts, put the install command in the add-on's `init_commands` configuration.
 # Optional
 
 1. Safe-ish by default, full power for those who can handle it
