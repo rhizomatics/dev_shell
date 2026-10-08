@@ -387,10 +387,23 @@ class _Names(ast.NodeVisitor):
 
     def visit_arg(self, node: ast.arg) -> None:
         self.bound.add(node.arg)
-        self.generic_visit(node)
+
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
+        # Annotations aren't read: nothing evaluates them when the statement
+        # runs (PEP 649), so a type that only exists on one side - `Any`
+        # imported locally, a class from the component - is no obstacle.
+        if node.value is not None:
+            self.visit(node.target)
+            self.visit(node.value)
+        elif not isinstance(node.target, ast.Name):
+            self.visit(node.target)
+        # else a bare `hass: HomeAssistant`, which binds nothing
 
     def _visit_def(self, node: Any) -> None:
         self._bind(node.name)
+        if getattr(node, "returns", None) is not None:
+            node = copy.copy(node)
+            node.returns = None
         self._visit_scope(node)
 
     def _visit_scope(self, node: ast.AST) -> None:

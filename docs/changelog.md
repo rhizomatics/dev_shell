@@ -4,6 +4,20 @@
     For live mode, generally the client and server component have to be on the same version. Different versions *might* work
     with each other for point releases
 
+# 0.11.1
+## 🐛 Fixes
+### Live Mode
+- A name used only in a type annotation no longer decides which side a statement runs on, and no longer stops it running inside Home Assistant because it "only exists in the local session"
+- A bare declaration, such as `hass: HomeAssistant`, is no longer treated as an assignment
+
+## ✨ Enhancements
+### Plugins
+- `homeassistant_repl.plugin` declares `MODE`, `SERVER`, `hass`, `obj`, `sql` and `hass_api` for linters and type checkers, to import under `TYPE_CHECKING`
+- The package now carries a `py.typed` marker
+
+## 📚 Documentation
+- *Plugins* covers importing a component's own classes, and type checking a plugin
+
 # 0.11.0
 ## ✨ Enhancements
 ### Configuration

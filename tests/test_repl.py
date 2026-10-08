@@ -255,6 +255,43 @@ async def test_uncopyable_local_name_rebound_by_the_command_is_ignored():
     assert client.executed == ["[s.entity_id for s in hass.states.async_all()]"]
 
 
+async def test_annotations_are_not_values_to_copy_over(capsys):
+    client = FakeClient()
+    live = _live(client)
+
+    await live.run("from typing import Any\nclass Frame: pass")
+    await live.run("data: dict[str, Any] = hass.data['x']")
+    await live.run("def first(e: Frame) -> Frame:\n    return hass.states.get(e)")
+
+    assert client.executed == [
+        "data: dict[str, Any] = hass.data['x']",
+        "def first(e: Frame) -> Frame:\n    return hass.states.get(e)",
+    ]
+    assert capsys.readouterr().err == ""
+
+
+async def test_a_name_only_in_an_annotation_does_not_choose_the_side():
+    client = FakeClient()
+    live = _live(client)
+
+    await live.run("entry = hass.config_entries.async_entries('x')[0]")
+    await live.run("count: entry = 3")
+
+    assert client.executed == ["entry = hass.config_entries.async_entries('x')[0]"]
+    assert live.local.globals_["count"] == 3
+
+
+async def test_a_bare_declaration_leaves_a_name_where_it_was():
+    client = FakeClient()
+    live = _live(client)
+
+    # as a plugin declares the shell's own names for a type checker
+    await live.run("TYPE_CHECKING = False")
+    await live.run("if TYPE_CHECKING:\n    hass: object\n    obj: object\nhass.states")
+
+    assert client.executed == ["hass.states"]
+
+
 async def test_statement_mixing_a_local_only_binding_with_hass_is_refused(capsys):
     client = FakeClient()
     live = _live(client, sql=object(), hass_api=None)

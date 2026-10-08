@@ -71,9 +71,44 @@ if SERVER == "house":
 
 They are ordinary variables, so nothing stops a session reassigning them.
 
+## Using Your Component's Classes
+
+A component's own code is importable inside Home Assistant, not on your machine, so import it in a statement that also uses `hass`. The whole statement is sent to Home Assistant, imports included, and the names it leaves there can be used from the prompt.
+
+```python
+if MODE != "api":
+    from custom_components.mycomponent.engine import Engine
+
+    entry = hass.config_entries.async_entries("mycomponent")[0]
+    engine: Engine = entry.runtime_data
+```
+
+There is no need to change `sys.path`, or to install Home Assistant alongside `ha-repl`. Annotations are never evaluated, so a type that only exists on one side does not stop a statement being run on the other.
+
+## Linters and Type Checkers
+
+`MODE`, `SERVER`, `hass`, `obj`, `sql` and `hass_api` are put there by the shell, so an editor reports them as undefined. `homeassistant_repl.plugin` declares them. Import from it where only a type checker will look, along with anything else needed only for annotations:
+
+```python
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from typing import Any
+
+    from homeassistant_repl.plugin import MODE, hass, obj  # noqa: TC004
+```
+
+The `noqa` is for Ruff, which otherwise points out that the names are used at run time. The module only declares the names and binds none of them, so importing from it outside `TYPE_CHECKING` fails.
+
+The checker needs to find the package, so add `homeassistant-repl` to the development dependencies of the repo the plugins live in. `hass` is typed as `HomeAssistant`, taken from the same environment.
+
 ## In Exec Mode
 
 Plugins are also run by [`ha-repl exec`](../modes/exec_mode.md), so a snippet and an agent see the same names as the interactive shell. Warnings go to standard error, so standard output, and the JSON object from `--json`, hold only the snippet's own result. Each statement that uses `hass` is a round trip to Home Assistant on every call, so keep those few, put them under `if MODE != "exec":`, or use `--no-plugins` where speed matters.
+
+## Examples
+
+- [Supernotify](https://supernotify.rhizomatics.org.uk) comes with a [plugin](https://github.com/rhizomatics/supernotify/blob/main/.ha-repl/plugins/10-supernotify-internals.py) built-in.
 
 ## In Other Python Shells
 
