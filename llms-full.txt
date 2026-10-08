@@ -42,6 +42,7 @@ This is primarily for developers of custom components, and their LLM agents, tho
 - Integrated with [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) as `hass_api` object
 - Auto-awaits coroutines for easy shell use (can be switched off or overridden)
 - Dedicated shell that can be run without installation with `uv`
+- Add in your own [plugins](https://homeassistant-repl.rhizomatics.org.uk/configuration/plugins/index.md) or package up a plugin with your component to help other developers
 - Usable from inside `ipython` shell, Marimo notebooks or plain `python -m asyncio`
 
 All of the above works with standard Home Assistant APIs, referred to as `api` mode.
