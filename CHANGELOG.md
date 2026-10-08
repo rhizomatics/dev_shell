@@ -7,6 +7,7 @@
 # 0.11.0
 ## ✨ Enhancements
 ### Configuration
+- Implementation of [RFC-0001: Persistent Config](https://homeassistant-repl.rhizomatics.org.uk/developer/design/rfcs/0001-persistent-config/)
 - Servers can be named in `~/.config/ha-repl/config.toml` and chosen with `--server NAME` or `HASS_SERVER=NAME`, with `default` picking one when neither is given. `--server` still takes a URL
   - A server's token comes from the file, from a command (`token_command`, for a secrets manager) or from a named environment variable (`token_env`)
   - `HASS_TOKEN` is only used with a URL, never with a named server
