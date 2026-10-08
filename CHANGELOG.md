@@ -17,6 +17,7 @@
 
 ## 📚 Documentation
 - *Plugins* covers importing a component's own classes, and type checking a plugin
+- A link is given to the example [Supernotify ha-repl plugin code](https://github.com/rhizomatics/supernotify/blob/main/.ha-repl/plugins/10-supernotify-internals.py)
 
 # 0.11.0
 ## ✨ Enhancements
