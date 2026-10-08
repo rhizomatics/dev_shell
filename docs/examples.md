@@ -98,8 +98,6 @@ hass.data["notify"].entities
 {n.name: n.platform.platform_name for n in hass.data["notify"].entities}
 ```
 
-!!! tip
-
 
 ### SQL
 
