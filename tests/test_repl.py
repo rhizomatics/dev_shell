@@ -55,6 +55,17 @@ async def test_plain_python_runs_locally_and_never_reaches_the_server():
     assert live.local.globals_["x"] == "[1, 2]"
 
 
+async def test_help_on_something_in_home_assistant_runs_there():
+    # `help` is bound locally too, but isn't a local function being called
+    # on a Home Assistant value - each side has its own.
+    client = FakeClient()
+    live = _live(client)
+
+    assert await live.run("help(hass.states)")
+
+    assert client.executed == ["help(hass.states)"]
+
+
 async def test_command_using_hass_or_obj_runs_on_the_server():
     client = FakeClient()
     live = _live(client)

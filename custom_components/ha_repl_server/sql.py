@@ -24,6 +24,7 @@ a sniff of every column.
 from __future__ import annotations
 
 import functools
+import inspect
 import io
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -255,21 +256,33 @@ def table_schemas() -> list[dict[str, Any]]:
     as plain data - from homeassistant.components.recorder.db_schema, the
     same source _recorder_arrow_types() reads above, not a live reflection
     of the connected database: these tables are schema-defined and the same
-    for every instance of a given HA version.
+    for every instance of a given HA version. `class` and `doc` are the
+    name and docstring of the db_schema class mapped to each table, and a
+    column is `legacy` when db_schema declares it with one of its
+    UNUSED_LEGACY_* types: still in the table, no longer written to.
     """
-    tables: dict[str, sa.Table] = {}
+    unused = [v for k, v in vars(db_schema).items() if k.startswith("UNUSED_LEGACY")]
+    classes: dict[str, type] = {}
     for name, obj in vars(db_schema).items():
-        if name.startswith("Legacy"):
+        # only the mapped classes themselves, not an alias of one (OLD_STATE)
+        if name.startswith("Legacy") or not isinstance(obj, type):
             continue
         table = getattr(obj, "__table__", None)
         if table is not None:
-            tables[table.name] = table
+            classes[table.name] = obj
     return [
         {
             "name": name,
+            "class": cls.__name__,
+            "doc": inspect.cleandoc(cls.__doc__ or ""),
             "columns": [
-                {"name": column.name, "type": str(column.type)} for column in table.c
+                {
+                    "name": column.name,
+                    "type": str(column.type),
+                    "legacy": any(column.type is u for u in unused),
+                }
+                for column in cls.__table__.c  # type:ignore[attr-defined] # ty: ignore[unresolved-attribute]
             ],
         }
-        for name, table in sorted(tables.items())
+        for name, cls in sorted(classes.items())
     ]

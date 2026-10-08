@@ -372,6 +372,24 @@ async def test_help_constructor_drops_self_return(manager):
     assert session_mod._format_signature(Widget, drop_return=(typing.Self,)) == "()"
 
 
+async def test_help_full_is_pythons_own_page(manager):
+    code = "class Point:\n    pass\np = Point()\n"
+    assert "Data descriptors" not in (await run(manager, code + "help(p)")).stdout
+
+    result = await run(manager, code + "help(p, full=True)")
+    assert "Data descriptors defined here" in result.stdout
+
+
+async def test_help_shows_string_annotations_unquoted(manager):
+    code = (
+        "class Box:\n"
+        "    def put(self, thing: 'str | None' = None) -> 'Box':\n"
+        "        return self\n"
+        "help(Box())"
+    )
+    assert "put(thing: str | None=None) -> Box" in (await run(manager, code)).stdout
+
+
 async def test_help_on_class_is_condensed(manager):
     code = (
         "class Point:\n"

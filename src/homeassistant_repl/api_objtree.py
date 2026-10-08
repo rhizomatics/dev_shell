@@ -286,7 +286,32 @@ def _clean(data: dict[str, Any]) -> dict[str, Any]:
 
 @dataclass(frozen=True)
 class ApiObjTree(Mapping[str, "ApiEntity | ApiObjTree"]):
-    """API client mode's view of the object tree - see the module docstring."""
+    """The tree of Home Assistant's entities, as read through its API.
+
+    Entities are arranged by integration, then domain, then name:
+
+        obj["/mqtt"]                    everything from one integration
+        obj["/mqtt/sensor"]             its sensors
+        obj["/mqtt/sensor/shed_temp"]   one entity
+        obj["sensor.shed_temp"]         the same entity, by entity id
+
+    A missing path or entity raises KeyError. Each level is a dict of the
+    level below, in alphabetical order: len(), `in`, keys(), values() and
+    items() all work on it, and those three can be indexed like a list.
+
+    find() goes through every entity below a path instead, in no fixed
+    order. It takes a path or regular expression, and any of domain=,
+    platform=, area= and label=, each a string or a list of strings.
+    find_paths() and find_names() take the same and give tree paths or
+    entity ids rather than the entities.
+
+    show(path) gives the most useful details of one entity.
+
+    This is a snapshot, refreshed between prompts once it is a while old.
+    reset_cache() makes the next prompt fetch a new one.
+    """
+
+    # API client mode's view of the object tree - see the module docstring.
 
     cache: Cache
     integration: str | None = None

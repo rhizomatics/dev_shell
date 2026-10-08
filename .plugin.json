@@ -1,0 +1,12 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "homeassistant-repl",
+  "version":"1.0.0",
+  "description": "Teaches an agent to run Python against a running Home Assistant with ha-repl, for custom component development",
+  "author": {
+    "name": "Rhizomatics",
+    "url": "https://github.com/rhizomatics"
+  },
+  "repository": "https://github.com/rhizomatics/homeassistant-repl",
+  "license": "Apache-2.0"
+}

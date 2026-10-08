@@ -484,7 +484,7 @@ def _capturing_help(out: io.StringIO, *, color: bool, width: int):
     # A fresh Helper per call, output redirected into the same buffer as print().
     helper = pydoc.Helper(input=io.StringIO(), output=out)
 
-    def shell_help(*args: Any) -> None:
+    def shell_help(*args: Any, full: bool = False) -> None:
         if not args:
             # help()'s real interactive loop (reading "help> " commands) spins the
             # CPU forever on this Python version when its input isn't a real tty -
@@ -496,12 +496,17 @@ def _capturing_help(out: io.StringIO, *, color: bool, width: int):
                 "\nGet help on any object, with links for known Home Assistant classes\n"
             )
             out.write("\ne.g. help(hass) or help(obj['/sun/sun']).\n")
+            out.write(
+                "\nhelp(thing, full=True) is Python's own full help page: every "
+                "method's docstring, special methods, inherited members and data "
+                "descriptors.\n"
+            )
             return
         if len(args) > 1:
             helper(*args)  # raises the same TypeError real help() would
             return
         (thing,) = args
-        if _is_summarisable(thing):
+        if _is_summarisable(thing) and not full:
             out.write(_class_summary(thing, color=color, width=width))
         else:
             helper(thing)
@@ -672,7 +677,9 @@ def _format_signature(
         ret is None or ret is type(None) or any(ret is d for d in drop_return)
     ):
         sig = sig.replace(return_annotation=sig.empty)
-    text = _DOTTED_NAME.sub(r"\1", str(sig))
+    # Annotations are plain strings in a module using `from __future__ import
+    # annotations` - shown as written, not as quoted strings.
+    text = _DOTTED_NAME.sub(r"\1", sig.format(quote_annotation_strings=False))
     return re.sub(r"\s*=\s*", "=", text)
 
 

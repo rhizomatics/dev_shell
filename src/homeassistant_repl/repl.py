@@ -41,7 +41,7 @@ from .client import Client, HaReplError, client_version
 from .local_session import LocalSession, format_error
 from .render import decode_value
 from .rest import hass_api
-from .sql import SqlResult, SqlTool
+from .sql import SqlResult, SqlRow, SqlTool
 
 HISTORY = Path.home() / ".ha_repl_history"
 
@@ -330,7 +330,9 @@ class LiveSession:
         return {
             name
             for name in self.local.globals_
-            if not name.startswith("__") and name not in ("_maybe_await", "unawait")
+            if not name.startswith("__")
+            # the shell's own, with a counterpart inside Home Assistant
+            and name not in ("_maybe_await", "unawait", "help")
         }
 
 
@@ -390,6 +392,8 @@ def _jsonable(value: Any) -> Any:
     (the Table show() returns) as plain text, the rest as their repr."""
     if isinstance(value, SqlResult):
         return value.json_data()
+    if isinstance(value, SqlRow):
+        return value.json_data()
     if not isinstance(value, type) and (
         hasattr(value, "__rich__") or hasattr(value, "__rich_console__")
     ):
@@ -412,6 +416,8 @@ def _ship(name: str, value: Any) -> str | None:
         # Crosses as its rows, a list of lists - enough for the loop or
         # comprehension over a result that calls into `hass` per row.
         value = list(value)
+    if isinstance(value, SqlRow):
+        value = value.values
     template = "{}"
     if type(value) is _LIST_ITERATOR:
         # What obj.find_names()/find_paths() hand back: recreated from the

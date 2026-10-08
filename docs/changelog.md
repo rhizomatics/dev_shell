@@ -5,13 +5,7 @@
     with each other for point releases
 
 # 0.10.0
-## ✨ Enhancements
-### Help
-- `help()` on something local - `obj` in API mode, `sql` and its results, tables and rows - now gives a short summary of what it is for, its methods, properties and attributes, as it already did for objects inside Home Assistant. Special methods, inherited members, data descriptors and the method resolution order are left out
-- `help(thing, full=True)` gives Python's own full help page, on either side
-- `help(obj)` explains how to use the object tree
-- Type annotations in the summary are no longer shown in quotes
-### SQL
+## SQL
 - `sql.table("states")` returns the `Table` object for a single table, by name
 - `Table` objects have `class_name` and `description`, the name and docstring of the class the Recorder maps to the table, e.g. `States` and `State change history.`
 - Legacy columns - those Home Assistant marks `UNUSED_LEGACY_COLUMN`, still in a table but no longer written to - are now told apart
@@ -21,9 +15,6 @@
 - `show()` on a result no longer cuts off at 6 columns by default, so it shows the same columns as a row from `result[0]`. Use `max_cols` to cap them
 - Indexing a result with a row number, e.g. `sql("select count(*) from events")[0]`, returns a `Row` object - its values, readable by position or column name, with its column names and `Table`
 - `columns` and `column_names` on a `Table` object are now properties, not methods
-## 📚 Documentation
-- Added help on using `ha-repl` from the **Studio Code Server** and **Advanced SSH** Home Assistant apps (aka addons), and using `ttyd`
-- Lots more examples of how to use all the builtins
 
 # 0.9.0
 ## Live Server

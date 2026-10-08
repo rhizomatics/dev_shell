@@ -23,9 +23,11 @@ from __future__ import annotations
 
 import base64
 import csv
+import dataclasses
 import io
 import json
 import random
+import re
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -39,7 +41,6 @@ from .client import HaReplError
 
 DEFAULT_MAX_ROWS = 1000
 DEFAULT_SHOW_ROWS = 30
-DEFAULT_SHOW_COLUMNS = 6
 
 
 class SqlError(Exception):
@@ -52,9 +53,14 @@ class SqlColumn:
 
     name: str
     type: str
+    legacy: bool = False
+    """True for a column Home Assistant still has in the table but no
+    longer writes to (declared UNUSED_LEGACY_* in the recorder's
+    db_schema) - its values have moved elsewhere, e.g. `states.entity_id`
+    to `states_meta`."""
 
     def __repr__(self) -> str:
-        return f"Column({self.name!r}, {self.type})"
+        return f"Column({self.name!r}, {self.type}{', legacy' if self.legacy else ''})"
 
 
 @dataclass(frozen=True)
@@ -64,17 +70,69 @@ class SqlTable:
 
     name: str
     _columns: tuple[SqlColumn, ...]
+    class_name: str = ""
+    """The class Home Assistant's recorder maps to this table, e.g.
+    `States` - found in homeassistant.components.recorder.db_schema."""
+    description: str = ""
+    """That class's docstring."""
+    legacy: bool = False
+    """Whether `columns` and `column_names` take in the legacy columns
+    as well as those in use - as `sql.table(name, legacy=True)` gives."""
 
+    @property
     def column_names(self) -> list[str]:
-        """Just the names, in schema order."""
-        return [column.name for column in self._columns]
+        """Just the names, in schema order - what a `select *` result
+        shows, legacy columns among them only if `legacy`."""
+        return [column.name for column in self.columns]
 
+    @property
     def columns(self) -> list[SqlColumn]:
-        """Name and type of each column, in schema order."""
-        return list(self._columns)
+        """Name and type of each column, in schema order - legacy ones
+        among them only if `legacy`."""
+        return [c for c in self._columns if self.legacy or not c.legacy]
 
     def __repr__(self) -> str:
-        return f"Table({self.name!r}, columns={self.column_names()!r})"
+        return f"Table({self.name!r}, columns={self.column_names!r})"
+
+
+@dataclass(frozen=True)
+class SqlRow:
+    """One row of a SqlResult, as `result[0]` gives it: its values in
+    column order, plus the column names and table they came from. Reads
+    like a list (`row[0]`, `len(row)`, a `for` loop) and by column name
+    (`row["entity_id"]`).
+    """
+
+    values: list[Any]
+    column_names: list[str]
+    table: SqlTable | None = None
+    """The recorder table of the result this row is from, if it had one."""
+
+    def __getitem__(self, key: int | slice | str) -> Any:
+        if isinstance(key, str):
+            try:
+                return self.values[self.column_names.index(key)]
+            except ValueError:
+                raise KeyError(
+                    f"no column {key!r} - columns are: {', '.join(self.column_names)}"
+                ) from None
+        return self.values[key]
+
+    def __iter__(self) -> Iterator[Any]:
+        return iter(self.values)
+
+    def __len__(self) -> int:
+        return len(self.values)
+
+    def to_dict(self) -> dict[str, Any]:
+        return dict(zip(self.column_names, self.values, strict=True))
+
+    def json_data(self) -> list[Any]:
+        """The values as JSON-ready data, as SqlResult.json_data() has them."""
+        return [_json_value(v) for v in self.values]
+
+    def __repr__(self) -> str:
+        return f"Row({self.to_dict()!r})"
 
 
 @dataclass
@@ -91,6 +149,13 @@ class SqlResult:
     """The recorder table these columns come from, when exactly one table
     has them all - None for a join, an aggregate, or a result that didn't
     come from `sql` in the first place."""
+    legacy: bool = False
+    """Whether legacy columns the query didn't name are part of this
+    result. They are always downloaded, and left out of everything -
+    `show()`, rows, `column_names`, dataframes, exports - until this is
+    set to True, which can be done at any time."""
+    _hidden: frozenset[str] = frozenset()
+    """The columns `legacy` decides on."""
 
     @classmethod
     def from_arrow(
@@ -99,18 +164,21 @@ class SqlResult:
         *,
         truncated: bool = False,
         tables: list[SqlTable] | None = None,
+        legacy: bool = False,
+        hidden: frozenset[str] = frozenset(),
     ) -> SqlResult:
         """Rebuild a SqlResult from Arrow IPC stream bytes (the one shared
         contract with the server that produced them) - a single
         struct-typed batch, one named field per column. `truncated` isn't
         itself encoded in the Arrow data (it's metadata about the query,
         not the rows), so it travels alongside the bytes rather than
-        inside them.
+        inside them. `hidden` names the columns left out unless `legacy`.
         """
         batch = na.ArrayStream.from_readable(data).read_all()
         names = {field.name for field in batch.schema.fields}
-        matches = [t for t in tables or () if names <= set(t.column_names())]
-        return cls(batch, truncated, matches[0] if len(matches) == 1 else None)
+        matches = [t for t in tables or () if names <= {c.name for c in t._columns}]
+        table = matches[0] if len(matches) == 1 else None
+        return cls(batch, truncated, table, legacy, hidden)
 
     @classmethod
     def _from_columns(
@@ -121,7 +189,15 @@ class SqlResult:
         batch = na.c_array_from_buffers(
             schema, length=rowcount, buffers=[], children=list(columns.values())
         )
-        return cls(na.Array(batch), like.truncated, like.table)
+        return dataclasses.replace(like, _data=na.Array(batch))
+
+    def _shown(self) -> SqlResult:
+        """This result if all its columns are in view, else one over just
+        those that are - which every reading operation works from."""
+        names = self.column_names
+        if len(names) == len(self._data.schema.fields):
+            return self
+        return self.project(names)
 
     def arrow(self) -> Any:
         """The whole result as one Arrow struct array (a `nanoarrow.Array`,
@@ -130,18 +206,19 @@ class SqlResult:
         `polars.DataFrame(r.arrow())`, `pyarrow.table(r.arrow())`,
         `pandas.DataFrame.from_arrow(r.arrow())`.
         """
-        return self._data
+        return self._shown()._data
 
     def arrow_ipc(self) -> bytes:
         """The result serialized as an Arrow IPC stream - the format
         `from_arrow()` reads, and what `polars.read_ipc_stream()` or
         `pyarrow.ipc.open_stream()` expect, e.g. to save to a file.
         """
-        data = self._data
+        shown = self._shown()
+        data = shown._data
         if data.n_chunks == 1 and data.offset:
             # The IPC writer can't encode a sliced (offset) array; write a
             # compact copy of just these rows instead.
-            data = self._take(range(self.rowcount))._data
+            data = shown._take(range(self.rowcount))._data
         buf = io.BytesIO()
         with StreamWriter.from_writable(buf) as writer:
             writer.write_stream(data)
@@ -153,10 +230,14 @@ class SqlResult:
 
     @property
     def column_names(self) -> list[str]:
-        return [field.name for field in self._data.schema.fields]
+        return [
+            field.name
+            for field in self._data.schema.fields
+            if self.legacy or field.name not in self._hidden
+        ]
 
     def to_dicts(self) -> list[dict[str, Any]]:
-        return self._data.to_pylist()
+        return self._shown()._data.to_pylist()
 
     def to_json(self, **kwargs: Any) -> str:
         """The whole result as one JSON document: `columns` (names),
@@ -179,7 +260,7 @@ class SqlResult:
     def to_polars(self) -> Any:
         import polars as pl  # type: ignore[import-not-found]  # ty: ignore[unresolved-import]
 
-        return pl.DataFrame(self._data)
+        return pl.DataFrame(self.arrow())
 
     def to_pandas(self) -> Any:
         import pandas as pd  # type: ignore[import-untyped]  # ty: ignore[unresolved-import]
@@ -199,11 +280,11 @@ class SqlResult:
         columns: list[str] | None = None,
         *,
         max_rows: int | None = DEFAULT_SHOW_ROWS,
-        max_cols: int | None = DEFAULT_SHOW_COLUMNS,
+        max_cols: int | None = None,
     ) -> Table:
-        """A rich Table rendering of this result - see the server-side
-        SqlResult's own show() for the full rationale; identical
-        behaviour, just rendered locally instead of over the wire.
+        """A rich Table rendering of this result. Shows the same columns
+        a row of it has (`result[0]`), unless `columns` names the ones to
+        show or `max_cols` caps how many; at most `max_rows` rows.
         """
         all_names = self.column_names
         if columns is not None:
@@ -240,22 +321,40 @@ class SqlResult:
 
     def project(self, columns: list[str]) -> SqlResult:
         """A new SqlResult with just these columns (same rows, same
-        underlying arrays - no data is copied).
+        underlying arrays - no data is copied). A legacy column named
+        here is in view in the new result.
         """
-        arrays = self._column_arrays()
-        return self._from_columns(
+        arrays = self._all_arrays()
+        projected = self._from_columns(
             {name: arrays[name] for name in columns}, self.rowcount, self
         )
+        projected._hidden = self._hidden - set(columns)
+        return projected
 
-    def __getitem__(self, key: slice) -> SqlResult:
-        """A contiguous run of rows with standard Python slice notation
+    def __getitem__(self, key: int | slice) -> Any:
+        """One row by position (`r[0]`, `r[-1]`) as a SqlRow, or a
+        contiguous run of rows with standard Python slice notation
         (`r[:10]`, `r[-1:]`, `r[10:20]`) - a new SqlResult sharing this
         one's data, nothing copied. For anything more (a step, a filter,
         a sort) use a dataframe: `r.to_polars()`.
         """
+        if isinstance(key, int) and not isinstance(key, bool):
+            index = key + self.rowcount if key < 0 else key
+            if not 0 <= index < self.rowcount:
+                raise IndexError(
+                    f"row {key} out of range - result has {self.rowcount} "
+                    f"row{'' if self.rowcount == 1 else 's'}"
+                )
+            arrays = self._column_arrays()
+            return SqlRow(
+                [column[index].as_py() for column in arrays.values()],
+                list(arrays),
+                self.table,
+            )
         if not isinstance(key, slice):
             raise TypeError(
-                f"SqlResult only supports slicing (e.g. result[:10]), not {key!r}"
+                "SqlResult takes a row number (result[0]) or a slice "
+                f"(result[:10]), not {key!r}"
             )
         start, stop, step = key.indices(self.rowcount)
         if step != 1:
@@ -266,7 +365,7 @@ class SqlResult:
         if self._data.n_chunks != 1:  # nothing to share: an empty result
             return self
         sliced = na.c_array(self._data)[start : max(start, stop)]
-        return SqlResult(na.Array(sliced), self.truncated, self.table)
+        return dataclasses.replace(self, _data=na.Array(sliced))
 
     def __len__(self) -> int:
         return self.rowcount
@@ -285,7 +384,7 @@ class SqlResult:
         - only the rows asked for are read, not the whole column."""
         columns = {
             name: na.array([column[i].as_py() for i in indices], column.schema)
-            for name, column in self._column_arrays().items()
+            for name, column in self._all_arrays().items()
         }
         return self._from_columns(columns, len(indices), self)
 
@@ -308,7 +407,13 @@ class SqlResult:
         return path
 
     def _column_arrays(self) -> dict[str, Any]:
-        """Each column as its own array - views into the struct, not copies."""
+        """Each column in view as its own array - views into the struct,
+        not copies."""
+        arrays = self._all_arrays()
+        return {name: arrays[name] for name in self.column_names}
+
+    def _all_arrays(self) -> dict[str, Any]:
+        """As _column_arrays(), whether or not the column is in view."""
         children = list(self._data.iter_children())
         if self._data.n_chunks == 1 and (
             self._data.offset or any(len(c) != self.rowcount for c in children)
@@ -317,12 +422,13 @@ class SqlResult:
             # arrays still span the original rows, so narrow them to match.
             start, stop = self._data.offset, self._data.offset + self.rowcount
             children = [na.Array(na.c_array(c)[start:stop]) for c in children]
-        return dict(zip(self.column_names, children, strict=True))
+        names = [field.name for field in self._data.schema.fields]
+        return dict(zip(names, children, strict=True))
 
     def _rows(self, names: list[str] | None = None) -> Iterator[tuple[Any, ...]]:
         if names is None:
-            return self._data.iter_tuples()
-        arrays = self._column_arrays()
+            return self._shown()._data.iter_tuples()
+        arrays = self._all_arrays()
         return zip(*(arrays[name].iter_py() for name in names), strict=True)
 
     def __repr__(self) -> str:
@@ -342,7 +448,15 @@ def _json_value(value: Any) -> Any:
     return str(value)
 
 
-_MAX_ROWS_UNSET: Any = object()
+class _Unset:
+    """Stands for "use sql.max_rows" - a default None can't, since None
+    is itself a value to pass (no cap). The repr is what help() shows."""
+
+    def __repr__(self) -> str:
+        return "sql.max_rows"
+
+
+_MAX_ROWS_UNSET: Any = _Unset()
 
 
 @dataclass
@@ -356,7 +470,8 @@ class SqlTool:
 
     `.max_rows` is this shell's default row cap (set it to change the
     default for every call after, or to None to remove it entirely) and
-    `.tables` the recorder's tables, to explore the schema without a query.
+    `.tables` the recorder's tables, to explore the schema without a query
+    - `.table(name)` picks one of them out by name.
     """
 
     client: Any
@@ -371,18 +486,44 @@ class SqlTool:
         reply = await client.call("ha_repl_server/sql_tables")
         tables = [
             SqlTable(
-                t["name"], tuple(SqlColumn(c["name"], c["type"]) for c in t["columns"])
+                t["name"],
+                tuple(
+                    SqlColumn(c["name"], c["type"], c.get("legacy", False))
+                    for c in t["columns"]
+                ),
+                # absent from a server older than this client
+                t.get("class", ""),
+                t.get("doc", ""),
             )
             for t in reply["tables"]
         ]
         return cls(client, tables=tables)
 
+    def table(self, name: str, *, legacy: bool = False) -> SqlTable:
+        """The recorder table called `name`, from `.tables` - with its
+        legacy columns too if `legacy`. Raises KeyError, naming the
+        tables there are, if there's no such table."""
+        for table in self.tables:
+            if table.name == name:
+                return dataclasses.replace(table, legacy=True) if legacy else table
+        known = ", ".join(t.name for t in self.tables)
+        raise KeyError(f"no table {name!r} - tables are: {known}")
+
     async def __call__(
-        self, query: str, *, max_rows: int | None = _MAX_ROWS_UNSET
+        self,
+        query: str,
+        *,
+        max_rows: int | None = _MAX_ROWS_UNSET,
+        legacy: bool = False,
     ) -> SqlResult:
         """Run a single read-only SELECT against Home Assistant's Recorder
         database. At most `max_rows` rows are fetched (default: this
-        object's own `.max_rows`) - pass None for no cap at all."""
+        object's own `.max_rows`) - pass None for no cap at all.
+
+        Legacy columns - still in a table, no longer written to - are
+        downloaded but kept out of view unless the query names them or
+        `legacy` is True, so a `select *` shows only the columns in use.
+        Setting `.legacy = True` on the result brings them into view."""
         try:
             reply = await self.client.call(
                 "ha_repl_server/sql",
@@ -397,10 +538,24 @@ class SqlTool:
             base64.b64decode(reply["arrow"]),
             truncated=reply["truncated"],
             tables=self.tables,
+            legacy=legacy,
+            hidden=self._unnamed_legacy(query),
         )
+
+    def _unnamed_legacy(self, query: str) -> frozenset[str]:
+        """Names of legacy columns of the tables this query mentions that
+        the query doesn't itself mention - going by its words, not a
+        parse. A name that's also a column in use in another of those
+        tables (`entity_id`, in a join of states and states_meta) isn't
+        one of them."""
+        words = set(re.findall(r"\w+", query.lower()))
+        tables = [t for t in self.tables if t.name.lower() in words]
+        in_use = {c.name for t in tables for c in t._columns if not c.legacy}
+        legacy = {c.name for t in tables for c in t._columns if c.legacy}
+        return frozenset(n for n in legacy - in_use if n.lower() not in words)
 
     def __repr__(self) -> str:
         return (
             f"<sql(query, max_rows=...) - default max_rows={self.max_rows!r}; "
-            "see sql.tables>"
+            "see sql.tables, sql.table(name)>"
         )

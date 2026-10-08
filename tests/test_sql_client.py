@@ -15,7 +15,14 @@ import pytest
 from rich.table import Table
 
 from homeassistant_repl.client import HaReplError
-from homeassistant_repl.sql import SqlColumn, SqlError, SqlResult, SqlTable, SqlTool
+from homeassistant_repl.sql import (
+    SqlColumn,
+    SqlError,
+    SqlResult,
+    SqlRow,
+    SqlTable,
+    SqlTool,
+)
 
 
 def _server_arrow_bytes(**columns: list) -> bytes:
@@ -111,10 +118,29 @@ def test_slicing_returns_a_new_result():
     assert result[:3].rowcount == 3
 
 
-def test_getitem_rejects_a_plain_index():
+def test_indexing_returns_a_row():
+    result = _result(a=[1, 2, 3], b=["x", "y", "z"])
+
+    row = result[0]
+    assert isinstance(row, SqlRow)
+    assert row.values == [1, "x"]
+    assert row.column_names == ["a", "b"]
+    assert row.table is result.table
+    assert (row[0], row["b"], len(row), list(row)) == (1, "x", 2, [1, "x"])
+    assert row.to_dict() == {"a": 1, "b": "x"}
+    assert repr(row) == "Row({'a': 1, 'b': 'x'})"
+    assert result[-1].values == [3, "z"]
+    assert result[1:][0].values == [2, "y"]
+    with pytest.raises(KeyError, match="no column 'c' - columns are: a, b"):
+        row["c"]
+
+
+def test_indexing_rejects_what_is_not_a_row_number():
     result = _result(a=[1, 2, 3])
-    with pytest.raises(TypeError, match="slicing"):
-        result[0]  # type: ignore[call-overload]  # ty: ignore[invalid-argument-type]
+    with pytest.raises(IndexError, match="row 3 out of range - result has 3 rows"):
+        result[3]
+    with pytest.raises(TypeError, match="row number"):
+        result["a"]  # type: ignore[call-overload]  # ty: ignore[invalid-argument-type]
 
 
 def test_sample_caps_at_available_rows_and_keeps_order():
@@ -134,7 +160,12 @@ def test_show_returns_a_rich_table_with_defaults():
 
     table = result.show()
 
+    # every column a row has, so what's shown is what result[0] holds
     assert isinstance(table, Table)
+    assert [str(c.header) for c in table.columns] == result[0].column_names
+    assert "cols" not in str(table.caption)
+
+    table = result.show(max_cols=6)
     assert [str(c.header) for c in table.columns] == [f"c{i}" for i in range(6)]
     assert "6/8 cols" in str(table.caption)
 
@@ -205,12 +236,21 @@ class _FakeClient:
                 "tables": [
                     {
                         "name": "t",
+                        "class": "Things",
+                        "doc": "Thing history.",
                         "columns": [
                             {"name": "id", "type": "INTEGER"},
                             {"name": "name", "type": "VARCHAR(255)"},
                         ],
                     },
-                    {"name": "other", "columns": [{"name": "zzz", "type": "TEXT"}]},
+                    {
+                        "name": "other",
+                        "columns": [
+                            {"name": "zzz", "type": "TEXT"},
+                            {"name": "old", "type": "CHAR", "legacy": True},
+                            {"name": "name", "type": "CHAR", "legacy": True},
+                        ],
+                    },
                 ]
             }
         if self.error is not None:
@@ -225,9 +265,113 @@ async def test_sqltool_connect_downloads_tables():
     tool = await SqlTool.connect(_FakeClient())
 
     assert [t.name for t in tool.tables] == ["t", "other"]
-    assert tool.tables[0].column_names() == ["id", "name"]
-    assert repr(tool.tables[0].columns()[1]) == "Column('name', VARCHAR(255))"
+    assert tool.tables[0].column_names == ["id", "name"]
+    assert repr(tool.tables[0].columns[1]) == "Column('name', VARCHAR(255))"
     assert repr(tool.tables[0]) == "Table('t', columns=['id', 'name'])"
+    assert (tool.tables[0].class_name, tool.tables[0].description) == (
+        "Things",
+        "Thing history.",
+    )
+    # a server that doesn't send them
+    assert (tool.tables[1].class_name, tool.tables[1].description) == ("", "")
+
+
+async def test_table_has_legacy_columns_only_when_asked():
+    tool = await SqlTool.connect(_FakeClient())
+    other = tool.table("other")
+
+    assert other is tool.tables[1]
+    assert other.column_names == ["zzz"]
+    assert [(c.name, c.legacy) for c in other.columns] == [("zzz", False)]
+    assert repr(other) == "Table('other', columns=['zzz'])"
+
+    full = tool.table("other", legacy=True)
+    assert full.column_names == ["zzz", "old", "name"]
+    assert [(c.name, c.legacy) for c in full.columns] == [
+        ("zzz", False),
+        ("old", True),
+        ("name", True),
+    ]
+    assert repr(full.columns[1]) == "Column('old', CHAR, legacy)"
+    # asking for them doesn't change the table everyone else gets
+    assert tool.table("other").column_names == ["zzz"]
+
+
+@pytest.mark.parametrize(
+    ("query", "kwargs", "expected"),
+    [
+        ("select * from other", {}, ["zzz"]),
+        ("select * from other", {"legacy": True}, ["zzz", "old", "name"]),
+        ("select zzz, old from other", {}, ["zzz", "old"]),
+        ("select * from other where OLD is null", {}, ["zzz", "old"]),
+        # `name` is in use in t, so isn't hidden once t is in the query
+        ("select * from other join t", {}, ["zzz", "name"]),
+        # no table of ours named: nothing is known to be legacy
+        ("select * from elsewhere", {}, ["zzz", "old", "name"]),
+    ],
+)
+async def test_sqltool_leaves_out_unnamed_legacy_columns(query, kwargs, expected):
+    client = _FakeClient(_server_arrow_bytes(zzz=[1], old=[None], name=[None]))
+    tool = await SqlTool.connect(client)
+
+    result = await tool(query, **kwargs)
+
+    assert result.column_names == expected
+    assert result.table is tool.table("other")
+    # nothing was dropped, only kept out of view
+    result.legacy = True
+    assert result.column_names == ["zzz", "old", "name"]
+
+
+async def test_result_legacy_flag_applies_to_every_operation(tmp_path):
+    client = _FakeClient(
+        _server_arrow_bytes(zzz=[1, 2, 3], old=["a", "b", "c"], name=[None] * 3)
+    )
+    result = await (await SqlTool.connect(client))("select * from other")
+
+    def views(r: SqlResult) -> list:
+        shown = r.show()
+        return [
+            r.column_names,
+            r[0].column_names,
+            [column.header for column in shown.columns],
+            list(r.to_dicts()[0]),
+            r.json_data()["columns"],
+            [f.name for f in r.arrow().schema.fields],
+            SqlResult.from_arrow(r.arrow_ipc()).column_names,
+            r[1:].column_names,
+            r.sample(2).column_names,
+            r.export_csv(tmp_path / "r.csv").read_text().splitlines()[0].split(","),
+        ]
+
+    assert views(result) == [["zzz"]] * 10
+    assert (list(result), result[1].values, result[1:][0].values) == (
+        [[1], [2], [3]],
+        [2],
+        [2],
+    )
+    assert repr(result) == "<SqlResult 3 rows x 1 cols [zzz] (truncated)>"
+
+    # a legacy column asked for by name is in view from then on
+    assert result.project(["zzz", "old"]).column_names == ["zzz", "old"]
+    assert [c.header for c in result.show(columns=["old"]).columns] == ["old"]
+
+    part = result[1:]
+    result.legacy = True
+    assert views(result) == [["zzz", "old", "name"]] * 10
+    assert result[1].values == [2, "b", None]
+    # a result made from it earlier has its own flag
+    assert part.column_names == ["zzz"]
+    part.legacy = True
+    assert part[0].values == [2, "b", None]
+
+
+async def test_sqltool_table_finds_a_table_by_name():
+    tool = await SqlTool.connect(_FakeClient())
+
+    assert tool.table("other") is tool.tables[1]
+    with pytest.raises(KeyError, match="no table 'nope' - tables are: t, other"):
+        tool.table("nope")
 
 
 async def test_sqltool_call_returns_a_local_result_with_its_table():

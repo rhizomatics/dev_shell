@@ -265,20 +265,43 @@ class OrderedItemsView(_OrderedView, ItemsView, Sequence):  # type: ignore[misc]
 
 @dataclass(frozen=True)
 class ObjTree(Mapping[str, "Entity | ApiEntity | ObjTree"]):
-    """A view of the object tree, optionally restricted to a subtree.
+    """The tree of Home Assistant's entities, live inside Home Assistant.
 
-    `integration` and/or `domain` pin this view to that part of the tree -
-    the way `obj["/alexa_devices"]` or `obj["/alexa_devices/media_player"]`
-    does. Indexing a restricted view only needs the remaining path segments,
-    given either as a single "a/b" string or one segment at a time.
+    Entities are arranged by integration, then domain, then name:
 
-    Implementing collections.abc.Mapping (on top of __getitem__, __iter__ and
-    __len__) gets `in`, .get(), and real KeysView/ItemsView/ValuesView from
-    .keys()/.items()/.values() for free, consistent with any other dict-like
-    object - overridden below to also be Sequences, since every level in this
-    tree is naturally a list (see _OrderedView): `obj["/alexa_devices"].keys()[0]`
-    and slicing work, alongside the usual Set/Collection behaviour.
+        obj["/mqtt"]                    everything from one integration
+        obj["/mqtt/sensor"]             its sensors
+        obj["/mqtt/sensor/shed_temp"]   one entity
+        obj["sensor.shed_temp"]         the same entity, by entity id
+
+    A missing path or entity raises KeyError. Each level is a dict of the
+    level below, in alphabetical order: len(), `in`, keys(), values() and
+    items() all work on it, and those three can be indexed like a list.
+
+    find() goes through every entity below a path instead, in no fixed
+    order. It takes a path or regular expression, and any of domain=,
+    platform=, area= and label=, each a string or a list of strings.
+    find_paths() and find_names() take the same and give tree paths or
+    entity ids rather than the entities.
+
+    show(path) gives the most useful details of one entity.
+
+    mode("api") switches to the cut-down entities API client mode gives,
+    and mode("live") back to the real ones.
     """
+
+    # A view of the object tree, optionally restricted to a subtree:
+    # `integration` and/or `domain` pin this view to that part of the tree -
+    # the way `obj["/alexa_devices"]` or `obj["/alexa_devices/media_player"]`
+    # does. Indexing a restricted view only needs the remaining path segments,
+    # given either as a single "a/b" string or one segment at a time.
+    #
+    # Implementing collections.abc.Mapping (on top of __getitem__, __iter__ and
+    # __len__) gets `in`, .get(), and real KeysView/ItemsView/ValuesView from
+    # .keys()/.items()/.values() for free, consistent with any other dict-like
+    # object - overridden below to also be Sequences, since every level in this
+    # tree is naturally a list (see _OrderedView): `obj["/alexa_devices"].keys()[0]`
+    # and slicing work, alongside the usual Set/Collection behaviour.
 
     hass: HomeAssistant
     integration: str | None = None

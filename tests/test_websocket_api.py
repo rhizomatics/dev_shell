@@ -87,7 +87,11 @@ async def test_ws_sql_tables_lists_recorder_tables_and_columns(
 
     tables = {t["name"]: t["columns"] for t in response["result"]["tables"]}
     assert "states" in tables
-    assert {"name": "entity_id", "type": "VARCHAR(255)"} in tables["states_meta"]
+    assert {
+        "name": "entity_id",
+        "type": "VARCHAR(255)",
+        "legacy": False,
+    } in tables["states_meta"]
 
 
 async def test_ws_sql_commands_honour_expose_sql_off(

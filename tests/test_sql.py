@@ -130,5 +130,12 @@ def test_table_schemas_lists_current_recorder_tables_with_columns():
     tables = {t["name"]: t["columns"] for t in table_schemas()}
 
     assert {"states", "states_meta", "events", "statistics"} <= set(tables)
-    assert {"name": "entity_id", "type": "VARCHAR(255)"} in tables["states_meta"]
+    assert {
+        "name": "entity_id",
+        "type": "VARCHAR(255)",
+        "legacy": False,
+    } in tables["states_meta"]
+    assert {"name": "entity_id", "type": "CHAR", "legacy": True} in tables["states"]
     assert list(tables) == sorted(tables)
+    described = {t["name"]: (t["class"], t["doc"]) for t in table_schemas()}
+    assert described["states"] == ("States", "State change history.")

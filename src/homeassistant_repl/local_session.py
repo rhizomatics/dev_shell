@@ -29,6 +29,8 @@ from rich.console import Console
 from rich.pretty import Pretty
 from rich.traceback import Traceback
 
+from .local_help import make_help
+
 _cell_counter = itertools.count(1)
 
 console = Console()
@@ -47,6 +49,7 @@ class LocalSession:
         self.globals_.setdefault("__builtins__", builtins)
         self.globals_.setdefault("_maybe_await", _maybe_await)
         self.globals_.setdefault("unawait", unawait)
+        self.globals_.setdefault("help", make_help(console))
 
     async def run(self, source: str, *, echo: bool = True) -> bool:
         """Execute source, printing the trailing expression's value (if any,
