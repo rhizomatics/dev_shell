@@ -309,6 +309,7 @@ What it does:
 - **Local to Home Assistant** - a local variable holding plain data is copied over before a statement that uses it. A module you imported locally is imported there under the same name. A `sql` result crosses as its rows, a list of lists.
 - **Home Assistant to local** - a variable assigned inside Home Assistant comes back, and is local from then on, when what it holds is plain data. So does what `obj.find_names()` and `obj.find_paths()` return: an iterator over strings, good for going through once.
 - **Everything else stays where it is** - states, entities, dataframes, functions and classes don't cross in either direction.
+- **Annotations are ignored** - a name used only in a type annotation doesn't decide where a statement runs, and is never copied over.
 - **One statement, one side** - `sql` and `hass_api` are local only, `hass` and `obj` are Home Assistant only, so a single statement can't use both. Assign one part to a variable first.
 
 A value that crosses is a copy. Changing it on one side doesn't change it on the other.

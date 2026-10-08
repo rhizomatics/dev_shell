@@ -821,10 +821,43 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#using-your-components-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using Your Component's Classes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linters-and-type-checkers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linters and Type Checkers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#in-exec-mode" class="md-nav__link">
     <span class="md-ellipsis">
       
         In Exec Mode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
       
     </span>
   </a>
@@ -1556,8 +1589,32 @@
 </span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"careful - this is the house"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>They are ordinary variables, so nothing stops a session reassigning them.</p>
+<h2 id="using-your-components-classes">Using Your Component's Classes<a class="headerlink" href="#using-your-components-classes" title="Permanent link">&para;</a></h2>
+<p>A component's own code is importable inside Home Assistant, not on your machine, so import it in a statement that also uses <code>hass</code>. The whole statement is sent to Home Assistant, imports included, and the names it leaves there can be used from the prompt.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">if</span> <span class="n">MODE</span> <span class="o">!=</span> <span class="s2">"api"</span><span class="p">:</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">custom_components.mycomponent.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Engine</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">entry</span> <span class="o">=</span> <span class="n">hass</span><span class="o">.</span><span class="n">config_entries</span><span class="o">.</span><span class="n">async_entries</span><span class="p">(</span><span class="s2">"mycomponent"</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">engine</span><span class="p">:</span> <span class="n">Engine</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">runtime_data</span>
+</span></code></pre></div>
+<p>There is no need to change <code>sys.path</code>, or to install Home Assistant alongside <code>ha-repl</code>. Annotations are never evaluated, so a type that only exists on one side does not stop a statement being run on the other.</p>
+<h2 id="linters-and-type-checkers">Linters and Type Checkers<a class="headerlink" href="#linters-and-type-checkers" title="Permanent link">&para;</a></h2>
+<p><code>MODE</code>, <code>SERVER</code>, <code>hass</code>, <code>obj</code>, <code>sql</code> and <code>hass_api</code> are put there by the shell, so an editor reports them as undefined. <code>homeassistant_repl.plugin</code> declares them. Import from it where only a type checker will look, along with anything else needed only for annotations:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">homeassistant_repl.plugin</span><span class="w"> </span><span class="kn">import</span> <span class="n">MODE</span><span class="p">,</span> <span class="n">hass</span><span class="p">,</span> <span class="n">obj</span>  <span class="c1"># noqa: TC004</span>
+</span></code></pre></div>
+<p>The <code>noqa</code> is for Ruff, which otherwise points out that the names are used at run time. The module only declares the names and binds none of them, so importing from it outside <code>TYPE_CHECKING</code> fails.</p>
+<p>The checker needs to find the package, so add <code>homeassistant-repl</code> to the development dependencies of the repo the plugins live in. <code>hass</code> is typed as <code>HomeAssistant</code>, taken from the same environment.</p>
 <h2 id="in-exec-mode">In Exec Mode<a class="headerlink" href="#in-exec-mode" title="Permanent link">&para;</a></h2>
 <p>Plugins are also run by <a href="../../modes/exec_mode/"><code>ha-repl exec</code></a>, so a snippet and an agent see the same names as the interactive shell. Warnings go to standard error, so standard output, and the JSON object from <code>--json</code>, hold only the snippet's own result. Each statement that uses <code>hass</code> is a round trip to Home Assistant on every call, so keep those few, put them under <code>if MODE != "exec":</code>, or use <code>--no-plugins</code> where speed matters.</p>
+<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="https://supernotify.rhizomatics.org.uk">Supernotify</a> comes with a <a href="https://github.com/rhizomatics/supernotify/blob/main/.ha-repl/plugins/10-supernotify-internals.py">plugin</a> built-in.</li>
+</ul>
 <h2 id="in-other-python-shells">In Other Python Shells<a class="headerlink" href="#in-other-python-shells" title="Permanent link">&para;</a></h2>
 <p>Plugins are ordinary Python with no special syntax. The same file can be named in <code>PYTHONSTARTUP</code>, linked into IPython's own startup directory, or run with <code>exec(open(path).read())</code> in a notebook. Only the lines that use <code>hass</code> depend on live mode. <code>MODE</code> and <code>SERVER</code> don't exist there, so a file shared with those shells should use <code>globals().get("MODE")</code>.</p>
 
