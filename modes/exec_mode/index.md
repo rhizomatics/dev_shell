@@ -1,8 +1,8 @@
 # Exec Mode
 
-`ha-repl exec` runs one snippet of Python against a running Home Assistant and exits. It is the non-interactive form of [live mode](https://homeassistant-repl.rhizomatics.org.uk/live_mode/index.md), and its main use is giving a coding agent a way to check its ideas against a real instance: read an entity's state, query the recorder, call a service, inspect an object, then decide what to do next.
+`ha-repl exec` runs one snippet of Python against a running Home Assistant and exits. It is the non-interactive form of [live mode](https://homeassistant-repl.rhizomatics.org.uk/modes/live_mode/index.md), and its main use is giving a coding agent a way to check its ideas against a real instance: read an entity's state, query the recorder, call a service, inspect an object, then decide what to do next.
 
-It needs the same server component as live mode - read the warnings on the [live mode](https://homeassistant-repl.rhizomatics.org.uk/live_mode/index.md) page first: an agent with `exec` can run any Python inside Home Assistant. Point it at a devcontainer or development instance, not the one running your house.
+It needs the same server component as live mode - read the warnings on the [live mode](https://homeassistant-repl.rhizomatics.org.uk/modes/live_mode/index.md) page first: an agent with `exec` can run any Python inside Home Assistant. Point it at a devcontainer or development instance, not the one running your house.
 
 ## Setup
 
@@ -13,7 +13,7 @@ export HASS_SERVER=http://homeassistant.local:8123
 export HASS_TOKEN=<long lived access token>
 ```
 
-Both can also go in a `.env` file in the directory the agent runs from. Then tell the agent the command exists, for example in its project instructions:
+Both can also go in a `.env` file in the directory the agent runs from, or the server can be one named in a [`config.toml`](https://homeassistant-repl.rhizomatics.org.uk/configuration/client_configuration/index.md), where a repo's `.ha-repl/config.toml` can set the default for everything run in that repo. [Plugins](https://homeassistant-repl.rhizomatics.org.uk/configuration/plugins/index.md) are run before the snippet, so helpers defined there are available to the agent; `--no-plugins` skips them. Then tell the agent the command exists, for example in its project instructions:
 
 ```markdown
 Use `ha-repl --json exec '<python>'` to run Python against the development
@@ -106,14 +106,14 @@ What `value` holds depends on where the last expression ran:
 
 ## What Runs Where
 
-A snippet is ordinary Python running in the `ha-repl` process, with whatever is installed there. Statements that use `hass` or `obj` are the exception: they are sent to Home Assistant and run inside it. The rules are the same as the interactive shell and are described in full under [What Runs Where](https://homeassistant-repl.rhizomatics.org.uk/live_mode/#what-runs-where). The points that matter most for a script:
+A snippet is ordinary Python running in the `ha-repl` process, with whatever is installed there. Statements that use `hass` or `obj` are the exception: they are sent to Home Assistant and run inside it. The rules are the same as the interactive shell and are described in full under [What Runs Where](https://homeassistant-repl.rhizomatics.org.uk/modes/live_mode/#what-runs-where). The points that matter most for a script:
 
 - `sql` and `hass_api` are local. A query's result is downloaded, and everything done with it afterwards happens locally.
 - Plain local data (strings, numbers, lists and dicts of them) and `sql` results can be used in a statement that runs inside Home Assistant. A `sql` result arrives there as a list of rows.
 - A variable assigned by a statement that used `hass` or `obj` comes back, and is local afterwards, if it holds plain data. Anything else stays inside Home Assistant, and later statements that use it run there too.
 - Don't use `sql` or `hass_api` in the same statement as `hass` or `obj` - it is refused. Assign one part on its own line first.
 
-[Mixing Both Sides](https://homeassistant-repl.rhizomatics.org.uk/live_mode/#mixing-both-sides) has the details and worked examples.
+[Mixing Both Sides](https://homeassistant-repl.rhizomatics.org.uk/modes/live_mode/#mixing-both-sides) has the details and worked examples.
 
 ## State Between Calls
 

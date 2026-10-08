@@ -8,14 +8,14 @@ Home Assistant REPL is a Python shell for developers of Home Assistant custom co
 ## Start here
 
 - [Home Assistant REPL](https://homeassistant-repl.rhizomatics.org.uk/index.md): Overview of what Home Assistant REPL does, api vs live mode, and getting started
-- [Exec Mode](https://homeassistant-repl.rhizomatics.org.uk/exec_mode/index.md): Running one-shot snippets with `ha-repl exec` - options, JSON output, exit codes, sessions and tips for coding agents
+- [Exec Mode](https://homeassistant-repl.rhizomatics.org.uk/modes/exec_mode/index.md): Running one-shot snippets with `ha-repl exec` - options, JSON output, exit codes, sessions and tips for coding agents
 
 ## Reference
 
-- [Live Mode](https://homeassistant-repl.rhizomatics.org.uk/live_mode/index.md): Installing the server component, the live shell, and which statements run locally or inside Home Assistant
+- [Live Mode](https://homeassistant-repl.rhizomatics.org.uk/modes/live_mode/index.md): Installing the server component, the live shell, and which statements run locally or inside Home Assistant
 - [The Object Tree](https://homeassistant-repl.rhizomatics.org.uk/obj_tree/index.md): The `obj` object tree - path and entity id lookup, `find()` filters and `show()`
 - [SQL Access](https://homeassistant-repl.rhizomatics.org.uk/sql/index.md): The `sql` object for querying the Recorder database, and its result and table objects
-- [Alternative Integration](https://homeassistant-repl.rhizomatics.org.uk/alternative_integration/index.md): Using `homeassistant_repl.connect()` from plain Python, ipython or Marimo instead of the shell
+- [Alternative Integration](https://homeassistant-repl.rhizomatics.org.uk/configuration/alternative_integration/index.md): Using `homeassistant_repl.connect()` from plain Python, ipython or Marimo instead of the shell
 
 ## Optional
 

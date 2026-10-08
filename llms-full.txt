@@ -48,19 +48,16 @@ All of the above works with standard Home Assistant APIs, referred to as `api` m
 
 Home Assistant REPL also has an advanced `live` mode that taps directly into a live Home Assistant using an optional server component available via [HACS](http://hacs.xyz).
 
-## Live Mode
+Get started with a single line at [Quick Start](https://homeassistant-repl.rhizomatics.org.uk/quick_start/index.md)
 
-This mode requires a custom component to be installed on the target Home Assistant server via HACS, or use the supplied scripts to install on a local devcontainer. It adds:
+## Live and Exec Modes
+
+These modes require a custom component to be [installed](https://homeassistant-repl.rhizomatics.org.uk/configuration/server_install/index.md) on the target Home Assistant server via HACS, or use the supplied scripts to install on a local devcontainer. It adds:
 
 - Full access to the core Home Assistant Python API via `hass`
 - Read/write access to the actual objects, e.g. entities and their helpers
+- Agent friendly non-interactive mode using *Exec Mode*
 - A frisson of danger
-
-### HA REPL Server
-
-A HACS component that taps into the Home Assistant and acts as a session server over web sockets. It has been designed for HomeAssistant 2026.8 or greater.
-
-Needed for `live` mode only, since `api` mode only uses standard Home Assistant APIs.
 
 ## Future Developments
 
@@ -70,73 +67,9 @@ Note
 
 It is not intended to ever be a replacement for a Python debugger, although it may complement one. It also does not intend to replicate [PyScript](https://pyscript.net), instead focusing on standard python (PyScript uses MicroPython) even at expense of general usability or home assistance access, and not a general automation script execution service. For most non-developer cases, [homeassistant-cli](https://pypi.org/project/homeassistant-cli/) is a better choice, with pre-packaged access to devices, entities, services etc.
 
-## Quick Start
+## Agent Support
 
-Use the `api` mode with `uv` (traditional install also available via `pip install homeassistant-repl`).
-
-If Home Assistant available via `http://homeassistant.local:8123` then you can skip the `--server` argument. You will also need to create a [Long Lived Access Token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) by going to the personal settings on your Home Assistant mobile or desktop app.
-
-```bash
-uv run --with homeassistant-repl ha-repl --token <<<my long lived access token>>>
-```
-
-## Using the Shell
-
-The shell is a full Python REPL shell, with multi-line editing, history etc, living inside an asyncio loop that exposes the live Home Assistant instance as:
-
-- `obj` - the [Object Tree](https://homeassistant-repl.rhizomatics.org.uk/obj_tree/index.md) exposed as a dictionary object and common methods
-- `hass_api` - the Home Assistant web socket / REST API exposed using the [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) library
-
-In `live` mode it offers, in addition to what `api` mode offers:
-
-- `hass` - the `HomeAssistant` class at the root of the Python API
-- `sql` - [SQL access](https://homeassistant-repl.rhizomatics.org.uk/sql/index.md) to the Recorder databases
-
-So I can write code at the command line like:
-
-```python
->>> pir = obj["/rflink/binary_sensor/hall_pir"]
->>> pir.state = "on"  # non-strict mode, sets entity state with repl as context
-```
-
-The return value of the object is returned to the shell, value printed and available to Python code as `_`. Tracebacks are printed also, as if they were local (in general everything feels like its local)
-
-The `homeassistant-api` integration can be used like:
-
-```python
->>> len(hass_api.get_domain('cover'))
-12
-```
-
-Note
-
-The `hass_api` object returns `AsyncEntity` objects rather than `ApiEntity` objects - this is because it comes from a separate project, [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) that is focused solely on API development, whereas the `ApiEntity` class is designed for custom code development, being a subset of the real `Entity` in HomeAssistant, that you'd also get in `live` mode.
-
-See also [Alternative Integration](https://homeassistant-repl.rhizomatics.org.uk/alternative_integration/index.md) options for how to use this in your own plain python shell, ipython, Marimo or similar.
-
-## Starting the Shell
-
-Use the `HASS_SERVER` environment variable, exported or in a local `.env` file, or the `--server` command line argument if the Home Assistant server is not running locally at usual address( i.e. `http://homeassistant.local:8123`). A [long lived access token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) is needed at `--token` or in an `HASS_TOKEN` environment variable.
-
-The quickest way to run the shell is using *uv*, which you can do without cloning this repo or making any other downloads.
-
-```bash
-uv run --with homeassistant-repl ha-repl
-```
-
-Get help on the arguments in the usual way,
-
-```bash
-uv run --with homeassistant-repl ha-repl --help       ,
-```
-
-## Configuration
-
-All modes require a [Long Lived Access Token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) which can be provided via `HASS_TOKEN` enivironment variable, a `HASS_TOKEN=xxxx` line in an `.env` file, or the `--token` argument on `ha-repl`.
-
-The URL will default to `http://homeassistant.local:8123` or can be set using the `HASS_SERVER` enivironment variable, a `HASS_SERVER=xxxx` line in an `.env` file, or the `--server` argument on `ha-repl`.
-
-Note, although `homeassistant-api` itself has different env vars, when used within `ha-repl` it will be set up automatically using the same server and token as the main shell.
+For coding agents, there is [Exec Mode](https://homeassistant-repl.rhizomatics.org.uk/modes/exec_mode/index.md) and also a [marketplace skill](https://homeassistant-repl.rhizomatics.org.uk/modes/exec_mode/#agent-skill).
 
 ## Other Python REPLs
 
@@ -157,9 +90,9 @@ These are all current with Python v3, there are others like dreampie that didn't
 
 # Exec Mode
 
-`ha-repl exec` runs one snippet of Python against a running Home Assistant and exits. It is the non-interactive form of [live mode](https://homeassistant-repl.rhizomatics.org.uk/live_mode/index.md), and its main use is giving a coding agent a way to check its ideas against a real instance: read an entity's state, query the recorder, call a service, inspect an object, then decide what to do next.
+`ha-repl exec` runs one snippet of Python against a running Home Assistant and exits. It is the non-interactive form of [live mode](https://homeassistant-repl.rhizomatics.org.uk/modes/live_mode/index.md), and its main use is giving a coding agent a way to check its ideas against a real instance: read an entity's state, query the recorder, call a service, inspect an object, then decide what to do next.
 
-It needs the same server component as live mode - read the warnings on the [live mode](https://homeassistant-repl.rhizomatics.org.uk/live_mode/index.md) page first: an agent with `exec` can run any Python inside Home Assistant. Point it at a devcontainer or development instance, not the one running your house.
+It needs the same server component as live mode - read the warnings on the [live mode](https://homeassistant-repl.rhizomatics.org.uk/modes/live_mode/index.md) page first: an agent with `exec` can run any Python inside Home Assistant. Point it at a devcontainer or development instance, not the one running your house.
 
 ## Setup
 
@@ -170,7 +103,7 @@ export HASS_SERVER=http://homeassistant.local:8123
 export HASS_TOKEN=<long lived access token>
 ```
 
-Both can also go in a `.env` file in the directory the agent runs from. Then tell the agent the command exists, for example in its project instructions:
+Both can also go in a `.env` file in the directory the agent runs from, or the server can be one named in a [`config.toml`](https://homeassistant-repl.rhizomatics.org.uk/configuration/client_configuration/index.md), where a repo's `.ha-repl/config.toml` can set the default for everything run in that repo. [Plugins](https://homeassistant-repl.rhizomatics.org.uk/configuration/plugins/index.md) are run before the snippet, so helpers defined there are available to the agent; `--no-plugins` skips them. Then tell the agent the command exists, for example in its project instructions:
 
 ```markdown
 Use `ha-repl --json exec '<python>'` to run Python against the development
@@ -263,14 +196,14 @@ What `value` holds depends on where the last expression ran:
 
 ## What Runs Where
 
-A snippet is ordinary Python running in the `ha-repl` process, with whatever is installed there. Statements that use `hass` or `obj` are the exception: they are sent to Home Assistant and run inside it. The rules are the same as the interactive shell and are described in full under [What Runs Where](https://homeassistant-repl.rhizomatics.org.uk/live_mode/#what-runs-where). The points that matter most for a script:
+A snippet is ordinary Python running in the `ha-repl` process, with whatever is installed there. Statements that use `hass` or `obj` are the exception: they are sent to Home Assistant and run inside it. The rules are the same as the interactive shell and are described in full under [What Runs Where](https://homeassistant-repl.rhizomatics.org.uk/modes/live_mode/#what-runs-where). The points that matter most for a script:
 
 - `sql` and `hass_api` are local. A query's result is downloaded, and everything done with it afterwards happens locally.
 - Plain local data (strings, numbers, lists and dicts of them) and `sql` results can be used in a statement that runs inside Home Assistant. A `sql` result arrives there as a list of rows.
 - A variable assigned by a statement that used `hass` or `obj` comes back, and is local afterwards, if it holds plain data. Anything else stays inside Home Assistant, and later statements that use it run there too.
 - Don't use `sql` or `hass_api` in the same statement as `hass` or `obj` - it is refused. Assign one part on its own line first.
 
-[Mixing Both Sides](https://homeassistant-repl.rhizomatics.org.uk/live_mode/#mixing-both-sides) has the details and worked examples.
+[Mixing Both Sides](https://homeassistant-repl.rhizomatics.org.uk/modes/live_mode/#mixing-both-sides) has the details and worked examples.
 
 ## State Between Calls
 
@@ -322,16 +255,9 @@ A rejected query raises `SqlError`. Only a single `SELECT` statement is accepted
 
 Live mode is the most powerful, flexible and dangerous way to play around with Home Assistant. Use it with a devcontainer Home Assistant or development instance unless you really know what you're doing, and even then ...
 
-## Installation
+## Pre-requisites
 
-Install via [HACS](https://hacs.xyz):
-
-- it's not in the default HACS repository, so you'll have to add `https://github.com/rhizomatics/homeassistant-repl` as a Custom Repository from the top-right dot menu first
-- Search for *Home Assistant REPL* in the HACS menu and choose *Download*
-- Restart Home Assistant for it to recognize the new custom component available
-- From **Settings → Devices & services → Add integration** find **Home Assistant REPL Server** in the list and install, there's no further config needed
-- The component will quiz you first to make sure you know what you're doing
-- Alternatively add `ha_repl_server:` to `configuration.yaml`, which is imported as a config entry)
+See [Live Mode Server Install](https://homeassistant-repl.rhizomatics.org.uk/configuration/server_install/index.md)
 
 ## Using the Live REPL
 
@@ -489,7 +415,7 @@ shout(hass.states.get("sun.sun").state)
 
 ## One-Shot Snippets and Agents
 
-`ha-repl exec` runs a snippet exactly as the live shell would, then exits - see [Exec Mode](https://homeassistant-repl.rhizomatics.org.uk/exec_mode/index.md), which covers its JSON output and use by coding agents.
+`ha-repl exec` runs a snippet exactly as the live shell would, then exits - see [Exec Mode](https://homeassistant-repl.rhizomatics.org.uk/modes/exec_mode/index.md), which covers its JSON output and use by coding agents.
 
 ## Running from a clone/fork of this repo
 
@@ -783,6 +709,8 @@ asyncio.run(main())
 ```
 
 `obj` behaves identically to the one bound in the REPL - everything under The Object Tree below applies. `connect()` only gets you `api` mode (read-only, no `hass`); `live` mode's live object tree requires the `ha_repl_server` HACS component and talks to it over the same underlying `Client`, but isn't exposed as a standalone importable helper.
+
+`connect()` reads the same [`config.toml`](https://homeassistant-repl.rhizomatics.org.uk/configuration/client_configuration/index.md) as the CLI, so a server can be given by name - `await homeassistant_repl.connect("house")` - and the `default` server is used when no argument and no `HASS_SERVER` is given. Plugins belong to the shells, and are not run by `connect()`.
 
 By default the cached snapshot is reused for 30 seconds (`ttl=` to change that) and the websocket connection is left open for the life of the process; call `await obj.cache.refresh()` for a fresh snapshot on demand, or `await obj.cache.client.close()` when you're done with it if that matters for your script.
 

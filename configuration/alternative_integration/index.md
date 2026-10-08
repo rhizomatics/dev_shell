@@ -37,6 +37,8 @@ asyncio.run(main())
 
 `obj` behaves identically to the one bound in the REPL - everything under The Object Tree below applies. `connect()` only gets you `api` mode (read-only, no `hass`); `live` mode's live object tree requires the `ha_repl_server` HACS component and talks to it over the same underlying `Client`, but isn't exposed as a standalone importable helper.
 
+`connect()` reads the same [`config.toml`](https://homeassistant-repl.rhizomatics.org.uk/configuration/client_configuration/index.md) as the CLI, so a server can be given by name - `await homeassistant_repl.connect("house")` - and the `default` server is used when no argument and no `HASS_SERVER` is given. Plugins belong to the shells, and are not run by `connect()`.
+
 By default the cached snapshot is reused for 30 seconds (`ttl=` to change that) and the websocket connection is left open for the life of the process; call `await obj.cache.refresh()` for a fresh snapshot on demand, or `await obj.cache.client.close()` when you're done with it if that matters for your script.
 
 ## iPython Example

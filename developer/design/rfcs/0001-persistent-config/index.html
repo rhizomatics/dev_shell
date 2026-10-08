@@ -13,8 +13,10 @@
         <link rel="canonical" href="https://homeassistant-repl.rhizomatics.org.uk/developer/design/rfcs/0001-persistent-config/">
       
       
-        <link rel="prev" href="../../roadmap/">
+        <link rel="prev" href="../">
       
+      
+        <link rel="next" href="../../../../modes/">
       
       
         
@@ -32,7 +34,7 @@
     
     
       
-        <title>RFC 0001: Persistent Configuration and Startup Files - Home Assistant REPL</title>
+        <title>RFC 0001: Persistent Configuration and Plugins - Home Assistant REPL</title>
       
     
     
@@ -83,7 +85,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#rfc-0001-persistent-configuration-and-startup-files" class="md-skip">
+        <a href="#rfc-0001-persistent-configuration-and-plugins" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              RFC 0001: Persistent Configuration and Startup Files
+              RFC 0001: Persistent Configuration and Plugins
             
           </span>
         </div>
@@ -228,25 +230,6 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../../alternative_integration/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Alternative Integration
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
       <a href="../../../../changelog/" class="md-tabs__link">
         
   
@@ -285,44 +268,6 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../../exec_mode/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Exec Mode
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../../../../live_mode/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Live Mode
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
       <a href="../../../../obj_tree/" class="md-tabs__link">
         
   
@@ -330,6 +275,25 @@
     
   
   The Object Tree
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../quick_start/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quick Start
 
       </a>
     </li>
@@ -359,19 +323,63 @@
   
   
   
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../../configuration/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Configuration
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
     
   
   
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../../../coverage/" class="md-tabs__link">
+        <a href="../../../" class="md-tabs__link">
           
   
   
     
   
   Developer
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../../modes/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Modes
 
         </a>
       </li>
@@ -460,33 +468,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../alternative_integration/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Alternative Integration
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../../../changelog/" class="md-nav__link">
         
   
@@ -541,60 +522,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../exec_mode/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Exec Mode
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../../live_mode/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Live Mode
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../../../obj_tree/" class="md-nav__link">
         
   
@@ -603,6 +530,33 @@
     
   
     The Object Tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../quick_start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
   
 
     
@@ -646,12 +600,212 @@
       
   
   
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../configuration/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Configuration
+  
+
+          </label>
+          <ul class="md-nav__list">
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../configuration/alternative_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alternative Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../configuration/client_configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Client Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../configuration/plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plugins
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../configuration/server_install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
   
     
     
+      
+        
+          
+        
       
         
       
@@ -673,11 +827,12 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
         
           
-          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
-            
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
@@ -691,11 +846,17 @@
   
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_8" id="__nav_8_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_9">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -704,6 +865,8 @@
 
           </label>
           <ul class="md-nav__list">
+            
+              
             
               
                 
@@ -745,6 +908,10 @@
     
       
         
+          
+        
+      
+        
       
         
       
@@ -766,11 +933,12 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_9_2" id="__nav_9_2_label" tabindex="">
-            
+          <div class="md-nav__link md-nav__container">
+            <a href="../../" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
@@ -784,11 +952,17 @@
   
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_8_3" id="__nav_8_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_2_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_9_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -797,6 +971,8 @@
 
           </label>
           <ul class="md-nav__list">
+            
+              
             
               
                 
@@ -866,6 +1042,10 @@
     
       
         
+          
+        
+      
+        
       
     
     
@@ -880,11 +1060,12 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_2_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_3_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_9_2_3" id="__nav_9_2_3_label" tabindex="0">
-            
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
@@ -898,11 +1079,17 @@
   
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_8_3_4" id="__nav_8_3_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_9_2_3_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_9_2_3">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_8_3_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8_3_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -911,6 +1098,8 @@
 
           </label>
           <ul class="md-nav__list">
+            
+              
             
               
                 
@@ -935,7 +1124,7 @@
   <span class="md-ellipsis">
     
   
-    RFC 0001: Persistent Configuration and Startup Files
+    RFC 0001: Persistent Configuration and Plugins
   
 
     
@@ -953,7 +1142,7 @@
   <span class="md-ellipsis">
     
   
-    RFC 0001: Persistent Configuration and Startup Files
+    RFC 0001: Persistent Configuration and Plugins
   
 
     
@@ -1057,10 +1246,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#startup-files" class="md-nav__link">
+  <a href="#plugins" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Startup files
+        Plugins
       
     </span>
   </a>
@@ -1106,10 +1295,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#open-questions" class="md-nav__link">
+  <a href="#decisions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Open Questions
+        Decisions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#as-implemented" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        As Implemented
       
     </span>
   </a>
@@ -1147,6 +1347,172 @@
           </ul>
         </nav>
       
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../modes/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modes
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9" id="__nav_9_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Modes
+  
+
+          </label>
+          <ul class="md-nav__list">
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../modes/api_mode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../modes/exec_mode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exec Mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../modes/live_mode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Live Mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1202,7 +1568,7 @@
     
     
       <li class="md-path__item">
-        <a href="../../../coverage/" class="md-path__link">
+        <a href="../../../" class="md-path__link">
           
   <span class="md-ellipsis">
     Developer
@@ -1220,7 +1586,7 @@
     
     
       <li class="md-path__item">
-        <a href="../../design_principles/" class="md-path__link">
+        <a href="../../" class="md-path__link">
           
   <span class="md-ellipsis">
     Design
@@ -1238,7 +1604,7 @@
     
     
       <li class="md-path__item">
-        <a href="./" class="md-path__link">
+        <a href="../" class="md-path__link">
           
   <span class="md-ellipsis">
     Rfcs
@@ -1278,7 +1644,7 @@
   
 
 
-<h1 id="rfc-0001-persistent-configuration-and-startup-files">RFC 0001: Persistent Configuration and Startup Files<a class="headerlink" href="#rfc-0001-persistent-configuration-and-startup-files" title="Permanent link">&para;</a></h1>
+<h1 id="rfc-0001-persistent-configuration-and-plugins">RFC 0001: Persistent Configuration and Plugins<a class="headerlink" href="#rfc-0001-persistent-configuration-and-plugins" title="Permanent link">&para;</a></h1>
 <table>
 <thead>
 <tr>
@@ -1289,7 +1655,7 @@
 <tbody>
 <tr>
 <td>Status</td>
-<td>Draft, for discussion</td>
+<td>Accepted, implemented in 0.11.0 - see <a href="../../../../configuration/client_configuration/">Configuration</a> and <a href="../../../../configuration/plugins/">Plugins</a></td>
 </tr>
 <tr>
 <td>Date</td>
@@ -1305,7 +1671,7 @@
 <p>Add a configuration directory, <code>~/.config/ha-repl/</code>, holding two things:</p>
 <ul>
 <li><code>config.toml</code>, which names the Home Assistant servers you work with, so one can be picked by name</li>
-<li><code>startup/</code>, a directory of plain Python files run at the start of every session, for bookmarked expressions, helper functions and classes</li>
+<li><code>plugins/</code>, a directory of plain Python files run at the start of every session, for bookmarked expressions, helper functions and classes</li>
 </ul>
 <p>A repo can carry the same layout in a <code>.ha-repl/</code> directory, which is layered over the one in the home directory.</p>
 <p>Both mechanisms are borrowed: named servers from kubectl contexts and AWS profiles, and the startup directory from IPython. Everything that works today (<code>--server</code>, <code>--token</code>, <code>HASS_SERVER</code>, <code>HASS_TOKEN</code>, <code>.env</code>) keeps working and keeps its precedence.</p>
@@ -1321,13 +1687,13 @@
 <h3 id="where-configuration-lives">Where configuration lives<a class="headerlink" href="#where-configuration-lives" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>~/.config/ha-repl/              # $XDG_CONFIG_HOME/ha-repl if that is set
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  config.toml
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  startup/
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  plugins/
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    10-helpers.py
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    20-bookmarks.py
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>&lt;repo&gt;/.ha-repl/                # nearest one walking up from the working directory
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>  config.toml
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>  startup/
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>  plugins/
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    50-this-component.py
 </span></code></pre></div>
 <p><code>~/.config</code> is used on every platform, including macOS, as <code>git</code>, <code>gh</code> and <code>uv</code> do. It is the location dotfiles tools expect.</p>
@@ -1399,9 +1765,9 @@
 </ol>
 <p>When the server is given by name, the token comes from that server's entry unless <code>--token</code> is given. <code>HASS_TOKEN</code> is not mixed with a named server: pairing a token from the environment with a server from the config is the mistake this feature is meant to remove. If the named server has no usable token, that is an error.</p>
 <p>Inside a Home Assistant add-on, <code>SUPERVISOR_TOKEN</code> keeps its present behaviour when no server is given.</p>
-<h3 id="startup-files">Startup files<a class="headerlink" href="#startup-files" title="Permanent link">&para;</a></h3>
-<p>Every <code>*.py</code> file in <code>startup/</code> is run at the start of a session, home directory first and then the repo's, each in name order. A later file can redefine a name from an earlier one, so a repo can override a helper.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># ~/.config/ha-repl/startup/20-bookmarks.py</span>
+<h3 id="plugins">Plugins<a class="headerlink" href="#plugins" title="Permanent link">&para;</a></h3>
+<p>Every <code>*.py</code> file in <code>plugins/</code> is run at the start of a session, home directory first and then the repo's, each in name order. A later file can redefine a name from an earlier one, so a repo can override a helper.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># ~/.config/ha-repl/plugins/20-bookmarks.py</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dt</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">sensors</span> <span class="o">=</span> <span class="n">hass</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"entity_components"</span><span class="p">][</span><span class="s2">"sensor"</span><span class="p">]</span>
@@ -1414,23 +1780,23 @@
 </span></code></pre></div>
 <p>A file is run as though its contents had been typed at the prompt:</p>
 <ul>
-<li>In live mode the usual <a href="../../../../live_mode/#what-runs-where">What Runs Where</a> rules apply statement by statement. <code>stale</code> above uses <code>hass</code>, so it is defined inside Home Assistant; the <code>import</code> is local, and is repeated there because <code>stale</code> needs it.</li>
+<li>In live mode the usual <a href="../../../../modes/live_mode/#what-runs-where">What Runs Where</a> rules apply statement by statement. <code>stale</code> above uses <code>hass</code>, so it is defined inside Home Assistant; the <code>import</code> is local, and is repeated there because <code>stale</code> needs it.</li>
 <li>In <code>api</code> mode there is no <code>hass</code>. Defining <code>stale</code> works, since the name is only looked up when it is called, but the <code>sensors</code> line fails.</li>
 <li>A statement that fails is reported as a warning on standard error, naming the file and line, and the rest of the file and the remaining files still run. A session always starts.</li>
-<li>Nothing is echoed. The value of a bare expression in a startup file is discarded.</li>
+<li>Nothing is echoed. The value of a bare expression in a plugin is discarded.</li>
 </ul>
-<p>The interactive banner lists the files that were loaded. <code>--no-startup</code> skips them all.</p>
-<p>Startup files are also run by <code>ha-repl exec</code>, so a snippet and an agent see the same names as the interactive shell. With <code>--json</code>, a startup warning goes to standard error and does not appear in the JSON object.</p>
+<p>The interactive banner lists the files that were loaded. <code>--no-plugins</code> skips them all.</p>
+<p>Plugins are also run by <code>ha-repl exec</code>, so a snippet and an agent see the same names as the interactive shell. With <code>--json</code>, a plugin warning goes to standard error and does not appear in the JSON object.</p>
 <h3 id="use-from-other-python-contexts">Use from other Python contexts<a class="headerlink" href="#use-from-other-python-contexts" title="Permanent link">&para;</a></h3>
 <p><code>homeassistant_repl.connect()</code> reads the same <code>config.toml</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">obj</span> <span class="o">=</span> <span class="k">await</span> <span class="n">homeassistant_repl</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">"house"</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Startup files are ordinary Python with no special syntax, so the same file can be named in <code>PYTHONSTARTUP</code>, linked into IPython's own startup directory, or run with <code>exec(open(path).read())</code> in a notebook. Only the lines that use <code>hass</code> depend on live mode.</p>
+<p>Plugins are ordinary Python with no special syntax, so the same file can be named in <code>PYTHONSTARTUP</code>, linked into IPython's own startup directory, or run with <code>exec(open(path).read())</code> in a notebook. Only the lines that use <code>hass</code> depend on live mode.</p>
 <h2 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h2>
 <p>A repo's <code>.ha-repl/</code> directory is code and configuration that arrives with a clone. Left unchecked it could:</p>
 <ul>
-<li>run arbitrary Python locally, through a startup file</li>
-<li>run arbitrary Python inside whichever Home Assistant is the default, through a startup file that uses <code>hass</code></li>
+<li>run arbitrary Python locally, through a plugin</li>
+<li>run arbitrary Python inside whichever Home Assistant is the default, through a plugin that uses <code>hass</code></li>
 <li>run an arbitrary command, through <code>token_command</code></li>
 <li>point <code>default</code> at an address of its own choosing</li>
 </ul>
@@ -1445,23 +1811,37 @@
 <h2 id="alternatives-considered">Alternatives Considered<a class="headerlink" href="#alternatives-considered" title="Permanent link">&para;</a></h2>
 <p><strong>A separate <code>--profile</code> flag.</strong> <code>--server</code> would stay as a URL only, and <code>--profile NAME</code> would choose an entry. It is more explicit, but gives two flags that both say where to connect and a rule for what happens when both are given.</p>
 <p><strong>More <code>.env</code> files.</strong> <code>.env.house</code>, <code>.env.dev</code> and a flag to pick one. This is close to what exists, but it gives no home directory sharing, no place for startup code, and no way to keep a token out of the file.</p>
-<p><strong><code>[tool.ha-repl]</code> in <code>pyproject.toml</code>.</strong> Familiar from <code>ruff</code> and <code>uv</code>, and no new directory in the repo. It can't hold startup files, so a second location would be needed anyway, and not every component repo has a <code>pyproject.toml</code>.</p>
-<p><strong>A single startup file</strong>, as <code>PYTHONSTARTUP</code> has. Simpler, but a directory lets the home and repo sets be combined without one including the other, and lets chezmoi manage each file separately.</p>
+<p><strong><code>[tool.ha-repl]</code> in <code>pyproject.toml</code>.</strong> Familiar from <code>ruff</code> and <code>uv</code>, and no new directory in the repo. It can't hold plugins, so a second location would be needed anyway, and not every component repo has a <code>pyproject.toml</code>.</p>
+<p><strong>A single plugin file</strong>, as <code>PYTHONSTARTUP</code> has. Simpler, but a directory lets the home and repo sets be combined without one including the other, and lets chezmoi manage each file separately.</p>
 <p><strong>Bookmarks as data</strong>, for example a <code>[bookmarks]</code> table of name to expression. Easier to list and to validate, but it can't hold a function or a class, and it would be a format nothing else understands.</p>
 <p><strong>Storing bookmarks inside Home Assistant</strong>, in the server component. They would follow the instance, not the developer, and it adds state to the side of the design that is meant to stay small (see <a href="../../design_principles/">Design Principles</a>).</p>
-<h2 id="open-questions">Open Questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h2>
+<h2 id="decisions">Decisions<a class="headerlink" href="#decisions" title="Permanent link">&para;</a></h2>
+<p>The questions this document was circulated with, and how each was settled:</p>
 <ol>
-<li><strong><code>--server NAME|URL</code>, or a separate <code>--profile</code>?</strong> This document proposes the first.</li>
-<li><strong>Should <code>exec</code> run startup files by default?</strong> This document proposes yes, with <code>--no-startup</code>. It adds a round trip to Home Assistant for each file that uses <code>hass</code>, on every call.</li>
-<li><strong><code>.ha-repl/</code> directory, or a single <code>.ha-repl.toml</code>?</strong> This document proposes the directory, to match the home layout.</li>
-<li><strong>Is the trust step worth its cost?</strong> It is the largest piece of new code here. The alternatives are to document the risk, or to allow a repo <code>config.toml</code> but not repo startup files or <code>token_command</code>.</li>
-<li><strong>Should a server entry be able to refuse writes?</strong> For example <code>live = false</code> on the house instance, so that <code>live</code> and <code>exec</code> are refused against it by name. It would be a guard against a slip, not a security control.</li>
-<li><strong>Should startup files be able to tell which server and mode they are running against?</strong> For example <code>SERVER</code> and <code>MODE</code> variables, so one file can hold lines for live mode only. Left out for now.</li>
+<li><strong><code>--server NAME|URL</code>, or a separate <code>--profile</code>?</strong> <code>--server NAME|URL</code>.</li>
+<li><strong>Should <code>exec</code> run plugins by default?</strong> Yes, with <code>--no-plugins</code>. The cost is a round trip to Home Assistant for each statement that uses <code>hass</code>, on every call.</li>
+<li><strong><code>.ha-repl/</code> directory, or a single <code>.ha-repl.toml</code>?</strong> The directory, to match the home layout.</li>
+<li><strong>Is the trust step worth its cost?</strong> Yes. A repo directory is ignored until <code>ha-repl trust</code> has approved it.</li>
+<li><strong>Should a server entry be able to refuse writes?</strong> Not in this version.</li>
+<li><strong>Should plugins be able to tell which server and mode they are running against?</strong> Yes: <code>MODE</code> is <code>"live"</code>, <code>"exec"</code> or <code>"api"</code>, and <code>SERVER</code> is the configured server's name, or <code>None</code> when connected by URL.</li>
 </ol>
+<h2 id="as-implemented">As Implemented<a class="headerlink" href="#as-implemented" title="Permanent link">&para;</a></h2>
+<p>Points the design above left open, settled in the implementation:</p>
+<ul>
+<li>With <code>SUPERVISOR_TOKEN</code> set, the Supervisor is used whenever <code>--server</code> is not given, ahead of <code>HASS_SERVER</code> and <code>default</code>. This is what happened before.</li>
+<li>When the repo file gives a server a token by a different key than the home file did, the repo's replaces it, so a merged server never has two.</li>
+<li><code>default</code> must be the name of a configured server, not a URL.</li>
+<li>What a plugin prints goes to standard error along with its warnings, so <code>exec</code> output holds only the snippet's result.</li>
+<li>A warning names the line the failing top-level statement starts on.</li>
+<li>A plugin that can't be parsed is skipped whole, with one warning.</li>
+<li>Outside a git repository, the search for <code>.ha-repl/</code> carries on up to the filesystem root.</li>
+<li>Plugins were called startup files in the draft, with a <code>startup/</code> directory and a <code>--no-startup</code> flag.</li>
+<li><code>--auto-await</code> was added, so that <code>auto_await = false</code> in a file can be overridden for one run.</li>
+</ul>
 <h2 id="out-of-scope">Out of Scope<a class="headerlink" href="#out-of-scope" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Saving a variable or function from a running session into a startup file</li>
-<li>Startup files that apply to one named server only</li>
+<li>Saving a variable or function from a running session into a plugin</li>
+<li>Plugins that apply to one named server only</li>
 <li>Any change to the server component or its protocol</li>
 </ul>
 
