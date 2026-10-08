@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Python REPL Shell for Home Assistant Developers">
+        <meta name="description" content="These showcase simple examples of using basic Python object notation, along with comprenhensions, to get command line access to Home Assistant APIs and data.">
       
       
       
@@ -1273,6 +1273,7 @@
 
 
 <h1 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h1>
+<p>These showcase simple examples of using basic Python object notation, along with comprenhensions, to get command line access to Home Assistant APIs and data.</p>
 <h2 id="api-mode">API Mode<a class="headerlink" href="#api-mode" title="Permanent link">&para;</a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -1321,6 +1322,10 @@
 <p>More examples for <code>hass_api</code> at the <a href="https://homeassistantapi.readthedocs.io/en/stable/usage.html#services">homeassistant-api</a> docs.</p>
 </div>
 <h2 id="live-mode">Live Mode<a class="headerlink" href="#live-mode" title="Permanent link">&para;</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>These examples need the <a href="../live_mode/#install-local-home-assistant-with-the-live-server">Live Server</a> HACS component installed on a Home Assistant server.</p>
+</div>
 <h3 id="hass-object"><code>hass</code> object<a class="headerlink" href="#hass-object" title="Permanent link">&para;</a></h3>
 <h4 id="simple-entity-fetch">Simple entity fetch<a class="headerlink" href="#simple-entity-fetch" title="Permanent link">&para;</a></h4>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">hass</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sun.sun"</span><span class="p">)</span>  <span class="c1"># returns a `State` object</span>
