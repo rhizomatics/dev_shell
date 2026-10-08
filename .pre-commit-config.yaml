@@ -21,6 +21,10 @@ repos:
     rev: 0.12.23
     hooks:
       - id: uv-lock
+        # Lock as CI does, without ~/.config/uv/uv.toml: its settings (an
+        # `exclude-newer-package` entry, say) are otherwise written into
+        # uv.lock, which `uv sync --locked` then rejects anywhere else.
+        entry: env XDG_CONFIG_HOME=/dev/null uv lock
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.16.10
     hooks:
