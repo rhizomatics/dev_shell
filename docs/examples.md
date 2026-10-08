@@ -1,5 +1,7 @@
 # Examples
 
+These showcase simple examples of using basic Python object notation, along with comprenhensions, to get command line access to Home Assistant APIs and data.
+
 ## API Mode
 
 !!! note
@@ -69,6 +71,9 @@ hass_api.get_domain("switch").services.keys()
     More examples for `hass_api` at the [homeassistant-api](https://homeassistantapi.readthedocs.io/en/stable/usage.html#services) docs.
 
 ## Live Mode
+
+!!! note
+    These examples need the [Live Server](live_mode.md#install-local-home-assistant-with-the-live-server) HACS component installed on a Home Assistant server.
 
 ### `hass` object
 
