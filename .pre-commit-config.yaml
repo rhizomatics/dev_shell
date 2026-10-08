@@ -55,6 +55,7 @@ repos:
           - prompt_toolkit
           - niquests[ws]
           - homeassistant_api
+          - properdocs
           - types-PyYAML
           - types-Pygments
           - pytest_unordered

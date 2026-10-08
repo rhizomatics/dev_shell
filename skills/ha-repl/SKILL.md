@@ -16,7 +16,14 @@ devcontainer, unless the user has said the target instance is fine to change.
 - `ha-repl` must be on the path, or run it as `uv run --with homeassistant-repl ha-repl`.
   It needs Python 3.14.
 - `HASS_SERVER` and `HASS_TOKEN` must be set in the environment or in a `.env` file in the
-  working directory. If they are missing, ask the user; don't look for a token elsewhere.
+  working directory, or a default server set in `~/.config/ha-repl/config.toml` -
+  `ha-repl servers` lists what is configured. If none of these is there, ask the user; don't
+  look for a token elsewhere.
+- If `ha-repl` reports that it is ignoring a `.ha-repl` directory, tell the user. Don't run
+  `ha-repl trust` yourself: it approves code to run, which is the user's decision.
+- The user's plugins may define extra names. `MODE` and `SERVER` are also set: `MODE`
+  is `"exec"`, and `SERVER` is the name of the configured server in use, or `None`. A warning on standard error starting
+  `ha-repl: plugin:` comes from those files, not from the snippet.
 - `exec` needs the `ha_repl_server` custom component on the instance. If it isn't installed,
   `exec` exits with status `2`; see "Without the server component" below.
 - `ha-repl` and the server component should be the same version. Prior to v1.0.0 they are likely to be breaking changes and backward compatibility between server and client is not assured.
@@ -174,10 +181,10 @@ Each documentation page is available as Markdown:
 
 - Index of pages: <https://homeassistant-repl.rhizomatics.org.uk/llms.txt>
 - All pages in one file: <https://homeassistant-repl.rhizomatics.org.uk/llms-full.txt>
-- Exec mode: <https://homeassistant-repl.rhizomatics.org.uk/exec_mode/index.md>
+- Exec mode: <https://homeassistant-repl.rhizomatics.org.uk/modes/exec_mode/index.md>
 - What runs where, with worked examples of mixing local and Home Assistant code, and those that
-  are refused: <https://homeassistant-repl.rhizomatics.org.uk/live_mode/index.md>
+  are refused: <https://homeassistant-repl.rhizomatics.org.uk/modes/live_mode/index.md>
 - Object tree: <https://homeassistant-repl.rhizomatics.org.uk/obj_tree/index.md>
 - SQL access: <https://homeassistant-repl.rhizomatics.org.uk/sql/index.md>
 - Using the library from plain Python, ipython or Marimo:
-  <https://homeassistant-repl.rhizomatics.org.uk/alternative_integration/index.md>
+  <https://homeassistant-repl.rhizomatics.org.uk/configuration/alternative_integration.md>

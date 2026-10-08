@@ -4,8 +4,38 @@
     For live mode, generally the client and server component have to be on the same version. Different versions *might* work
     with each other for point releases
 
+# 0.11.0
+## ✨ Enhancements
+### Configuration
+- Servers can be named in `~/.config/ha-repl/config.toml` and chosen with `--server NAME` or `HASS_SERVER=NAME`, with `default` picking one when neither is given. `--server` still takes a URL
+  - A server's token comes from the file, from a command (`token_command`, for a secrets manager) or from a named environment variable (`token_env`)
+  - `HASS_TOKEN` is only used with a URL, never with a named server
+  - `ha-repl servers` lists the servers configured, without their tokens
+- Python files in `~/.config/ha-repl/plugins/` are run at the start of every session, including `ha-repl exec`, for helper functions and bookmarked expressions. `--no-plugins` skips them
+  - `MODE` (`"live"`, `"exec"` or `"api"`) and `SERVER` (the configured server's name) are set, so one file can adapt to where it is running
+- A repo can carry its own `.ha-repl/` directory, layered over the one in the home directory. It is ignored until allowed with `ha-repl trust`, and again whenever its contents change
+- `session`, `ttl` and `auto_await` can be given defaults in `config.toml`. `--auto-await` is new, to turn it back on for one run
+- `homeassistant_repl.connect()` accepts a server name, e.g. `connect("house")`
+- See the new *Configuration* and *Plugins* pages
+
+### API Mode
+- `ApiEntity` is closer to the real `Entity`, so more code works unchanged in both `api` and `live` mode
+  - `registry` is renamed `registry_entry`, and can be read by attribute as well as by key: `e.registry_entry.unique_id`
+  - `platform` is still the integration's name as a string, and also has `platform_name` and `domain`
+  - New properties with the real `Entity` names: `unique_id`, `available`, `enabled`, `device_class`, `unit_of_measurement`, `icon`, `entity_picture`, `supported_features`, `assumed_state`, `attribution`, `entity_category`, `has_entity_name` and `translation_key`
+  - The same applies to `obj.mode("api")` in live mode, so the server component needs updating too
+
+## 📚 Documentation
+- Reorganized 
+
 # 0.10.0
-## SQL
+## ✨ Enhancements
+### Help
+- `help()` on something local - `obj` in API mode, `sql` and its results, tables and rows - now gives a short summary of what it is for, its methods, properties and attributes, as it already did for objects inside Home Assistant. Special methods, inherited members, data descriptors and the method resolution order are left out
+- `help(thing, full=True)` gives Python's own full help page, on either side
+- `help(obj)` explains how to use the object tree
+- Type annotations in the summary are no longer shown in quotes
+### SQL
 - `sql.table("states")` returns the `Table` object for a single table, by name
 - `Table` objects have `class_name` and `description`, the name and docstring of the class the Recorder maps to the table, e.g. `States` and `State change history.`
 - Legacy columns - those Home Assistant marks `UNUSED_LEGACY_COLUMN`, still in a table but no longer written to - are now told apart
@@ -15,6 +45,9 @@
 - `show()` on a result no longer cuts off at 6 columns by default, so it shows the same columns as a row from `result[0]`. Use `max_cols` to cap them
 - Indexing a result with a row number, e.g. `sql("select count(*) from events")[0]`, returns a `Row` object - its values, readable by position or column name, with its column names and `Table`
 - `columns` and `column_names` on a `Table` object are now properties, not methods
+## 📚 Documentation
+- Added help on using `ha-repl` from the **Studio Code Server** and **Advanced SSH** Home Assistant apps (aka addons), and using `ttyd`
+- Lots more examples of how to use all the builtins
 
 # 0.9.0
 ## Live Server

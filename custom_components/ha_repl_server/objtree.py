@@ -62,7 +62,7 @@ from collections.abc import (
 )
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, Self
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import area_registry as ar
@@ -113,6 +113,48 @@ def _require_str(value: Any, what: str = "path") -> str:
     return value
 
 
+class ApiPlatform(str):  # noqa: FURB189 - has to be a real str: compared, printed, sent as JSON
+    """The integration an entity belongs to. A plain string - "mqtt" - that
+    can also be read the way a live entity's `platform` is, as
+    `platform.platform_name` and `platform.domain`, so the same expression
+    works on an ApiEntity and on a real Entity.
+
+    Duplicated from homeassistant_repl.api_objtree - see ApiEntity.
+    """
+
+    __slots__ = ("domain",)
+
+    domain: str
+
+    def __new__(cls, platform_name: str, domain: str) -> Self:
+        self = super().__new__(cls, platform_name)
+        self.domain = domain
+        return self
+
+    # So it can be copied and pickled - one more argument than str's own.
+    def __getnewargs__(self) -> tuple[str, str]:  # type: ignore[override]  # ty: ignore[invalid-method-override]
+        return (str(self), self.domain)
+
+    @property
+    def platform_name(self) -> str:
+        return str(self)
+
+
+class ApiRegistryEntry(dict[str, Any]):  # noqa: FURB189 - has to be a real dict, as above
+    """An entity's registry entry. A dict, that can also be read the way a
+    live entity's `registry_entry` is - `registry_entry.unique_id` - so the
+    same expression works on an ApiEntity and on a real Entity.
+
+    Duplicated from homeassistant_repl.api_objtree - see ApiEntity.
+    """
+
+    def __getattr__(self, name: str) -> Any:
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(name) from None
+
+
 @dataclass(frozen=True)
 class ApiEntity:
     """One entity's worth of `obj.mode("api")` data - the same read-only
@@ -124,7 +166,7 @@ class ApiEntity:
     """
 
     entity_id: str
-    platform: str
+    platform: ApiPlatform
     domain: str
     object_id: str
     state: str | None
@@ -132,7 +174,62 @@ class ApiEntity:
     state_attributes: dict[str, Any]
     area_id: str | None
     labels: frozenset[str]
-    registry: dict[str, Any]
+    registry_entry: ApiRegistryEntry
+
+    # The real Entity's own properties, as far as the state and registry
+    # entry can answer them - same names, so they read the same in either mode.
+
+    @property
+    def unique_id(self) -> str | None:
+        return self.registry_entry.get("unique_id")
+
+    @property
+    def available(self) -> bool:
+        return self.state not in (None, "unavailable")
+
+    @property
+    def enabled(self) -> bool:
+        return self.registry_entry.get("disabled_by") is None
+
+    @property
+    def device_class(self) -> str | None:
+        return self.state_attributes.get("device_class")
+
+    @property
+    def unit_of_measurement(self) -> str | None:
+        return self.state_attributes.get("unit_of_measurement")
+
+    @property
+    def icon(self) -> str | None:
+        return self.state_attributes.get("icon")
+
+    @property
+    def entity_picture(self) -> str | None:
+        return self.state_attributes.get("entity_picture")
+
+    @property
+    def supported_features(self) -> int | None:
+        return self.state_attributes.get("supported_features")
+
+    @property
+    def assumed_state(self) -> bool:
+        return bool(self.state_attributes.get("assumed_state", False))
+
+    @property
+    def attribution(self) -> str | None:
+        return self.state_attributes.get("attribution")
+
+    @property
+    def entity_category(self) -> str | None:
+        return self.registry_entry.get("entity_category")
+
+    @property
+    def has_entity_name(self) -> bool:
+        return bool(self.registry_entry.get("has_entity_name", False))
+
+    @property
+    def translation_key(self) -> str | None:
+        return self.registry_entry.get("translation_key")
 
 
 @dataclass
@@ -412,7 +509,7 @@ class ObjTree(Mapping[str, "Entity | ApiEntity | ObjTree"]):
         name = entity.name
         return ApiEntity(
             entity_id=entry.entity_id,
-            platform=entry.platform,
+            platform=ApiPlatform(entry.platform, domain),
             domain=domain,
             object_id=object_id,
             # Mirrors what /api/states actually publishes: both come back as
@@ -423,7 +520,7 @@ class ObjTree(Mapping[str, "Entity | ApiEntity | ObjTree"]):
             state_attributes=dict(entity.state_attributes or {}),
             area_id=_entity_area_id(entry, devices),
             labels=frozenset(entry.labels),
-            registry=_public_attrs(entry),
+            registry_entry=ApiRegistryEntry(_public_attrs(entry)),
         )
 
     def _entries(

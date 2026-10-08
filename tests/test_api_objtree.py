@@ -4,6 +4,8 @@ config/*_registry/list websocket commands actually return."""
 
 from __future__ import annotations
 
+import copy
+import json
 import re
 from typing import Any
 
@@ -320,3 +322,51 @@ async def test_reset_cache_marks_stale(tree: ApiObjTree):
     assert not tree.cache.is_stale()
     tree.reset_cache()
     assert tree.cache.is_stale()
+
+
+async def test_entity_reads_like_a_live_entity(tree: ApiObjTree):
+    """The spellings that work on a real Entity work here too."""
+    entity = tree["/hue/light/kitchen_lights"]
+    assert isinstance(entity, ApiEntity)
+
+    # platform: still the plain string, and the live EntityPlatform's attributes
+    assert entity.platform == "hue"
+    assert entity.platform.platform_name == "hue"
+    assert entity.platform.domain == "light"
+    assert json.dumps(entity.platform) == '"hue"'
+    assert copy.deepcopy(entity.platform).domain == "light"
+
+    # registry_entry: attribute access as on a RegistryEntry, and still a dict
+    entry = entity.registry_entry
+    assert entry.platform == entry["platform"] == "hue"
+    assert entity.unique_id == entry.get("unique_id")
+    with pytest.raises(AttributeError):
+        entry.no_such_field  # noqa: B018
+
+    assert entity.available is True
+    assert entity.enabled is True
+    assert entity.assumed_state is False
+    assert entity.device_class == entity.state_attributes.get("device_class")
+    assert entity.icon == entity.state_attributes.get("icon")
+
+
+async def test_entity_with_no_state_is_not_available():
+    cache = Cache(
+        FakeClient({
+            "get_states": [],
+            "config/entity_registry/list": [
+                {**ENTITY_REGISTRY[0], "disabled_by": "user"}
+            ],
+            "config/device_registry/list": DEVICE_REGISTRY,
+            "config/area_registry/list": AREA_REGISTRY,
+            "config/label_registry/list": LABEL_REGISTRY,
+        }),
+        ttl=30,
+    )
+    await cache.refresh()
+
+    [entity] = cache.entities.values()
+
+    assert entity.state is None
+    assert entity.available is False
+    assert entity.enabled is False

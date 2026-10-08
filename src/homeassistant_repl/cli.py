@@ -13,9 +13,16 @@
   ha-repl exec -f snippet.py                      run a file
   ha-repl exec - <<'EOF' ... EOF                  read the snippet from stdin
   ha-repl reset / ha-repl sessions                manage live-mode server-side sessions
+  ha-repl --server house live                     connect to a server named in config.toml
+  ha-repl servers                                 list the servers configured
+  ha-repl trust                                   allow this repo's .ha-repl directory
 
 Connection: HASS_SERVER (default http://homeassistant.local:8123), HASS_TOKEN, HASS_SESSION.
 Both HASS_SERVER/HASS_TOKEN also fall back to a `.env` file in the current directory, below real env vars.
+Configuration: ~/.config/ha-repl/config.toml names servers, so --server/HASS_SERVER can be a name
+as well as a URL, and `default` picks one when neither is given. Python files in
+~/.config/ha-repl/plugins/ run at the start of every session, exec included (--no-plugins skips them).
+A repo's own .ha-repl/ directory is layered over both, once allowed with `ha-repl trust`.
 API client mode: --ttl seconds before the cached snapshot is refreshed (default 30).
 Exit status of exec is 1 when the snippet raised, 2 on connection/usage errors.
 """
@@ -33,7 +40,17 @@ from typing import Any
 
 from rich.pretty import Pretty
 
-from .client import Client, HaReplError, resolve_token, resolve_url
+from .client import Client, HaReplError
+from .config import (
+    REPO_DIR,
+    Config,
+    Connection,
+    display_path,
+    find_repo_dir,
+    load_config,
+    resolve_connection,
+    trust,
+)
 from .local_session import console, error_console
 from .render import decode_value, remote_traceback
 
@@ -41,7 +58,7 @@ from .render import decode_value, remote_traceback
 def main() -> None:
     args = _parser().parse_args()
     try:
-        sys.exit(asyncio.run(_dispatch(args)))
+        sys.exit(_run(args))
     except HaReplError as err:
         print(f"ha-repl: {err}", file=sys.stderr)
         sys.exit(2)
@@ -55,23 +72,39 @@ def _parser() -> argparse.ArgumentParser:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--server", default=None, help="defaults to $HASS_SERVER")
-    parser.add_argument("--token", default=None, help="defaults to $HASS_TOKEN")
     parser.add_argument(
-        "-s", "--session", default=os.environ.get("HASS_SESSION", "default")
+        "--server",
+        default=None,
+        help="a server named in config.toml, or a URL; defaults to $HASS_SERVER, "
+        "then config.toml's `default`",
+    )
+    parser.add_argument(
+        "--token",
+        default=None,
+        help="defaults to the named server's own token, or $HASS_TOKEN for a URL",
+    )
+    parser.add_argument(
+        "-s",
+        "--session",
+        default=None,
+        help="defaults to $HASS_SESSION, then config.toml's `session`, then 'default'",
     )
     parser.add_argument("--json", action="store_true", help="print raw JSON results")
     parser.add_argument(
         "--ttl",
         type=float,
-        default=30.0,
+        default=None,
         help="API client mode: seconds before the cached snapshot is refreshed (default: 30)",
     )
     parser.add_argument(
-        "--no-auto-await",
-        action="store_true",
-        help="don't automatically await a call you forgot to `await` - "
-        "report it as an unawaited coroutine instead, as plain Python would",
+        "--auto-await",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="--no-auto-await: don't automatically await a call you forgot to "
+        "`await` - report it as an unawaited coroutine instead, as plain Python would",
+    )
+    parser.add_argument(
+        "--no-plugins", action="store_true", help="don't run the plugins"
     )
     sub = parser.add_subparsers(dest="command")
 
@@ -96,12 +129,75 @@ def _parser() -> argparse.ArgumentParser:
     )
     sub.add_parser("reset", help="discard the live-mode session's variables")
     sub.add_parser("sessions", help="list live-mode sessions on the server")
+    sub.add_parser("servers", help="list the servers named in config.toml")
+    sub.add_parser(
+        "trust", help=f"allow this repo's {REPO_DIR} directory, as it stands now"
+    )
     return parser
 
 
-async def _dispatch(args: argparse.Namespace) -> int:
-    url = resolve_url(args.server)
-    async with Client(url, resolve_token(args.token)) as client:
+def _run(args: argparse.Namespace) -> int:
+    if args.command == "trust":
+        return _trust()
+    config = load_config()
+    for warning in config.warnings:
+        print(f"ha-repl: {warning}", file=sys.stderr)
+    if args.command == "servers":
+        return _servers(args, config)
+
+    # Each setting: the flag, then (for the session) the environment, then
+    # config.toml, then the built-in default.
+    if args.session is None:
+        args.session = os.environ.get("HASS_SESSION") or config.session or "default"
+    if args.ttl is None:
+        args.ttl = 30.0 if config.ttl is None else float(config.ttl)
+    if args.auto_await is None:
+        args.auto_await = config.auto_await is not False
+    args.plugins = [] if args.no_plugins else config.plugins
+    connection = resolve_connection(args.server, args.token, config)
+    args.server_name = connection.name
+    return asyncio.run(_dispatch(args, connection))
+
+
+def _trust() -> int:
+    directory = find_repo_dir()
+    if directory is None:
+        raise HaReplError(f"no {REPO_DIR} directory here, or above in this repo")
+    files = trust(directory)
+    print(f"trusted {display_path(directory)}")
+    for path in files:
+        print(f"  {path.relative_to(directory).as_posix()}")
+    return 0
+
+
+def _servers(args: argparse.Namespace, config: Config) -> int:
+    """List the configured servers - where each token comes from, never the token."""
+    servers = list(config.servers.values())
+    if not servers:
+        text = "no servers configured"
+    else:
+        width = max(len(server.name) for server in servers)
+        text = "\n".join(
+            f"{'*' if server.name == config.default else ' '} "
+            f"{server.name:<{width}}  {server.url}"
+            f"  ({server.token_source or 'no token'})"
+            for server in servers
+        )
+    listing = [
+        {
+            "name": server.name,
+            "url": server.url,
+            "token_source": server.token_source,
+            "default": server.name == config.default,
+        }
+        for server in servers
+    ]
+    _emit(args, {"default": config.default, "servers": listing}, text)
+    return 0
+
+
+async def _dispatch(args: argparse.Namespace, connection: Connection) -> int:
+    async with Client(connection.url, connection.token) as client:
         match args.command:
             case "exec":
                 return await _exec(client, args)
@@ -117,13 +213,21 @@ async def _dispatch(args: argparse.Namespace) -> int:
                 from .repl import run_repl
 
                 return await run_repl(
-                    client, args.session, auto_await=not args.no_auto_await
+                    client,
+                    args.session,
+                    auto_await=args.auto_await,
+                    server_name=connection.name,
+                    plugins=args.plugins,
                 )
             case _:  # "api", or no subcommand at all - API client mode is the default
                 from .apirepl import run_api_repl
 
                 return await run_api_repl(
-                    client, args.ttl, auto_await=not args.no_auto_await
+                    client,
+                    args.ttl,
+                    auto_await=args.auto_await,
+                    server_name=connection.name,
+                    plugins=args.plugins,
                 )
 
 
@@ -141,6 +245,7 @@ async def _exec(client: Client, args: argparse.Namespace) -> int:
     if args.reset:
         await client.call("ha_repl_server/reset", session=args.session)
 
+    from .plugins import bind_context, run_plugins
     from .repl import Captured, connect_live
 
     # The same local-plus-server session the interactive shell uses, so a
@@ -150,10 +255,13 @@ async def _exec(client: Client, args: argparse.Namespace) -> int:
     live = await connect_live(
         client,
         args.session,
-        auto_await=not args.no_auto_await,
+        auto_await=args.auto_await,
         capture=capture,
         timeout=args.timeout,
     )
+    # So a snippet sees the same names the interactive shell would.
+    bind_context(live.local.globals_, "exec", args.server_name)
+    await run_plugins(args.plugins, live.run_quiet)
     start = time.perf_counter()
     try:
         ok = await asyncio.wait_for(live.run(code), args.timeout)

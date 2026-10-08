@@ -26,6 +26,7 @@ import io
 import json
 import sys
 import types
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -38,7 +39,9 @@ from rich.console import Console
 
 from .cli import display_options, print_result
 from .client import Client, HaReplError, client_version
+from .config import display_path
 from .local_session import LocalSession, format_error
+from .plugins import bind_context, run_plugins
 from .render import decode_value
 from .rest import hass_api
 from .sql import SqlResult, SqlRow, SqlTool
@@ -131,15 +134,16 @@ class LiveSession:
             if session["name"] == self.session_name:
                 self.remote_names = set(session["variables"]) - self._local_names()
 
-    async def run(self, source: str) -> bool:
+    async def run(self, source: str, *, echo: bool = True) -> bool:
         """Run source, stopping at the first statement that fails. Only the
-        final statement's value is echoed. Returns False on any failure."""
+        final statement's value is echoed, and not even that with `echo`
+        off. Returns False on any failure."""
         try:
             tree = ast.parse(source)
         except SyntaxError, ValueError:
-            return await self._run_local(source, echo=True)  # reports the error
+            return await self._run_local(source, echo=echo)  # reports the error
         if not tree.body:
-            return await self._run_local(source, echo=True)
+            return await self._run_local(source, echo=echo)
         lines = source.splitlines()
         body = tree.body
         whole = True
@@ -157,13 +161,26 @@ class LiveSession:
             )
             whole = False
             if chunk.remote:
-                ok = await self._run_remote(text, chunk.names, echo=not body)
+                ok = await self._run_remote(text, chunk.names, echo=echo and not body)
             else:
-                ok = await self._run_local(text, echo=not body)
+                ok = await self._run_local(text, echo=echo and not body)
                 self.remote_names -= chunk.names.assigned
             if not ok:
                 return False
         return True
+
+    async def run_quiet(self, source: str) -> dict[str, Any] | None:
+        """Run source the way a plugin's statement is run: no value
+        echoed, what it prints sent to stderr, and its error (None if it
+        worked) handed back rather than reported."""
+        outer, quiet = self.capture, Captured()
+        self.capture = quiet
+        try:
+            await self.run(source, echo=False)
+        finally:
+            self.capture = outer
+        sys.stderr.write(quiet.stdout)
+        return quiet.error
 
     def _next_chunk(self, body: list[ast.stmt]) -> _Chunk:
         """The leading statements of `body` that run together: a run of
@@ -472,7 +489,12 @@ async def connect_live(
 
 
 async def run_repl(
-    client: Client, session_name: str, *, auto_await: bool = True
+    client: Client,
+    session_name: str,
+    *,
+    auto_await: bool = True,
+    server_name: str | None = None,
+    plugins: Sequence[Path] = (),
 ) -> int:
     compiler = codeop.CommandCompiler()
     compiler.compiler.flags |= ast.PyCF_ALLOW_TOP_LEVEL_AWAIT
@@ -487,10 +509,14 @@ async def run_repl(
         server = "Live Server"
 
     live = await connect_live(client, session_name, auto_await=auto_await)
+    bind_context(live.local.globals_, "live", server_name)
+    loaded = await run_plugins(plugins, live.run_quiet)
     print(
         f"Live client v{client_version()} connected to {server} at HA API "
-        f"{client.url} (session {session_name!r}). Ctrl-D to exit.\n"
+        f"{banner_address(client.url, server_name)} (session {session_name!r}). "
+        "Ctrl-D to exit.\n"
         "Python runs locally; anything using `hass` or `obj` runs inside Home Assistant."
+        f"{banner_plugins(loaded)}"
     )
     lines: list[str] = []
     while True:
@@ -515,6 +541,18 @@ async def run_repl(
         if is_quit_call(source):
             return 0
         await live.run(source)
+
+
+def banner_address(url: str, server_name: str | None) -> str:
+    """Where a shell is connected, by name too if it was chosen by name."""
+    return f"{server_name} ({url})" if server_name else url
+
+
+def banner_plugins(loaded: Sequence[Path]) -> str:
+    """The banner's line listing the plugins run, if there were any."""
+    if not loaded:
+        return ""
+    return "\nPlugins: " + ", ".join(display_path(path) for path in loaded)
 
 
 def is_quit_call(source: str) -> bool:

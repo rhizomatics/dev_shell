@@ -55,7 +55,7 @@ Find me all the MQTT devices that are exposed to Alexa.
 [
     o.entity_id
     for o in obj.find(platform="mqtt")
-    if o.registry["options"].get("cloud.alexa", {}).get("should_expose", {})
+    if o.registry_entry.options.get("cloud.alexa", {}).get("should_expose", {})
 ]
 ```
 
@@ -73,7 +73,7 @@ hass_api.get_domain("switch").services.keys()
 ## Live Mode
 
 !!! note
-    These examples need the [Live Server](live_mode.md#install-local-home-assistant-with-the-live-server) HACS component installed on a Home Assistant server.
+    These examples need the [Live Server](modes/live_mode.md#install-local-home-assistant-with-the-live-server) HACS component installed on a Home Assistant server.
 
 ### `hass` object
 
@@ -111,6 +111,16 @@ sql.tables
 
 ```python
 sql("select count(*) from statistics").show()
+```
+
+#### Joins
+
+Get the textual event type when dumping events
+
+```python
+sql(
+    "select * from events e inner join event_types et on et.event_type_id=e.event_type_id"
+).show()
 ```
 
 #### Distinct field analysis 

@@ -4,6 +4,30 @@
     For live mode, generally the client and server component have to be on the same version. Different versions *might* work
     with each other for point releases
 
+# 0.11.0
+## ✨ Enhancements
+### Configuration
+- Servers can be named in `~/.config/ha-repl/config.toml` and chosen with `--server NAME` or `HASS_SERVER=NAME`, with `default` picking one when neither is given. `--server` still takes a URL
+  - A server's token comes from the file, from a command (`token_command`, for a secrets manager) or from a named environment variable (`token_env`)
+  - `HASS_TOKEN` is only used with a URL, never with a named server
+  - `ha-repl servers` lists the servers configured, without their tokens
+- Python files in `~/.config/ha-repl/plugins/` are run at the start of every session, including `ha-repl exec`, for helper functions and bookmarked expressions. `--no-plugins` skips them
+  - `MODE` (`"live"`, `"exec"` or `"api"`) and `SERVER` (the configured server's name) are set, so one file can adapt to where it is running
+- A repo can carry its own `.ha-repl/` directory, layered over the one in the home directory. It is ignored until allowed with `ha-repl trust`, and again whenever its contents change
+- `session`, `ttl` and `auto_await` can be given defaults in `config.toml`. `--auto-await` is new, to turn it back on for one run
+- `homeassistant_repl.connect()` accepts a server name, e.g. `connect("house")`
+- See the new *Configuration* and *Plugins* pages
+
+### API Mode
+- `ApiEntity` is closer to the real `Entity`, so more code works unchanged in both `api` and `live` mode
+  - `registry` is renamed `registry_entry`, and can be read by attribute as well as by key: `e.registry_entry.unique_id`
+  - `platform` is still the integration's name as a string, and also has `platform_name` and `domain`
+  - New properties with the real `Entity` names: `unique_id`, `available`, `enabled`, `device_class`, `unit_of_measurement`, `icon`, `entity_picture`, `supported_features`, `assumed_state`, `attribution`, `entity_category`, `has_entity_name` and `translation_key`
+  - The same applies to `obj.mode("api")` in live mode, so the server component needs updating too
+
+## 📚 Documentation
+- Reorganized and improved the configuration and installation
+
 # 0.10.0
 ## ✨ Enhancements
 ### Help

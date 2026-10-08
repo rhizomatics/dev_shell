@@ -10,7 +10,7 @@ package-lock.json
 .devcontainer/.venv
 junit/
 .real-env
-.env
+.*env
 
 .venv/
 .DS_Store

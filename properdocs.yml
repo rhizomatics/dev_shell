@@ -40,6 +40,8 @@ hooks:
   # heading anchors match GitHub (incl. non-ASCII), so translated README links work
   - docs_hooks/slugs.py
   - docs_hooks/llmstxt_hooks.py
+  # index pages can list a section that has sections of its own
+  - docs_hooks/pagetree_sections.py
   # the live mode page's examples, from the file the tests run them from
   - docs_hooks/blended_examples.py
 
@@ -75,12 +77,12 @@ plugins:
       sections:
         Start here:
           - index.md: Overview of what Home Assistant REPL does, api vs live mode, and getting started
-          - exec_mode.md: Running one-shot snippets with `ha-repl exec` - options, JSON output, exit codes, sessions and tips for coding agents
+          - modes/exec_mode.md: Running one-shot snippets with `ha-repl exec` - options, JSON output, exit codes, sessions and tips for coding agents
         Reference:
-          - live_mode.md: Installing the server component, the live shell, and which statements run locally or inside Home Assistant
+          - modes/live_mode.md: Installing the server component, the live shell, and which statements run locally or inside Home Assistant
           - obj_tree.md: The `obj` object tree - path and entity id lookup, `find()` filters and `show()`
           - sql.md: The `sql` object for querying the Recorder database, and its result and table objects
-          - alternative_integration.md: Using `homeassistant_repl.connect()` from plain Python, ipython or Marimo instead of the shell
+          - configuration/alternative_integration.md: Using `homeassistant_repl.connect()` from plain Python, ipython or Marimo instead of the shell
         Optional:
           - developer/design/design_principles.md: Design principles behind the client/server split
         # changelog and roadmap left out - old or planned behaviour an agent would take as current

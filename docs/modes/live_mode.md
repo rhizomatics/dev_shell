@@ -2,20 +2,13 @@
 
 Live mode is the most powerful, flexible and dangerous way to play around with Home Assistant. Use it with a devcontainer Home Assistant or development instance unless you really know what you're doing, and even then ...
 
-## Installation
+## Pre-requisites
 
-Install via [HACS](https://hacs.xyz):
-
- - it's not in the default HACS repository, so you'll have to add `https://github.com/rhizomatics/homeassistant-repl` as a Custom Repository from the top-right dot menu first
- - Search for *Home Assistant REPL* in the HACS menu and choose *Download*
- - Restart Home Assistant for it to recognize the new custom component available
- - From **Settings → Devices & services → Add integration** find **Home Assistant REPL Server** in the list and install, there's no further config needed
-   - The component will quiz you first to make sure you know what you're doing
-   - Alternatively add `ha_repl_server:` to `configuration.yaml`, which is imported as a config entry) 
+See [Live Mode Server Install](../configuration/server_install.md)
 
 ## Using the Live REPL
 
-![HACS Component Direct Access](./assets/screenshots/hacs_comp_live.png)
+![HACS Component Direct Access](../assets/screenshots/hacs_comp_live.png)
 
 Run `ha-repl` with the `live` argument
 
@@ -39,7 +32,7 @@ The live shell is an ordinary Python session on your own machine. Import whateve
 
 | Name | Where it lives |
 | ---- | -------------- |
-| `sql` | Local. Sends the query to Home Assistant, downloads the result as Arrow data, and gives you a local result object - see [SQL Access](sql.md) |
+| `sql` | Local. Sends the query to Home Assistant, downloads the result as Arrow data, and gives you a local result object - see [SQL Access](../sql.md) |
 | `hass_api` | Local. A REST API client |
 | `hass`, `obj` | Inside Home Assistant |
 

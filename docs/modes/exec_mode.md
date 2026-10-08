@@ -13,7 +13,7 @@ export HASS_SERVER=http://homeassistant.local:8123
 export HASS_TOKEN=<long lived access token>
 ```
 
-Both can also go in a `.env` file in the directory the agent runs from. Then tell the agent the command exists, for example in its project instructions:
+Both can also go in a `.env` file in the directory the agent runs from, or the server can be one named in a [`config.toml`](../configuration/client_configuration.md), where a repo's `.ha-repl/config.toml` can set the default for everything run in that repo. [Plugins](../configuration/plugins.md) are run before the snippet, so helpers defined there are available to the agent; `--no-plugins` skips them. Then tell the agent the command exists, for example in its project instructions:
 
 ```markdown
 Use `ha-repl --json exec '<python>'` to run Python against the development

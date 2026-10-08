@@ -46,6 +46,13 @@ async def test_mode_api_returns_dict_shaped_entity(obj: ObjTree):
     assert isinstance(entity, ApiEntity)
     assert entity.entity_id == "sensor.test_one"
     assert entity.platform == "test"
+    # ...and read as a live entity's would be
+    assert entity.platform.platform_name == "test"
+    assert entity.platform.domain == "sensor"
+    assert entity.registry_entry.platform == "test"
+    assert entity.unique_id == entity.registry_entry.unique_id
+    assert entity.available is True
+    assert entity.enabled is True
     assert entity.domain == "sensor"
     assert entity.object_id == "test_one"
     assert entity.state == "42"

@@ -17,6 +17,7 @@ from __future__ import annotations
 import ast
 import codeop
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 
 from prompt_toolkit import PromptSession
@@ -27,13 +28,21 @@ from pygments.lexers.python import PythonLexer
 from .api_objtree import ApiObjTree, Cache
 from .client import Client, HaReplError, client_version
 from .local_session import LocalSession
-from .repl import is_quit_call
+from .plugins import bind_context, local_runner, run_plugins
+from .repl import banner_address, banner_plugins, is_quit_call
 from .rest import hass_api
 
 HISTORY = Path.home() / ".ha_repl_api_history"
 
 
-async def run_api_repl(client: Client, ttl: float, *, auto_await: bool = True) -> int:
+async def run_api_repl(
+    client: Client,
+    ttl: float,
+    *,
+    auto_await: bool = True,
+    server_name: str | None = None,
+    plugins: Sequence[Path] = (),
+) -> int:
     cache = Cache(client, ttl)
     await cache.refresh()
     try:
@@ -51,9 +60,13 @@ async def run_api_repl(client: Client, ttl: float, *, auto_await: bool = True) -
     prompt: PromptSession[str] = PromptSession(
         history=FileHistory(str(HISTORY)), lexer=PygmentsLexer(PythonLexer)
     )
+    bind_context(session.globals_, "api", server_name)
+    loaded = await run_plugins(plugins, local_runner(session))
     print(
-        f"API connected to {client.url}. Client v{client_version()}. "
+        f"API connected to {banner_address(client.url, server_name)}. "
+        f"Client v{client_version()}. "
         "`obj` (read-only) and `hass_api` (REST client) - no `hass`. Ctrl-D to exit."
+        f"{banner_plugins(loaded)}"
     )
     lines: list[str] = []
     while True:

@@ -58,19 +58,17 @@ All of the above works with standard Home Assistant APIs, referred to as `api` m
 
 Home Assistant REPL also has an advanced `live` mode that taps directly into a live Home Assistant using an optional server component available via [HACS](http://hacs.xyz).
 
-## Live Mode
+Get started with a single line at [Quick Start](./quick_start.md)
 
-This mode requires a custom component to be installed on the target Home Assistant server via HACS, or use the supplied scripts to install on a local devcontainer. It adds:
+## Live and Exec Modes
+
+These modes require a custom component to be [installed](./configuration/server_install.md) on the target Home Assistant server via HACS, or use the supplied scripts to install on a local devcontainer. It adds:
 
 - Full access to the core Home Assistant Python API via `hass`
 - Read/write access to the actual objects, e.g. entities and their helpers
+- Agent friendly non-interactive mode using *Exec Mode*
 - A frisson of danger
 
-### HA REPL Server
-
-A HACS component that taps into the Home Assistant and acts as a session server over web sockets. It has been designed for HomeAssistant 2026.8 or greater.
-
-Needed for `live` mode only, since `api` mode only uses standard Home Assistant APIs.
 
 ## Future Developments
 
@@ -79,73 +77,9 @@ See the [Roadmap](./developer/design/roadmap.md) for where this might go, and yo
 !!! note
     It is not intended to ever be a replacement for a Python debugger, although it may complement one. It also does not intend to replicate [PyScript](https://pyscript.net), instead focusing on standard python (PyScript uses MicroPython) even at expense of general usability or home assistance access, and not a general automation script execution service. For most non-developer cases, [homeassistant-cli](https://pypi.org/project/homeassistant-cli/) is a better choice, with pre-packaged access to devices, entities, services etc.
 
-## Quick Start
+## Agent Support
 
-Use the `api` mode with `uv` (traditional install also available via `pip install homeassistant-repl`).
-
-If Home Assistant available via `http://homeassistant.local:8123` then you can skip the `--server` argument. You will also need to create a [Long Lived Access Token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) by going to the personal settings on your Home Assistant mobile or desktop app.
-
-```bash
-uv run --with homeassistant-repl ha-repl --token <<<my long lived access token>>>
-```
-
-## Using the Shell
-
-The shell is a full Python REPL shell, with multi-line editing, history etc, living inside an asyncio loop that exposes the live Home Assistant instance as:
-
-* `obj` - the [Object Tree](./obj_tree.md) exposed as a dictionary object and common methods
-* `hass_api` - the Home Assistant web socket / REST API exposed using the [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) library
-
-In `live` mode it offers, in addition to what `api` mode offers:
-
-* `hass` - the `HomeAssistant` class at the root of the Python API
-* `sql`  - [SQL access](./sql.md) to the Recorder databases
-
-So I can write code at the command line like:
-
-```python
->>> pir = obj["/rflink/binary_sensor/hall_pir"]
->>> pir.state = "on"  # non-strict mode, sets entity state with repl as context
-```
-
-The return value of the object is returned to the shell, value printed and available to Python code as `_`. Tracebacks are printed also, as if they were local (in general everything feels like its local)
-
-The `homeassistant-api` integration can be used like:
-
-```python
->>> len(hass_api.get_domain('cover'))
-12
-```
-
-!!! note
-    The `hass_api` object returns `AsyncEntity` objects rather than `ApiEntity` objects - this is because it comes from a separate project, [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) that is focused solely on API development, whereas the `ApiEntity` class is designed for custom code development, being a subset of the real `Entity` in HomeAssistant, that you'd also get in `live` mode.
-
-See also [Alternative Integration](alternative_integration.md) options for how to use this in your own plain python shell, ipython, Marimo or similar.
-
-
-
-## Starting the Shell
-
-Use the `HASS_SERVER` environment variable, exported or in a local `.env` file, or the `--server` command line argument if the Home Assistant server is not running locally at usual address( i.e. `http://homeassistant.local:8123`). A [long lived access token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) is needed at `--token` or in an `HASS_TOKEN` environment variable.
-
-The quickest way to run the shell is using *uv*, which you can do without cloning this repo or making any other downloads.
-
-```bash
-uv run --with homeassistant-repl ha-repl         
-```
-Get help on the arguments in the usual way,
-
-```bash
-uv run --with homeassistant-repl ha-repl --help       ,
-```
-
-## Configuration
-
-All modes require a [Long Lived Access Token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) which can be provided via `HASS_TOKEN` enivironment variable, a `HASS_TOKEN=xxxx` line in an `.env` file, or the `--token` argument on `ha-repl`.
-
-The URL will default to `http://homeassistant.local:8123` or can be set using the `HASS_SERVER` enivironment variable, a `HASS_SERVER=xxxx` line in an `.env` file, or the `--server` argument on `ha-repl`.
-
-Note, although `homeassistant-api` itself has different env vars, when used within `ha-repl` it will be set up automatically using the same server and token as the main shell.
+For coding agents, there is [Exec Mode](./modes/exec_mode.md) and also a [marketplace skill](./modes/exec_mode.md#agent-skill).
 
 ## Other Python REPLs
 

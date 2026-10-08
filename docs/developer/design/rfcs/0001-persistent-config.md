@@ -1,8 +1,8 @@
-# RFC 0001: Persistent Configuration and Startup Files
+# RFC 0001: Persistent Configuration and Plugins
 
 | | |
 | --- | --- |
-| Status | Draft, for discussion |
+| Status | Accepted, implemented in 0.11.0 - see [Configuration](../../../configuration/client_configuration.md) and [Plugins](../../../configuration/plugins.md) |
 | Date | 2026-10-07 |
 | Affects | `ha-repl` command, `homeassistant_repl.connect()`. No change to the server component |
 
@@ -11,7 +11,7 @@
 Add a configuration directory, `~/.config/ha-repl/`, holding two things:
 
 - `config.toml`, which names the Home Assistant servers you work with, so one can be picked by name
-- `startup/`, a directory of plain Python files run at the start of every session, for bookmarked expressions, helper functions and classes
+- `plugins/`, a directory of plain Python files run at the start of every session, for bookmarked expressions, helper functions and classes
 
 A repo can carry the same layout in a `.ha-repl/` directory, which is layered over the one in the home directory.
 
@@ -34,13 +34,13 @@ The configuration should also be easy to keep in a dotfiles manager such as chez
 ```
 ~/.config/ha-repl/              # $XDG_CONFIG_HOME/ha-repl if that is set
   config.toml
-  startup/
+  plugins/
     10-helpers.py
     20-bookmarks.py
 
 <repo>/.ha-repl/                # nearest one walking up from the working directory
   config.toml
-  startup/
+  plugins/
     50-this-component.py
 ```
 
@@ -116,12 +116,12 @@ When the server is given by name, the token comes from that server's entry unles
 
 Inside a Home Assistant add-on, `SUPERVISOR_TOKEN` keeps its present behaviour when no server is given.
 
-### Startup files
+### Plugins
 
-Every `*.py` file in `startup/` is run at the start of a session, home directory first and then the repo's, each in name order. A later file can redefine a name from an earlier one, so a repo can override a helper.
+Every `*.py` file in `plugins/` is run at the start of a session, home directory first and then the repo's, each in name order. A later file can redefine a name from an earlier one, so a repo can override a helper.
 
 ```python
-# ~/.config/ha-repl/startup/20-bookmarks.py
+# ~/.config/ha-repl/plugins/20-bookmarks.py
 import datetime as dt
 
 sensors = hass.data["entity_components"]["sensor"]
@@ -135,14 +135,14 @@ def stale(hours=24):
 
 A file is run as though its contents had been typed at the prompt:
 
-- In live mode the usual [What Runs Where](../../../live_mode.md#what-runs-where) rules apply statement by statement. `stale` above uses `hass`, so it is defined inside Home Assistant; the `import` is local, and is repeated there because `stale` needs it.
+- In live mode the usual [What Runs Where](../../../modes/live_mode.md#what-runs-where) rules apply statement by statement. `stale` above uses `hass`, so it is defined inside Home Assistant; the `import` is local, and is repeated there because `stale` needs it.
 - In `api` mode there is no `hass`. Defining `stale` works, since the name is only looked up when it is called, but the `sensors` line fails.
 - A statement that fails is reported as a warning on standard error, naming the file and line, and the rest of the file and the remaining files still run. A session always starts.
-- Nothing is echoed. The value of a bare expression in a startup file is discarded.
+- Nothing is echoed. The value of a bare expression in a plugin is discarded.
 
-The interactive banner lists the files that were loaded. `--no-startup` skips them all.
+The interactive banner lists the files that were loaded. `--no-plugins` skips them all.
 
-Startup files are also run by `ha-repl exec`, so a snippet and an agent see the same names as the interactive shell. With `--json`, a startup warning goes to standard error and does not appear in the JSON object.
+Plugins are also run by `ha-repl exec`, so a snippet and an agent see the same names as the interactive shell. With `--json`, a plugin warning goes to standard error and does not appear in the JSON object.
 
 ### Use from other Python contexts
 
@@ -152,14 +152,14 @@ Startup files are also run by `ha-repl exec`, so a snippet and an agent see the 
 obj = await homeassistant_repl.connect("house")
 ```
 
-Startup files are ordinary Python with no special syntax, so the same file can be named in `PYTHONSTARTUP`, linked into IPython's own startup directory, or run with `exec(open(path).read())` in a notebook. Only the lines that use `hass` depend on live mode.
+Plugins are ordinary Python with no special syntax, so the same file can be named in `PYTHONSTARTUP`, linked into IPython's own startup directory, or run with `exec(open(path).read())` in a notebook. Only the lines that use `hass` depend on live mode.
 
 ## Security
 
 A repo's `.ha-repl/` directory is code and configuration that arrives with a clone. Left unchecked it could:
 
-- run arbitrary Python locally, through a startup file
-- run arbitrary Python inside whichever Home Assistant is the default, through a startup file that uses `hass`
+- run arbitrary Python locally, through a plugin
+- run arbitrary Python inside whichever Home Assistant is the default, through a plugin that uses `hass`
 - run an arbitrary command, through `token_command`
 - point `default` at an address of its own choosing
 
@@ -183,25 +183,41 @@ Tokens are never printed, by `ha-repl servers` or in error messages. A `config.t
 
 **More `.env` files.** `.env.house`, `.env.dev` and a flag to pick one. This is close to what exists, but it gives no home directory sharing, no place for startup code, and no way to keep a token out of the file.
 
-**`[tool.ha-repl]` in `pyproject.toml`.** Familiar from `ruff` and `uv`, and no new directory in the repo. It can't hold startup files, so a second location would be needed anyway, and not every component repo has a `pyproject.toml`.
+**`[tool.ha-repl]` in `pyproject.toml`.** Familiar from `ruff` and `uv`, and no new directory in the repo. It can't hold plugins, so a second location would be needed anyway, and not every component repo has a `pyproject.toml`.
 
-**A single startup file**, as `PYTHONSTARTUP` has. Simpler, but a directory lets the home and repo sets be combined without one including the other, and lets chezmoi manage each file separately.
+**A single plugin file**, as `PYTHONSTARTUP` has. Simpler, but a directory lets the home and repo sets be combined without one including the other, and lets chezmoi manage each file separately.
 
 **Bookmarks as data**, for example a `[bookmarks]` table of name to expression. Easier to list and to validate, but it can't hold a function or a class, and it would be a format nothing else understands.
 
 **Storing bookmarks inside Home Assistant**, in the server component. They would follow the instance, not the developer, and it adds state to the side of the design that is meant to stay small (see [Design Principles](../design_principles.md)).
 
-## Open Questions
+## Decisions
 
-1. **`--server NAME|URL`, or a separate `--profile`?** This document proposes the first.
-2. **Should `exec` run startup files by default?** This document proposes yes, with `--no-startup`. It adds a round trip to Home Assistant for each file that uses `hass`, on every call.
-3. **`.ha-repl/` directory, or a single `.ha-repl.toml`?** This document proposes the directory, to match the home layout.
-4. **Is the trust step worth its cost?** It is the largest piece of new code here. The alternatives are to document the risk, or to allow a repo `config.toml` but not repo startup files or `token_command`.
-5. **Should a server entry be able to refuse writes?** For example `live = false` on the house instance, so that `live` and `exec` are refused against it by name. It would be a guard against a slip, not a security control.
-6. **Should startup files be able to tell which server and mode they are running against?** For example `SERVER` and `MODE` variables, so one file can hold lines for live mode only. Left out for now.
+The questions this document was circulated with, and how each was settled:
+
+1. **`--server NAME|URL`, or a separate `--profile`?** `--server NAME|URL`.
+2. **Should `exec` run plugins by default?** Yes, with `--no-plugins`. The cost is a round trip to Home Assistant for each statement that uses `hass`, on every call.
+3. **`.ha-repl/` directory, or a single `.ha-repl.toml`?** The directory, to match the home layout.
+4. **Is the trust step worth its cost?** Yes. A repo directory is ignored until `ha-repl trust` has approved it.
+5. **Should a server entry be able to refuse writes?** Not in this version.
+6. **Should plugins be able to tell which server and mode they are running against?** Yes: `MODE` is `"live"`, `"exec"` or `"api"`, and `SERVER` is the configured server's name, or `None` when connected by URL.
+
+## As Implemented
+
+Points the design above left open, settled in the implementation:
+
+- With `SUPERVISOR_TOKEN` set, the Supervisor is used whenever `--server` is not given, ahead of `HASS_SERVER` and `default`. This is what happened before.
+- When the repo file gives a server a token by a different key than the home file did, the repo's replaces it, so a merged server never has two.
+- `default` must be the name of a configured server, not a URL.
+- What a plugin prints goes to standard error along with its warnings, so `exec` output holds only the snippet's result.
+- A warning names the line the failing top-level statement starts on.
+- A plugin that can't be parsed is skipped whole, with one warning.
+- Outside a git repository, the search for `.ha-repl/` carries on up to the filesystem root.
+- Plugins were called startup files in the draft, with a `startup/` directory and a `--no-startup` flag.
+- `--auto-await` was added, so that `auto_await = false` in a file can be overridden for one run.
 
 ## Out of Scope
 
-- Saving a variable or function from a running session into a startup file
-- Startup files that apply to one named server only
+- Saving a variable or function from a running session into a plugin
+- Plugins that apply to one named server only
 - Any change to the server component or its protocol
