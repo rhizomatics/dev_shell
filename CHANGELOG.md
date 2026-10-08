@@ -4,6 +4,10 @@
     For live mode, generally the client and server component have to be on the same version. Different versions *might* work
     with each other for point releases
 
+# 0.11.2
+## 🐛 Fixes
+- `uv.lock` rebuilt for release
+
 # 0.11.1
 ## 🐛 Fixes
 ### Live Mode
