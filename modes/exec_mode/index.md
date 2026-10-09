@@ -158,4 +158,5 @@ A rejected query raises `SqlError`. Only a single `SELECT` statement is accepted
 - Always set `-t`. A snippet that waits on something that never happens otherwise blocks forever.
 - Keep `max_rows` small while exploring. The default is 1000 rows; `sql.tables` lists the tables and their columns without running a query.
 - Prefer reading to writing. `hass.states.get(...)`, `obj[...]` and `sql(...)` are safe to repeat; service calls and direct changes to `hass` objects take effect immediately on the instance.
+- `show(thing)` as the last expression gives an object's attributes and their values, cut down to a readable size - see [Looking Inside Objects](https://homeassistant-repl.rhizomatics.org.uk/modes/live_mode/#looking-inside-objects). With `--json` it comes back in `value` as text.
 - `help(thing)` prints a summary of an object's methods and properties, which is often quicker than reading the source. `help(thing, full=True)` gives Python's own full help page instead.

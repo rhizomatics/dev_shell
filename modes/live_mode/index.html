@@ -1380,6 +1380,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#looking-inside-objects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Looking Inside Objects
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#mixing-both-sides" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1717,6 +1728,62 @@
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="s1">'below_horizon'</span>
 </span></code></pre></div>
 <p>The decision is made per statement, so several lines pasted or run together can use both sides.</p>
+<h2 id="looking-inside-objects">Looking Inside Objects<a class="headerlink" href="#looking-inside-objects" title="Permanent link">&para;</a></h2>
+<p>Most of what <code>hass</code> holds - the config, a registry, an entity, a config entry - prints as little more than its class name, since the object itself can't leave Home Assistant. <code>show()</code> looks inside one, and prints its attributes and their values in colour, one to a line:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">show</span><span class="p">(</span><span class="n">hass</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">Config</span><span class="p">(</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">all_components</span><span class="o">=</span><span class="p">{</span><span class="s1">'websocket_api'</span><span class="p">,</span> <span class="s1">'recorder'</span><span class="p">,</span> <span class="s1">'http'</span><span class="p">,</span> <span class="s1">'ha_repl_server'</span><span class="p">,</span> <span class="o">...</span> <span class="o">+</span><span class="mi">96</span><span class="p">},</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">config_dir</span><span class="o">=</span><span class="s1">'/config'</span><span class="p">,</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">country</span><span class="o">=</span><span class="s1">'GB'</span><span class="p">,</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="o">...</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">units</span><span class="o">=&lt;</span><span class="n">homeassistant</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">unit_system</span><span class="o">.</span><span class="n">UnitSystem</span> <span class="nb">object</span> <span class="n">at</span> <span class="mh">0x7f1c2a3d4e60</span><span class="o">&gt;</span><span class="p">,</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">version</span><span class="o">=</span><span class="s1">'2026.10.1'</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="p">)</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">show</span><span class="p">(</span><span class="n">hass</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sun.sun"</span><span class="p">))</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">show</span><span class="p">(</span><span class="n">obj</span><span class="p">[</span><span class="s2">"sensor.outside_temperature"</span><span class="p">],</span> <span class="n">private</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">show</span><span class="p">(</span><span class="n">hass</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>    <span class="c1"># opens up `units` and the other objects inside it too</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">show</span><span class="p">(</span><span class="n">hass</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">max_items</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+</span></code></pre></div>
+<p>It shows what the object is now: properties are read, as that is where much of an object's state is. Names starting with an underscore, and methods, are left out unless asked for.</p>
+<p>Anything enormous is cut short, with a note of how much was left out, so it is safe to point at <code>hass.data</code> or a registry.</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>private</code></td>
+<td><code>False</code></td>
+<td>Include names starting with a single underscore</td>
+</tr>
+<tr>
+<td><code>methods</code></td>
+<td><code>False</code></td>
+<td>List methods too, each with its signature</td>
+</tr>
+<tr>
+<td><code>depth</code></td>
+<td><code>1</code></td>
+<td>How many levels are opened up: with <code>1</code>, the object's attributes and what is in any list or dict among them; with <code>2</code>, the attributes of the objects it holds as well</td>
+</tr>
+<tr>
+<td><code>max_items</code></td>
+<td><code>30</code></td>
+<td>Items shown of a list, dict or set, the rest counted as <code>... +N</code></td>
+</tr>
+<tr>
+<td><code>max_string</code></td>
+<td><code>200</code></td>
+<td>Characters shown of a string, or of an object's own text, the rest counted as <code>+N</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>show()</code> gives its picture of the object as a value, so it is displayed when it is the last thing on the line or in a snippet, like any other value. Use <code>help()</code> for what an object can do, and <code>show()</code> for what it holds.</p>
+<p>It works on local objects as well, such as a <code>sql</code> result or something of your own.</p>
 <h2 id="mixing-both-sides">Mixing Both Sides<a class="headerlink" href="#mixing-both-sides" title="Permanent link">&para;</a></h2>
 <p>The two sides are separate Python sessions, and the shell does a small amount of work to let a statement on one side use a value from the other. Treat it as a convenience for simple cases rather than something to build on: it is deliberately limited, and anything it can't do is refused rather than attempted.</p>
 <p>What it does:</p>
@@ -1732,79 +1799,79 @@
 <h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
 <h4 id="entity-names-from-obj-used-locally">Entity names from <code>obj</code>, used locally<a class="headerlink" href="#entity-names-from-obj-used-locally" title="Permanent link">&para;</a></h4>
 <p>What <code>find_names()</code> and <code>find_paths()</code> return comes back, so the next statement can go through it with anything local - here, the REST client.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">names</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">find_names</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="s2">"light"</span><span class="p">)</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="p">{</span><span class="n">n</span><span class="p">:</span> <span class="n">hass_api</span><span class="o">.</span><span class="n">get_state</span><span class="p">(</span><span class="n">entity_id</span><span class="o">=</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">state</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span><span class="p">}</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">names</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">find_names</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="s2">"light"</span><span class="p">)</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="p">{</span><span class="n">n</span><span class="p">:</span> <span class="n">hass_api</span><span class="o">.</span><span class="n">get_state</span><span class="p">(</span><span class="n">entity_id</span><span class="o">=</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">state</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span><span class="p">}</span>
 </span></code></pre></div>
 <p>Runs inside Home Assistant, then locally.</p>
 <h4 id="tree-paths-from-obj-filtered-locally">Tree paths from <code>obj</code>, filtered locally<a class="headerlink" href="#tree-paths-from-obj-filtered-locally" title="Permanent link">&para;</a></h4>
 <p>Once the paths are back, going through them is ordinary local Python.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">paths</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">find_paths</span><span class="p">(</span><span class="s2">"/demo"</span><span class="p">)</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nb">sorted</span><span class="p">(</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">paths</span> <span class="k">if</span> <span class="s2">"kitchen"</span> <span class="ow">in</span> <span class="n">p</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">paths</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">find_paths</span><span class="p">(</span><span class="s2">"/demo"</span><span class="p">)</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nb">sorted</span><span class="p">(</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">paths</span> <span class="k">if</span> <span class="s2">"kitchen"</span> <span class="ow">in</span> <span class="n">p</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Runs inside Home Assistant, then locally.</p>
 <h4 id="a-local-list-used-inside-home-assistant">A local list, used inside Home Assistant<a class="headerlink" href="#a-local-list-used-inside-home-assistant" title="Permanent link">&para;</a></h4>
 <p>Plain local data is copied over before the statement that needs it.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">wanted</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"light.kitchen"</span><span class="p">,</span> <span class="s2">"sun.sun"</span><span class="p">]</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="p">{</span><span class="n">n</span><span class="p">:</span> <span class="n">hass</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">state</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">wanted</span><span class="p">}</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">wanted</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"light.kitchen"</span><span class="p">,</span> <span class="s2">"sun.sun"</span><span class="p">]</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="p">{</span><span class="n">n</span><span class="p">:</span> <span class="n">hass</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">state</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">wanted</span><span class="p">}</span>
 </span></code></pre></div>
 <p>Runs locally, then inside Home Assistant.</p>
 <h4 id="a-number-worked-out-inside-home-assistant">A number worked out inside Home Assistant<a class="headerlink" href="#a-number-worked-out-inside-home-assistant" title="Permanent link">&para;</a></h4>
 <p>Numbers and strings come back just as lists of them do.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">hass</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">async_all</span><span class="p">())</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">count</span> <span class="o">*</span> <span class="mi">2</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">hass</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">async_all</span><span class="p">())</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">count</span> <span class="o">*</span> <span class="mi">2</span>
 </span></code></pre></div>
 <p>Runs inside Home Assistant, then locally.</p>
 <h4 id="rows-from-sql-looked-up-in-hass">Rows from <code>sql</code>, looked up in <code>hass</code><a class="headerlink" href="#rows-from-sql-looked-up-in-hass" title="Permanent link">&para;</a></h4>
 <p>A <code>sql</code> result is local, and crosses as its rows - a list of lists - when a statement inside Home Assistant loops over it.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">r</span> <span class="o">=</span> <span class="n">sql</span><span class="p">(</span><span class="s2">"select entity_id from states_meta"</span><span class="p">)</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="p">{</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">hass</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">state</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">r</span><span class="p">}</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">r</span> <span class="o">=</span> <span class="n">sql</span><span class="p">(</span><span class="s2">"select entity_id from states_meta"</span><span class="p">)</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="p">{</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">hass</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">state</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">r</span><span class="p">}</span>
 </span></code></pre></div>
 <p>Runs locally, then inside Home Assistant.</p>
 <h4 id="objects-stay-inside-home-assistant">Objects stay inside Home Assistant<a class="headerlink" href="#objects-stay-inside-home-assistant" title="Permanent link">&para;</a></h4>
 <p>A state, an entity, or anything else that isn't plain data stays where it is, and later statements that use it run there too.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">hass</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sun.sun"</span><span class="p">)</span><span class="o">.</span><span class="n">state</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">hass</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sun.sun"</span><span class="p">)</span><span class="o">.</span><span class="n">state</span>
 </span></code></pre></div>
 <p>Runs inside Home Assistant.</p>
 <h4 id="entity-names-from-obj-found-in-one-statement-and-used-in-hass-in-another">Entity names from <code>obj</code>, found in one statement and used in <code>hass</code> in another<a class="headerlink" href="#entity-names-from-obj-found-in-one-statement-and-used-in-hass-in-another" title="Permanent link">&para;</a></h4>
 <p>The names come back as local data, and are copied over again for the statement that needs them inside Home Assistant.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">names</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">find_names</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="s2">"light"</span><span class="p">)</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="p">{</span><span class="n">n</span><span class="p">:</span> <span class="n">hass</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">state</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span><span class="p">}</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">names</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">find_names</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="s2">"light"</span><span class="p">)</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="p">{</span><span class="n">n</span><span class="p">:</span> <span class="n">hass</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">state</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span><span class="p">}</span>
 </span></code></pre></div>
 <p>Runs inside Home Assistant, then inside Home Assistant.</p>
 <h3 id="not-supported">Not Supported<a class="headerlink" href="#not-supported" title="Permanent link">&para;</a></h3>
 <p>The shell refuses these with an explanation, rather than running them.</p>
 <h4 id="both-sides-in-one-statement">Both sides in one statement<a class="headerlink" href="#both-sides-in-one-statement" title="Permanent link">&para;</a></h4>
 <p><code>hass_api</code> and <code>sql</code> only exist locally, <code>hass</code> and <code>obj</code> only inside Home Assistant, and a statement runs in one place. Split it in two, as in the first example.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="p">{</span><span class="n">n</span><span class="p">:</span> <span class="n">hass_api</span><span class="o">.</span><span class="n">get_state</span><span class="p">(</span><span class="n">entity_id</span><span class="o">=</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">state</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">find_names</span><span class="p">()}</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="p">{</span><span class="n">n</span><span class="p">:</span> <span class="n">hass_api</span><span class="o">.</span><span class="n">get_state</span><span class="p">(</span><span class="n">entity_id</span><span class="o">=</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">state</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">find_names</span><span class="p">()}</span>
 </span></code></pre></div>
 <h4 id="a-local-function-called-on-something-from-hass">A local function, called on something from <code>hass</code><a class="headerlink" href="#a-local-function-called-on-something-from-hass" title="Permanent link">&para;</a></h4>
 <p>Only data crosses - functions, classes and dataframes don't.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">shout</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>    <span class="k">return</span> <span class="n">text</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">shout</span><span class="p">(</span><span class="n">hass</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sun.sun"</span><span class="p">)</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">shout</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    <span class="k">return</span> <span class="n">text</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">shout</span><span class="p">(</span><span class="n">hass</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sun.sun"</span><span class="p">)</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="one-shot-snippets-and-agents">One-Shot Snippets and Agents<a class="headerlink" href="#one-shot-snippets-and-agents" title="Permanent link">&para;</a></h2>
 <p><code>ha-repl exec</code> runs a snippet exactly as the live shell would, then exits - see <a href="../exec_mode/">Exec Mode</a>, which covers its JSON output and use by coding agents.</p>
 <h2 id="running-from-a-clonefork-of-this-repo">Running from a clone/fork of this repo<a class="headerlink" href="#running-from-a-clonefork-of-this-repo" title="Permanent link">&para;</a></h2>
 <p>If you do have this repo checked out, you can also use a direct <code>run</code> which means you can also tinker locally with <code>homeassistant_repl</code> code.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w">         </span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w">         </span>
 </span></code></pre></div>
 <h3 id="install-local-home-assistant-with-the-live-server">Install Local Home Assistant with the Live Server<a class="headerlink" href="#install-local-home-assistant-with-the-live-server" title="Permanent link">&para;</a></h3>
 <p>The <code>homeassistant-repl</code> repo has a <a href="https://containers.dev">DevContainer</a> defined, and helper scripts in the <code>/dev</code> directory to manage it.</p>
 <p>Dev instance (devcontainer, or directly on a host with Python 3.14):</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>dev/setup.sh<span class="w">                 </span><span class="c1"># installs HA into its own venv + the CLI (devcontainer runs this)</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>dev/restart-ha.sh<span class="w">            </span><span class="c1"># Kill current HA instance and start a new</span>
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>dev/run-ha.sh<span class="w">                </span><span class="c1"># HA on :8123 with custom_components/ha_repl_server symlinked in</span>
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>dev/bootstrap.py<span class="w">   </span><span class="c1"># onboard (user dev/dev) and write dev/.env with a token</span>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>dev/setup.sh<span class="w">                 </span><span class="c1"># installs HA into its own venv + the CLI (devcontainer runs this)</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>dev/restart-ha.sh<span class="w">            </span><span class="c1"># Kill current HA instance and start a new</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>dev/run-ha.sh<span class="w">                </span><span class="c1"># HA on :8123 with custom_components/ha_repl_server symlinked in</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>dev/bootstrap.py<span class="w">   </span><span class="c1"># onboard (user dev/dev) and write dev/.env with a token</span>
 </span></code></pre></div>
 <p>Using it (host or container):</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nb">set</span><span class="w"> </span>-a<span class="p">;</span><span class="w"> </span>.<span class="w"> </span>dev/.env<span class="p">;</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>+a
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w">                                         </span><span class="c1"># interactive</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s1">'hass.states.get("sun.sun")'</span>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;'PY'</span>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="s">await hass.services.async_call("light", "toggle", {"entity_id": "light.kitchen_lights"}, blocking=True)</span>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="s">hass.states.get("light.kitchen_lights").state</span>
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="s">PY</span>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nb">set</span><span class="w"> </span>-a<span class="p">;</span><span class="w"> </span>.<span class="w"> </span>dev/.env<span class="p">;</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>+a
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w">                                         </span><span class="c1"># interactive</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span><span class="s1">'hass.states.get("sun.sun")'</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>uv<span class="w"> </span>run<span class="w"> </span>ha-repl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;'PY'</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="s">await hass.services.async_call("light", "toggle", {"entity_id": "light.kitchen_lights"}, blocking=True)</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="s">hass.states.get("light.kitchen_lights").state</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="s">PY</span>
 </span></code></pre></div>
 
 

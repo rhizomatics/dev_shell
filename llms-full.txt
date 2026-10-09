@@ -37,7 +37,7 @@ This is primarily for developers of custom components, and their LLM agents, tho
 
 - Integrated with `rich` and `pygments` for pretty object printouts and stack traces
 - Reuses session and history features from `prompt-toolkit`
-- Access to all entities via dictionary like interface, `obj`
+- Access to all entities via an [Object Tree](https://homeassistant-repl.rhizomatics.org.uk/obj_tree/index.md) dictionary like interface
 - Usual multi-line editing support and history of Python
 - Integrated with [homeassistant-api](https://pypi.org/project/HomeAssistant-API/) as `hass_api` object
 - Auto-awaits coroutines for easy shell use (can be switched off or overridden)
@@ -76,7 +76,7 @@ For coding agents, there is [Exec Mode](https://homeassistant-repl.rhizomatics.o
 
 These are all current with Python v3, there are others like dreampie that didn't make it past Python 2.
 
-### New Default REPL Experiences
+### Out of the Box
 
 - [Python Interactive Mode](https://docs.python.org/3/tutorial/appendix.html#tut-interac) - Core python REPL, greatly enhanced in v3.13 with PyPi code, and now the default Python terminal experience.
 - [VSCode Python REPL](https://code.visualstudio.com/docs/python/run#_native-repl) - Notebook style with Intellisense, bundled with the standard Microsoft VSCode Python bundle
@@ -249,6 +249,7 @@ A rejected query raises `SqlError`. Only a single `SELECT` statement is accepted
 - Always set `-t`. A snippet that waits on something that never happens otherwise blocks forever.
 - Keep `max_rows` small while exploring. The default is 1000 rows; `sql.tables` lists the tables and their columns without running a query.
 - Prefer reading to writing. `hass.states.get(...)`, `obj[...]` and `sql(...)` are safe to repeat; service calls and direct changes to `hass` objects take effect immediately on the instance.
+- `show(thing)` as the last expression gives an object's attributes and their values, cut down to a readable size - see [Looking Inside Objects](https://homeassistant-repl.rhizomatics.org.uk/modes/live_mode/#looking-inside-objects). With `--json` it comes back in `value` as text.
 - `help(thing)` prints a summary of an object's methods and properties, which is often quicker than reading the source. `help(thing, full=True)` gives Python's own full help page instead.
 # Reference
 
@@ -299,6 +300,42 @@ Since `hass` and `obj` only exist inside Home Assistant, any statement that uses
 ```
 
 The decision is made per statement, so several lines pasted or run together can use both sides.
+
+## Looking Inside Objects
+
+Most of what `hass` holds - the config, a registry, an entity, a config entry - prints as little more than its class name, since the object itself can't leave Home Assistant. `show()` looks inside one, and prints its attributes and their values in colour, one to a line:
+
+```python
+>>> show(hass.config)
+Config(
+    all_components={'websocket_api', 'recorder', 'http', 'ha_repl_server', ... +96},
+    config_dir='/config',
+    country='GB',
+    ...
+    units=<homeassistant.util.unit_system.UnitSystem object at 0x7f1c2a3d4e60>,
+    version='2026.10.1'
+)
+>>> show(hass.states.get("sun.sun"))
+>>> show(obj["sensor.outside_temperature"], private=True)
+>>> show(hass.config, depth=2)    # opens up `units` and the other objects inside it too
+>>> show(hass.data, max_items=100)
+```
+
+It shows what the object is now: properties are read, as that is where much of an object's state is. Names starting with an underscore, and methods, are left out unless asked for.
+
+Anything enormous is cut short, with a note of how much was left out, so it is safe to point at `hass.data` or a registry.
+
+| Option       | Default | Effect                                                                                                                                                                |
+| ------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `private`    | `False` | Include names starting with a single underscore                                                                                                                       |
+| `methods`    | `False` | List methods too, each with its signature                                                                                                                             |
+| `depth`      | `1`     | How many levels are opened up: with `1`, the object's attributes and what is in any list or dict among them; with `2`, the attributes of the objects it holds as well |
+| `max_items`  | `30`    | Items shown of a list, dict or set, the rest counted as `... +N`                                                                                                      |
+| `max_string` | `200`   | Characters shown of a string, or of an object's own text, the rest counted as `+N`                                                                                    |
+
+`show()` gives its picture of the object as a value, so it is displayed when it is the last thing on the line or in a snippet, like any other value. Use `help()` for what an object can do, and `show()` for what it holds.
+
+It works on local objects as well, such as a `sql` result or something of your own.
 
 ## Mixing Both Sides
 
@@ -572,14 +609,14 @@ Data is serialized as Apache Arrow using the `nanofeather` library - this provid
 
 ### `sql` Object
 
-| Operation                          | Description                                                                                                                |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `sql("<query>")`                   | Send a query to the database and wait for results                                                                          |
-| `sql("<query>", legacy=True)`      | The same, with [legacy columns](#legacy-columns) in view                                                                   |
-| `sql.max_rows`                     | Read/write property to set the default row limit for results in this session                                               |
-| `sql.table("<name>")`              | Returns the `Table` object that describes the named table and its contents, or raises `KeyError` if there is no such table |
-| `sql.table("<name>", legacy=True)` | The same, with the table's [legacy columns](#legacy-columns) included                                                      |
-| `sql.tables`                       | Returns a list of `Table` objects that describe each table and its contents                                                |
+| Operation                          | Description                                                                                                                                  |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sql("<query>")`                   | Send a query to the database and wait for results                                                                                            |
+| `sql("<query>", legacy=True)`      | The same, with [legacy columns](#legacy-columns) in view                                                                                     |
+| `sql.max_rows`                     | Read/write property to set the default row limit for results in this session                                                                 |
+| `sql.table("<name>")`              | Returns the `Table` object that describes the named table and its contents, or raises `KeyError` if there is no such table                   |
+| `sql.table("<name>", legacy=True)` | The same, with the table's [legacy columns](#legacy-columns) included                                                                        |
+| `sql.tables`                       | Returns a list of `Table` objects that describe each table and its contents, with a `VirtualTable` for each [virtual table](#virtual-tables) |
 
 For example this will show the size of the `statistics` table.
 
@@ -636,15 +673,54 @@ Indexing a result with a row number gives a `Row` object. It reads like a list o
 
 A `Table` object describes one table, using Home Assistant's own definition of it in `homeassistant.components.recorder.db_schema`.
 
-| Operation      | Description                                                                                      |
-| -------------- | ------------------------------------------------------------------------------------------------ |
-| `name`         | The table's name in the database, e.g. `states`                                                  |
-| `class_name`   | The name of the class the Recorder uses for this table, e.g. `States`, to look up in `db_schema` |
-| `description`  | That class's docstring, e.g. `State change history.`                                             |
-| `columns`      | List of `Column` objects, each with a `name`, `type` and `legacy` flag                           |
-| `column_names` | List of the column names, in order                                                               |
+| Operation      | Description                                                                                                                 |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `name`         | The table's name in the database, e.g. `states`                                                                             |
+| `class_name`   | The name of the class the Recorder uses for this table, e.g. `States`, to look up in `db_schema`. Empty for a virtual table |
+| `description`  | That class's docstring, e.g. `State change history.`                                                                        |
+| `columns`      | List of `Column` objects, each with a `name`, `type` and `legacy` flag                                                      |
+| `column_names` | List of the column names, in order                                                                                          |
+| `virtual`      | `True` if this is a [virtual table](#virtual-tables) rather than a real table in the database                               |
 
 Both leave out the [legacy columns](#legacy-columns), unless the table came from `sql.table("<name>", legacy=True)`.
+
+### Virtual Tables
+
+A virtual table is a ready-made join, to query as if it were a table. It saves writing out a join that almost every query on that table needs, because the Recorder keeps the name of a thing - an entity id, an event type, a statistic id - in a different table from its rows.
+
+Each virtual table has that name as its first column, then the columns of its table that are in use, without the [legacy columns](#legacy-columns) or the key the two tables are joined on.
+
+| Virtual table                   | What it holds                                                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `state_history`                 | One row per recorded state, with its `entity_id`: `states` joined to `states_meta`                                  |
+| `event_history`                 | One row per recorded event, with its `event_type`: `events` joined to `event_types`                                 |
+| `statistics_history`            | One row an hour per long term statistic, with its `statistic_id`: `statistics` joined to `statistics_meta`          |
+| `statistics_short_term_history` | One row every 5 minutes per statistic, with its `statistic_id`: `statistics_short_term` joined to `statistics_meta` |
+
+```python
+>>> sql("select * from state_history where entity_id = 'sensor.outside_temperature'").show()
+>>> sql("select entity_id, count(*) from state_history group by entity_id").show()
+>>> sql("select event_type, count(*) from event_history group by event_type").show()
+>>> sql("select start_ts, mean from statistics_history where statistic_id = 'sensor.outside_temperature'").show()
+>>> sql.table("state_history").column_names
+```
+
+A virtual table can be used wherever a real one can in a query - filtered, grouped, joined to other tables, real or virtual, or to itself - and the database does all of that work, as it would for the join written out.
+
+`sql.tables` lists them among the real tables. Each is a `VirtualTable` object, which shows as `VirtualTable(...)` rather than `Table(...)`, so the two can't be mistaken for each other. It has everything a `Table` has, with `virtual` set to `True`, an empty `class_name`, and one thing more:
+
+| Operation    | Description                            |
+| ------------ | -------------------------------------- |
+| `definition` | The query the virtual table stands for |
+
+```python
+>>> [t.name for t in sql.tables if t.virtual]
+>>> sql.table("state_history").definition
+```
+
+Info
+
+Nothing is created in the Home Assistant database. When a query mentions a virtual table by name, its definition is added to the query as a common table expression (a `with` clause) before it is run. If the query has a `with` clause of its own, the definition joins that one.
 
 ### Legacy Columns
 

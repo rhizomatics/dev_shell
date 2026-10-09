@@ -696,6 +696,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#look-inside-an-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Look inside an object
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#get-integration-data" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -768,10 +779,54 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#long-term-statistics-for-an-entity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Long term statistics for an entity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#state-history-for-an-entity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        State history for an entity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#find-the-top-talkers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Find the top talkers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#distinct-field-analysis" class="md-nav__link">
     <span class="md-ellipsis">
       
         Distinct field analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#domain--cardinality-analysis-on-states" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domain / Cardinality analysis on states
       
     </span>
   </a>
@@ -1696,25 +1751,67 @@
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">hass</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sun.sun"</span><span class="p">)</span><span class="o">.</span><span class="n">state</span>  <span class="c1"># returns sun position as string</span>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">hass</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sun.sun"</span><span class="p">)</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="s2">"next_dawn"</span><span class="p">]</span>  <span class="c1"># date time from attributes</span>
 </span></code></pre></div>
+<h4 id="look-inside-an-object">Look inside an object<a class="headerlink" href="#look-inside-an-object" title="Permanent link">&para;</a></h4>
+<p><code>show()</code> gives the attributes and their values, where the object alone would print as its class name.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">show</span><span class="p">(</span><span class="n">hass</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">show</span><span class="p">(</span><span class="n">hass</span><span class="o">.</span><span class="n">states</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sun.sun"</span><span class="p">))</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">show</span><span class="p">(</span><span class="n">hass</span><span class="o">.</span><span class="n">config_entries</span><span class="o">.</span><span class="n">async_entries</span><span class="p">(</span><span class="s2">"mqtt"</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="n">private</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></code></pre></div>
 <h4 id="get-integration-data">Get integration data<a class="headerlink" href="#get-integration-data" title="Permanent link">&para;</a></h4>
 <p>Note that each integration can have wildly different data, and some like <code>mqtt</code> can be huge.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">hass</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"notify"</span><span class="p">]</span><span class="o">.</span><span class="n">entities</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">hass</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"notify"</span><span class="p">]</span><span class="o">.</span><span class="n">entities</span>
 </span></code></pre></div>
 <h4 id="mapping-of-all-notify-entities-by-platform-name">Mapping of all notify entities by platform name<a class="headerlink" href="#mapping-of-all-notify-entities-by-platform-name" title="Permanent link">&para;</a></h4>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="p">{</span><span class="n">n</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">n</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">platform_name</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">hass</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"notify"</span><span class="p">]</span><span class="o">.</span><span class="n">entities</span><span class="p">}</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="p">{</span><span class="n">n</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">n</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">platform_name</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">hass</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"notify"</span><span class="p">]</span><span class="o">.</span><span class="n">entities</span><span class="p">}</span>
 </span></code></pre></div>
 <h3 id="sql">SQL<a class="headerlink" href="#sql" title="Permanent link">&para;</a></h3>
 <h4 id="get-a-list-of-tables-and-their-columns">Get a list of tables and their columns<a class="headerlink" href="#get-a-list-of-tables-and-their-columns" title="Permanent link">&para;</a></h4>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">sql</span><span class="o">.</span><span class="n">tables</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">sql</span><span class="o">.</span><span class="n">tables</span>
 </span></code></pre></div>
 <h4 id="quick-analysis-of-tables">Quick analysis of tables<a class="headerlink" href="#quick-analysis-of-tables" title="Permanent link">&para;</a></h4>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">sql</span><span class="p">(</span><span class="s2">"select count(*) from statistics"</span><span class="p">)</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">sql</span><span class="p">(</span><span class="s2">"select count(*) from statistics"</span><span class="p">)</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </span></code></pre></div>
 <h4 id="joins">Joins<a class="headerlink" href="#joins" title="Permanent link">&para;</a></h4>
-<p>Get the textual event type when dumping events</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">sql</span><span class="p">(</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>    <span class="s2">"select * from events e inner join event_types et on et.event_type_id=e.event_type_id"</span>
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="p">)</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<p>Get the event data when dumping events. The <a href="../sql/#virtual-tables"><code>event_history</code> virtual table</a> already has the textual event type, and is joined here like any table.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">sql</span><span class="p">(</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>    <span class="s2">"select * from event_history e inner join event_data d on d.data_id=e.data_id"</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="p">)</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</span></code></pre></div>
+<h4 id="long-term-statistics-for-an-entity">Long term statistics for an entity<a class="headerlink" href="#long-term-statistics-for-an-entity" title="Permanent link">&para;</a></h4>
+<p>The <a href="../sql/#virtual-tables"><code>statistics_history</code> virtual table</a> has an hourly row for each statistic, kept after state history has been purged.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">sql</span><span class="p">(</span><span class="s2">"""</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="s2">    select start_ts, mean, min, max, state, sum</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="s2">    from statistics_history</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="s2">    where statistic_id = 'sensor.outside_temperature'</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="s2">    order by start_ts desc</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="s2">"""</span><span class="p">)</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</span></code></pre></div>
+<h4 id="state-history-for-an-entity">State history for an entity<a class="headerlink" href="#state-history-for-an-entity" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>states</code> has no entity id of its own, so this uses the <a href="../sql/#virtual-tables"><code>state_history</code> virtual table</a>, which adds it</li>
+<li>Times are seconds since the epoch, in the <code>_ts</code> columns, so the cutoff is worked out in Python</li>
+</ul>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="n">since</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">3600</span>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="n">sql</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="s2">    select state, last_updated_ts</span>
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="s2">    from state_history</span>
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="s2">    where entity_id = 'update.home_assistant_core_update' and last_updated_ts &gt; </span><span class="si">{</span><span class="n">since</span><span class="si">}</span>
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="s2">    order by last_updated_ts desc</span>
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="s2">"""</span><span class="p">)</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</span></code></pre></div>
+<h4 id="find-the-top-talkers">Find the top talkers<a class="headerlink" href="#find-the-top-talkers" title="Permanent link">&para;</a></h4>
+<p>This uses a <code>HAVING</code> query to filter the aggregate values.</p>
+<p>It also writes out the join of <code>states</code> to <code>states_meta</code> that gets each state's entity id, to show what the <a href="../sql/#virtual-tables"><code>state_history</code> virtual table</a> stands for. The other examples here use a virtual table instead.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">sql</span><span class="p">(</span><span class="s2">"""</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="s2">    SELECT m.entity_id, COUNT(*) as "States"</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="s2">    FROM states s</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="s2">    INNER JOIN states_meta m ON m.metadata_id = s.metadata_id</span>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="s2">    GROUP BY m.entity_id</span>
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="s2">    HAVING COUNT(*) &gt; 100</span>
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="s2">    ORDER BY COUNT(*) DESC</span>
+</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="s2">"""</span><span class="p">)</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </span></code></pre></div>
 <h4 id="distinct-field-analysis">Distinct field analysis<a class="headerlink" href="#distinct-field-analysis" title="Permanent link">&para;</a></h4>
 <ul>
@@ -1723,18 +1820,32 @@
 <li><code>f</code> string to build a simple query</li>
 <li>Could extend this to <code>legacy</code> columns by passing <code>legacy=true</code> on the <code>sql</code> and <code>sql.table</code> calls</li>
 </ul>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a> <span class="p">{</span> <span class="n">col</span><span class="p">:</span><span class="n">sql</span><span class="p">(</span><span class="sa">f</span><span class="s1">'select count(distinct </span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s1">) from events'</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">col</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="ow">in</span> <span class="n">sql</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="s2">"events"</span><span class="p">)</span><span class="o">.</span><span class="n">column_names</span> <span class="p">}</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="p">{</span>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>    <span class="s1">'event_id'</span><span class="p">:</span> <span class="mi">173121</span><span class="p">,</span>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    <span class="s1">'origin_idx'</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>    <span class="s1">'time_fired_ts'</span><span class="p">:</span> <span class="mi">173112</span><span class="p">,</span>
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>    <span class="s1">'data_id'</span><span class="p">:</span> <span class="mi">97248</span><span class="p">,</span>
-</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>    <span class="s1">'context_id_bin'</span><span class="p">:</span> <span class="mi">161680</span><span class="p">,</span>
-</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>    <span class="s1">'context_user_id_bin'</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
-</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>    <span class="s1">'context_parent_id_bin'</span><span class="p">:</span> <span class="mi">1679</span><span class="p">,</span>
-</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>    <span class="s1">'event_type_id'</span><span class="p">:</span> <span class="mi">42</span>
-</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="p">}</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a> <span class="p">{</span> <span class="n">col</span><span class="p">:</span><span class="n">sql</span><span class="p">(</span><span class="sa">f</span><span class="s1">'select count(distinct </span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s1">) from events'</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">col</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="ow">in</span> <span class="n">sql</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="s2">"events"</span><span class="p">)</span><span class="o">.</span><span class="n">column_names</span> <span class="p">}</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="p">{</span>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>    <span class="s1">'event_id'</span><span class="p">:</span> <span class="mi">173121</span><span class="p">,</span>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>    <span class="s1">'origin_idx'</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>    <span class="s1">'time_fired_ts'</span><span class="p">:</span> <span class="mi">173112</span><span class="p">,</span>
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>    <span class="s1">'data_id'</span><span class="p">:</span> <span class="mi">97248</span><span class="p">,</span>
+</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>    <span class="s1">'context_id_bin'</span><span class="p">:</span> <span class="mi">161680</span><span class="p">,</span>
+</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>    <span class="s1">'context_user_id_bin'</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>    <span class="s1">'context_parent_id_bin'</span><span class="p">:</span> <span class="mi">1679</span><span class="p">,</span>
+</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>    <span class="s1">'event_type_id'</span><span class="p">:</span> <span class="mi">42</span>
+</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a><span class="p">}</span>
+</span></code></pre></div>
+<h4 id="domain--cardinality-analysis-on-states">Domain / Cardinality analysis on states<a class="headerlink" href="#domain--cardinality-analysis-on-states" title="Permanent link">&para;</a></h4>
+<p>This is a handy way of checking the variability within column states - how many values, how many unique values and the max and minimum values (which could be numeric or string, the latter sorting alphanumerically).</p>
+<p>It also demonstrates column renaming for the result sets, and filtering the <code>state_history</code> virtual table with a where clause, with no join or table aliases needed. Note that the formatting and upper case here is purely for readability.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="n">sql</span><span class="p">(</span><span class="s2">"""</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="s2">    SELECT  entity_id,</span>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="s2">            COUNT(*) as States,</span>
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="s2">            COUNT(distinct state) as "Distinct States",</span>
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="s2">            MIN(state) as "Min State",</span>
+</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="s2">            MAX(state) as "Max State"</span>
+</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="s2">        FROM state_history</span>
+</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="s2">        WHERE entity_id like 'sensor.%'</span>
+</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="s2">        GROUP BY entity_id</span>
+</span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a><span class="s2">    """</span><span class="p">)</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </span></code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>

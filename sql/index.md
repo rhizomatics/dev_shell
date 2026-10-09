@@ -12,14 +12,14 @@ Data is serialized as Apache Arrow using the `nanofeather` library - this provid
 
 ### `sql` Object
 
-| Operation                          | Description                                                                                                                |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `sql("<query>")`                   | Send a query to the database and wait for results                                                                          |
-| `sql("<query>", legacy=True)`      | The same, with [legacy columns](#legacy-columns) in view                                                                   |
-| `sql.max_rows`                     | Read/write property to set the default row limit for results in this session                                               |
-| `sql.table("<name>")`              | Returns the `Table` object that describes the named table and its contents, or raises `KeyError` if there is no such table |
-| `sql.table("<name>", legacy=True)` | The same, with the table's [legacy columns](#legacy-columns) included                                                      |
-| `sql.tables`                       | Returns a list of `Table` objects that describe each table and its contents                                                |
+| Operation                          | Description                                                                                                                                  |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sql("<query>")`                   | Send a query to the database and wait for results                                                                                            |
+| `sql("<query>", legacy=True)`      | The same, with [legacy columns](#legacy-columns) in view                                                                                     |
+| `sql.max_rows`                     | Read/write property to set the default row limit for results in this session                                                                 |
+| `sql.table("<name>")`              | Returns the `Table` object that describes the named table and its contents, or raises `KeyError` if there is no such table                   |
+| `sql.table("<name>", legacy=True)` | The same, with the table's [legacy columns](#legacy-columns) included                                                                        |
+| `sql.tables`                       | Returns a list of `Table` objects that describe each table and its contents, with a `VirtualTable` for each [virtual table](#virtual-tables) |
 
 For example this will show the size of the `statistics` table.
 
@@ -76,15 +76,54 @@ Indexing a result with a row number gives a `Row` object. It reads like a list o
 
 A `Table` object describes one table, using Home Assistant's own definition of it in `homeassistant.components.recorder.db_schema`.
 
-| Operation      | Description                                                                                      |
-| -------------- | ------------------------------------------------------------------------------------------------ |
-| `name`         | The table's name in the database, e.g. `states`                                                  |
-| `class_name`   | The name of the class the Recorder uses for this table, e.g. `States`, to look up in `db_schema` |
-| `description`  | That class's docstring, e.g. `State change history.`                                             |
-| `columns`      | List of `Column` objects, each with a `name`, `type` and `legacy` flag                           |
-| `column_names` | List of the column names, in order                                                               |
+| Operation      | Description                                                                                                                 |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `name`         | The table's name in the database, e.g. `states`                                                                             |
+| `class_name`   | The name of the class the Recorder uses for this table, e.g. `States`, to look up in `db_schema`. Empty for a virtual table |
+| `description`  | That class's docstring, e.g. `State change history.`                                                                        |
+| `columns`      | List of `Column` objects, each with a `name`, `type` and `legacy` flag                                                      |
+| `column_names` | List of the column names, in order                                                                                          |
+| `virtual`      | `True` if this is a [virtual table](#virtual-tables) rather than a real table in the database                               |
 
 Both leave out the [legacy columns](#legacy-columns), unless the table came from `sql.table("<name>", legacy=True)`.
+
+### Virtual Tables
+
+A virtual table is a ready-made join, to query as if it were a table. It saves writing out a join that almost every query on that table needs, because the Recorder keeps the name of a thing - an entity id, an event type, a statistic id - in a different table from its rows.
+
+Each virtual table has that name as its first column, then the columns of its table that are in use, without the [legacy columns](#legacy-columns) or the key the two tables are joined on.
+
+| Virtual table                   | What it holds                                                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `state_history`                 | One row per recorded state, with its `entity_id`: `states` joined to `states_meta`                                  |
+| `event_history`                 | One row per recorded event, with its `event_type`: `events` joined to `event_types`                                 |
+| `statistics_history`            | One row an hour per long term statistic, with its `statistic_id`: `statistics` joined to `statistics_meta`          |
+| `statistics_short_term_history` | One row every 5 minutes per statistic, with its `statistic_id`: `statistics_short_term` joined to `statistics_meta` |
+
+```python
+>>> sql("select * from state_history where entity_id = 'sensor.outside_temperature'").show()
+>>> sql("select entity_id, count(*) from state_history group by entity_id").show()
+>>> sql("select event_type, count(*) from event_history group by event_type").show()
+>>> sql("select start_ts, mean from statistics_history where statistic_id = 'sensor.outside_temperature'").show()
+>>> sql.table("state_history").column_names
+```
+
+A virtual table can be used wherever a real one can in a query - filtered, grouped, joined to other tables, real or virtual, or to itself - and the database does all of that work, as it would for the join written out.
+
+`sql.tables` lists them among the real tables. Each is a `VirtualTable` object, which shows as `VirtualTable(...)` rather than `Table(...)`, so the two can't be mistaken for each other. It has everything a `Table` has, with `virtual` set to `True`, an empty `class_name`, and one thing more:
+
+| Operation    | Description                            |
+| ------------ | -------------------------------------- |
+| `definition` | The query the virtual table stands for |
+
+```python
+>>> [t.name for t in sql.tables if t.virtual]
+>>> sql.table("state_history").definition
+```
+
+Info
+
+Nothing is created in the Home Assistant database. When a query mentions a virtual table by name, its definition is added to the query as a common table expression (a `with` clause) before it is run. If the query has a `with` clause of its own, the definition joins that one.
 
 ### Legacy Columns
 

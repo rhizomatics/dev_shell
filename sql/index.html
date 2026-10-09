@@ -682,6 +682,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#virtual-tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Virtual Tables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#legacy-columns" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1513,7 +1524,7 @@
 </tr>
 <tr>
 <td><code>sql.tables</code></td>
-<td>Returns a list of <code>Table</code> objects that describe each table and its contents</td>
+<td>Returns a list of <code>Table</code> objects that describe each table and its contents, with a <code>VirtualTable</code> for each <a href="#virtual-tables">virtual table</a></td>
 </tr>
 </tbody>
 </table>
@@ -1645,7 +1656,7 @@
 </tr>
 <tr>
 <td><code>class_name</code></td>
-<td>The name of the class the Recorder uses for this table, e.g. <code>States</code>, to look up in <code>db_schema</code></td>
+<td>The name of the class the Recorder uses for this table, e.g. <code>States</code>, to look up in <code>db_schema</code>. Empty for a virtual table</td>
 </tr>
 <tr>
 <td><code>description</code></td>
@@ -1659,9 +1670,71 @@
 <td><code>column_names</code></td>
 <td>List of the column names, in order</td>
 </tr>
+<tr>
+<td><code>virtual</code></td>
+<td><code>True</code> if this is a <a href="#virtual-tables">virtual table</a> rather than a real table in the database</td>
+</tr>
 </tbody>
 </table>
 <p>Both leave out the <a href="#legacy-columns">legacy columns</a>, unless the table came from <code>sql.table("&lt;name&gt;", legacy=True)</code>.</p>
+<h3 id="virtual-tables">Virtual Tables<a class="headerlink" href="#virtual-tables" title="Permanent link">&para;</a></h3>
+<p>A virtual table is a ready-made join, to query as if it were a table. It saves writing out a join that almost every query on that table needs, because the Recorder keeps the name of a thing - an entity id, an event type, a statistic id - in a different table from its rows.</p>
+<p>Each virtual table has that name as its first column, then the columns of its table that are in use, without the <a href="#legacy-columns">legacy columns</a> or the key the two tables are joined on.</p>
+<table>
+<thead>
+<tr>
+<th>Virtual table</th>
+<th>What it holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>state_history</code></td>
+<td>One row per recorded state, with its <code>entity_id</code>: <code>states</code> joined to <code>states_meta</code></td>
+</tr>
+<tr>
+<td><code>event_history</code></td>
+<td>One row per recorded event, with its <code>event_type</code>: <code>events</code> joined to <code>event_types</code></td>
+</tr>
+<tr>
+<td><code>statistics_history</code></td>
+<td>One row an hour per long term statistic, with its <code>statistic_id</code>: <code>statistics</code> joined to <code>statistics_meta</code></td>
+</tr>
+<tr>
+<td><code>statistics_short_term_history</code></td>
+<td>One row every 5 minutes per statistic, with its <code>statistic_id</code>: <code>statistics_short_term</code> joined to <code>statistics_meta</code></td>
+</tr>
+</tbody>
+</table>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">sql</span><span class="p">(</span><span class="s2">"select * from state_history where entity_id = 'sensor.outside_temperature'"</span><span class="p">)</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">sql</span><span class="p">(</span><span class="s2">"select entity_id, count(*) from state_history group by entity_id"</span><span class="p">)</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">sql</span><span class="p">(</span><span class="s2">"select event_type, count(*) from event_history group by event_type"</span><span class="p">)</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">sql</span><span class="p">(</span><span class="s2">"select start_ts, mean from statistics_history where statistic_id = 'sensor.outside_temperature'"</span><span class="p">)</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">sql</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="s2">"state_history"</span><span class="p">)</span><span class="o">.</span><span class="n">column_names</span>
+</span></code></pre></div>
+<p>A virtual table can be used wherever a real one can in a query - filtered, grouped, joined to other tables, real or virtual, or to itself - and the database does all of that work, as it would for the join written out.</p>
+<p><code>sql.tables</code> lists them among the real tables. Each is a <code>VirtualTable</code> object, which shows as <code>VirtualTable(...)</code> rather than <code>Table(...)</code>, so the two can't be mistaken for each other. It has everything a <code>Table</code> has, with <code>virtual</code> set to <code>True</code>, an empty <code>class_name</code>, and one thing more:</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>definition</code></td>
+<td>The query the virtual table stands for</td>
+</tr>
+</tbody>
+</table>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">sql</span><span class="o">.</span><span class="n">tables</span> <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">virtual</span><span class="p">]</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">sql</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="s2">"state_history"</span><span class="p">)</span><span class="o">.</span><span class="n">definition</span>
+</span></code></pre></div>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>Nothing is created in the Home Assistant database. When a query mentions a virtual table by name, its definition is added to the query as a common table expression (a <code>with</code> clause) before it is run. If the query has a <code>with</code> clause of its own, the definition joins that one.</p>
+</div>
 <h3 id="legacy-columns">Legacy Columns<a class="headerlink" href="#legacy-columns" title="Permanent link">&para;</a></h3>
 <p>Some Recorder tables still have columns that Home Assistant no longer writes to, because the data moved elsewhere - <code>entity_id</code> in <code>states</code>, for example, is now in <code>states_meta</code>. Home Assistant marks these in <code>db_schema</code> as <code>UNUSED_LEGACY_COLUMN</code>, and they are empty for anything recorded recently.</p>
 <p>They are kept out of view by default, both in a <code>Table</code> and in a query's result. A query still downloads them, but the result leaves them out of everything it does - <code>show()</code>, rows, <code>column_names</code>, dataframes, exports - so <code>select * from states</code> shows only the columns in use.</p>
@@ -1671,12 +1744,12 @@
 <li>the query is made with <code>legacy=True</code></li>
 <li><code>legacy</code> is set to <code>True</code> on the result afterwards, which needs no new query</li>
 </ul>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">r</span> <span class="o">=</span> <span class="n">sql</span><span class="p">(</span><span class="s2">"select * from states"</span><span class="p">)</span>                 <span class="c1"># columns in use</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">r</span><span class="o">.</span><span class="n">legacy</span> <span class="o">=</span> <span class="kc">True</span>                                 <span class="c1"># now every column</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">sql</span><span class="p">(</span><span class="s2">"select * from states"</span><span class="p">,</span> <span class="n">legacy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>        <span class="c1"># every column from the start</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">sql</span><span class="p">(</span><span class="s2">"select state_id, entity_id from states"</span><span class="p">)</span>   <span class="c1"># named, so in view</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">sql</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="s2">"states"</span><span class="p">)</span><span class="o">.</span><span class="n">column_names</span>               <span class="c1"># columns in use</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">sql</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="s2">"states"</span><span class="p">,</span> <span class="n">legacy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">column_names</span>  <span class="c1"># every column</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">r</span> <span class="o">=</span> <span class="n">sql</span><span class="p">(</span><span class="s2">"select * from states"</span><span class="p">)</span>                 <span class="c1"># columns in use</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">r</span><span class="o">.</span><span class="n">legacy</span> <span class="o">=</span> <span class="kc">True</span>                                 <span class="c1"># now every column</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">sql</span><span class="p">(</span><span class="s2">"select * from states"</span><span class="p">,</span> <span class="n">legacy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>        <span class="c1"># every column from the start</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">sql</span><span class="p">(</span><span class="s2">"select state_id, entity_id from states"</span><span class="p">)</span>   <span class="c1"># named, so in view</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">sql</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="s2">"states"</span><span class="p">)</span><span class="o">.</span><span class="n">column_names</span>               <span class="c1"># columns in use</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">sql</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="s2">"states"</span><span class="p">,</span> <span class="n">legacy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">column_names</span>  <span class="c1"># every column</span>
 </span></code></pre></div>
 <p>A query is checked by its words rather than parsed, so a legacy column mentioned anywhere in it, such as in a <code>where</code>, is in view.</p>
 <h3 id="more-help">More Help<a class="headerlink" href="#more-help" title="Permanent link">&para;</a></h3>

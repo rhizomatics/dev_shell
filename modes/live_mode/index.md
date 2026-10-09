@@ -46,6 +46,42 @@ Since `hass` and `obj` only exist inside Home Assistant, any statement that uses
 
 The decision is made per statement, so several lines pasted or run together can use both sides.
 
+## Looking Inside Objects
+
+Most of what `hass` holds - the config, a registry, an entity, a config entry - prints as little more than its class name, since the object itself can't leave Home Assistant. `show()` looks inside one, and prints its attributes and their values in colour, one to a line:
+
+```python
+>>> show(hass.config)
+Config(
+    all_components={'websocket_api', 'recorder', 'http', 'ha_repl_server', ... +96},
+    config_dir='/config',
+    country='GB',
+    ...
+    units=<homeassistant.util.unit_system.UnitSystem object at 0x7f1c2a3d4e60>,
+    version='2026.10.1'
+)
+>>> show(hass.states.get("sun.sun"))
+>>> show(obj["sensor.outside_temperature"], private=True)
+>>> show(hass.config, depth=2)    # opens up `units` and the other objects inside it too
+>>> show(hass.data, max_items=100)
+```
+
+It shows what the object is now: properties are read, as that is where much of an object's state is. Names starting with an underscore, and methods, are left out unless asked for.
+
+Anything enormous is cut short, with a note of how much was left out, so it is safe to point at `hass.data` or a registry.
+
+| Option       | Default | Effect                                                                                                                                                                |
+| ------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `private`    | `False` | Include names starting with a single underscore                                                                                                                       |
+| `methods`    | `False` | List methods too, each with its signature                                                                                                                             |
+| `depth`      | `1`     | How many levels are opened up: with `1`, the object's attributes and what is in any list or dict among them; with `2`, the attributes of the objects it holds as well |
+| `max_items`  | `30`    | Items shown of a list, dict or set, the rest counted as `... +N`                                                                                                      |
+| `max_string` | `200`   | Characters shown of a string, or of an object's own text, the rest counted as `+N`                                                                                    |
+
+`show()` gives its picture of the object as a value, so it is displayed when it is the last thing on the line or in a snippet, like any other value. Use `help()` for what an object can do, and `show()` for what it holds.
+
+It works on local objects as well, such as a `sql` result or something of your own.
+
 ## Mixing Both Sides
 
 The two sides are separate Python sessions, and the shell does a small amount of work to let a statement on one side use a value from the other. Treat it as a convenience for simple cases rather than something to build on: it is deliberately limited, and anything it can't do is refused rather than attempted.
