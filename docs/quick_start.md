@@ -23,6 +23,7 @@ In `live` mode it offers, in addition to what `api` mode offers:
 
 * `hass` - the `HomeAssistant` class at the root of the Python API
 * `sql`  - [SQL access](./sql.md) to the Recorder databases
+* `show(thing)` - [looks inside](./modes/live_mode.md#looking-inside-objects) any `hass` object, with its attributes and their values in colour
 
 So I can write code at the command line like:
 

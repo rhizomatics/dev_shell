@@ -102,3 +102,54 @@ async def test_help_on_sql_shows_how_to_call_it(capsys):
     out = await _help(capsys, "help(sql.table('states'))", sql=sql)
     assert "  column_names - Just the names, in schema order" in out
     assert "  class_name: str\n" in out
+
+
+class Gadget:
+    kind = "lamp"
+
+    def __init__(self) -> None:
+        self.name = "x" * 500
+        self.numbers = list(range(100))
+        self._secret = 1
+
+    @property
+    def state(self) -> str:
+        return "on"
+
+    @property
+    def broken(self) -> str:
+        raise ValueError("no")
+
+    def turn_on(self, brightness: int = 1) -> None: ...
+
+
+async def _show(capsys, code: str) -> str:
+    assert await LocalSession({"Gadget": Gadget}).run(code)
+    return capsys.readouterr().out
+
+
+async def test_show_lists_public_attributes_with_their_values(capsys):
+    out = await _show(capsys, "show(Gadget(), max_items=3, max_string=10)")
+
+    assert out.startswith("Gadget(\n")
+    assert "    kind='lamp',\n" in out
+    assert "    state='on'\n" in out
+    assert "    broken=<ValueError: no>,\n" in out
+    assert "    name='xxxxxxxxxx'+490,\n" in out
+    assert "    numbers=[0, 1, 2, ... +97],\n" in out
+    assert "_secret" not in out
+    assert "turn_on" not in out
+
+
+async def test_show_private_and_methods_add_those(capsys):
+    out = await _show(capsys, "show(Gadget(), private=True, methods=True)")
+
+    assert "    _secret=1,\n" in out
+    assert "    turn_on=def turn_on(brightness: int = 1)\n" in out
+    assert "__init__" not in out
+
+
+async def test_show_of_plain_data_is_the_data_cut_down(capsys):
+    out = await _show(capsys, "show({'a': list(range(50))}, max_items=2)")
+
+    assert out == "{'a': [0, 1, ... +48]}\n"

@@ -4,6 +4,30 @@
     For live mode, generally the client and server component have to be on the same version. Different versions *might* work
     with each other for point releases
 
+# 0.12.0
+## ✨ Enhancements
+### SQL
+- New virtual tables, to query as if they were real ones, in place of the join almost every query on these tables needs
+  - `state_history` is `states` with each row's `entity_id` as the first column
+  - `event_history` is `events` with each row's `event_type`
+  - `statistics_history` and `statistics_short_term_history` are `statistics` and `statistics_short_term` with each row's `statistic_id`
+  - `sql("select * from state_history where entity_id = 'sensor.outside_temperature'")`
+  - They leave out the legacy columns and the join key
+  - Nothing is created in the Home Assistant database - a virtual table is added to the query as a `with` clause when the query mentions it
+  - `sql.tables` lists them, each as a `VirtualTable` object rather than a `Table`, with a `virtual` flag and the query it stands for as its `definition`
+  - Needs both the client and the server component at this version
+
+### Live Mode
+- New `show(thing)`, to look inside an object that otherwise prints as little more than its class name: its attributes and their values, in colour, one to a line
+  - `show(hass.config)`, `show(hass.states.get("sun.sun"))`
+  - Names starting with an underscore are left out unless `private=True`, and methods unless `methods=True`
+  - Anything enormous is cut short, with a count of what was left out, so `show(hass.data)` is safe - `max_items`, `max_string` and `depth` set how much is shown
+  - Nothing new is installed in Home Assistant: the server sends a description of the object, and the shell draws it
+  - Works on local objects too, and in `ha-repl exec`, where it comes back as text
+
+## 📚 Documentation
+- The agent skill and *Examples* cover querying state history, events and long term statistics, and looking inside objects with `show()`
+
 # 0.11.1
 ## 🐛 Fixes
 ### Live Mode

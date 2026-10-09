@@ -69,6 +69,9 @@ class ExecResult:
     # for the client to pretty-print itself.
     value: str | None = None
     value_tree: Any = None
+    # The value is a picture show() made, so a client wanting data rather
+    # than a drawing is better served by `value`'s text than by the tree.
+    shown: bool = False
     # The variables the caller asked after that turned out to be plain data,
     # each as a tree like value_tree.
     names: dict[str, Any] = field(default_factory=dict)
@@ -81,6 +84,7 @@ class ExecResult:
             "stdout": self.stdout,
             "value": self.value,
             "value_tree": self.value_tree,
+            "shown": self.shown,
             "names": self.names,
             "error": self.error,
             "duration": self.duration,
@@ -123,6 +127,7 @@ class Session:
             self.globals_.update(self.protected)
             self.globals_["print"] = _capturing_print(out)
             self.globals_["help"] = _capturing_help(out, color=color, width=width)
+            self.globals_["show"] = show
             self.globals_["_maybe_await"] = _maybe_await
             self.globals_["unawait"] = unawait
             result = ExecResult()
@@ -134,6 +139,7 @@ class Session:
                     self.globals_["_"] = value
                     result.value = _plain_text(value, width=width)
                     result.value_tree = _encode_value(value)
+                    result.shown = type(value) is Shown
             except asyncio.CancelledError:
                 # Cancellation of the caller must propagate, not be reported as a result.
                 raise
@@ -261,6 +267,8 @@ def _encode(value: Any, budget: list[int], ancestors: set[int]) -> Any:
     budget[0] -= len(value) if kind is str else 8
     if budget[0] < 0:
         raise _TooBig
+    if kind is Shown:
+        return value.tree
     if value is None or kind is bool or kind is str:
         return value
     # Home Assistant's websocket layer serialises with orjson, which has no
@@ -380,6 +388,207 @@ class _Shown:
 
     def __repr__(self) -> str:
         return self.text
+
+
+# The most show() sends back whatever it is asked for: enough for a screen
+# or several, far short of what a registry or `hass.data` holds.
+_SHOW_BUDGET = 50_000
+
+
+class Shown:
+    """What show() returns: a picture of an object rather than the object -
+    its attributes and their values, already cut down to size. Echoed as
+    the last expression, it is laid out and coloured by the client like any
+    other value; `tree` is that picture, in _encode_value()'s terms."""
+
+    def __init__(self, tree: Any) -> None:
+        self.tree = tree
+
+    def __repr__(self) -> str:
+        return _tree_text(self.tree, "")
+
+
+def show(
+    thing: Any,
+    *,
+    private: bool = False,
+    methods: bool = False,
+    depth: int = 1,
+    max_items: int = 30,
+    max_string: int = 200,
+) -> Shown:
+    """Look inside an object: its attributes and their values, laid out
+    one to a line. Names starting with an underscore are left out unless
+    `private`, and methods unless `methods`, which lists them with their
+    signatures. Properties are read, as that is where much of an object's
+    state is.
+
+    Long values are cut short: a container to its first `max_items`, a
+    string or repr to `max_string` characters, each saying how much was
+    left out. `depth` is how many levels are opened up - with 1, the
+    object's own attributes and what is in any list or dict among them;
+    with 2, the attributes of the objects it holds as well.
+    """
+    look = _Look(private, methods, depth, max_items, max_string)
+    return Shown(look.at(thing, 0))
+
+
+class _Look:
+    def __init__(
+        self, private: bool, methods: bool, depth: int, max_items: int, max_string: int
+    ) -> None:
+        self.private = private
+        self.methods = methods
+        self.depth = depth
+        self.max_items = max(max_items, 1)
+        self.max_string = max(max_string, 1)
+        self.budget = _SHOW_BUDGET
+        self.ancestors: set[int] = set()
+
+    def at(self, value: Any, level: int) -> Any:
+        """The tree for `value`, `level` levels below what show() was given."""
+        kind = type(value)
+        if value is None or kind is bool:
+            return value
+        if kind is int and -(2**63) <= value < 2**63:
+            return value
+        if kind is float and math.isfinite(value):
+            return value
+        if self.budget < 0:
+            return _cut("...")
+        if kind is str:
+            self.budget -= min(len(value), self.max_string)
+            if len(value) <= self.max_string:
+                return value
+            return _cut(f"{value[: self.max_string]!r}+{len(value) - self.max_string}")
+        if kind is _Shown:
+            return self._repr(value)
+        if id(value) in self.ancestors:
+            return _cut("...")
+        try:
+            parts = _parts(value, kind)
+        except Exception:  # noqa: BLE001 - a property or descriptor can raise anything
+            parts = None
+        if parts is None:
+            # What show() was given is always opened up, whatever the depth.
+            below = level >= max(self.depth, 1)
+            if below or isinstance(value, (bytes, bytearray)):
+                return self._repr(value)
+            parts = ("obj", kind.__qualname__, self._attributes(value))
+        tag, name, items = parts
+        items = list(items)
+        if level > self.depth:
+            if tag == "obj":
+                return self._repr(value)
+            # Not its repr(): building that for a big container costs as
+            # much as sending it would.
+            return _cut(f"<{kind.__name__} of {len(items)}>")
+        # An object's own attributes are what was asked for, however many.
+        more = 0 if tag == "obj" else len(items) - self.max_items
+        if more > 0:
+            items = items[: self.max_items]
+        self.ancestors.add(id(value))
+        try:
+            if tag == "dict":
+                encoded: Any = [
+                    [self.at(k, level + 1), self.at(v, level + 1)] for k, v in items
+                ]
+                if more > 0:
+                    encoded.append([_cut("..."), _cut(f"+{more}")])
+            elif tag == "obj":
+                encoded = [[k, self.at(v, level + 1)] for k, v in items]
+            else:
+                encoded = [self.at(item, level + 1) for item in items]
+                if more > 0:
+                    encoded.append(_cut(f"... +{more}"))
+        finally:
+            self.ancestors.discard(id(value))
+        if tag == "list":
+            return encoded
+        if tag == "obj":
+            return {"t": "obj", "n": name, "f": encoded}
+        return {"t": tag, "v": encoded}
+
+    def _repr(self, value: Any) -> Any:
+        try:
+            text = repr(value)
+        except Exception as err:  # noqa: BLE001 - a broken __repr__ can raise anything
+            text = f"<repr-error {str(err)!r}>"
+        if len(text) > self.max_string:
+            text = f"{text[: self.max_string]}...+{len(text) - self.max_string}"
+        self.budget -= len(text)
+        return _cut(text)
+
+    def _attributes(self, value: Any) -> list[tuple[str, Any]]:
+        try:
+            names = dir(value)
+        except Exception:  # noqa: BLE001 - a __dir__ of its own can raise anything
+            names = []
+        found: list[tuple[str, Any]] = []
+        for name in names:
+            if name.startswith("__") or (name.startswith("_") and not self.private):
+                continue
+            try:
+                attr = getattr(value, name)
+            except Exception as err:  # noqa: BLE001 - a property can raise anything
+                attr = _Shown(f"<{type(err).__name__}: {err}>")
+            if inspect.isroutine(attr) or inspect.isclass(attr):
+                if not self.methods:
+                    continue
+                attr = _Shown(_callable_text(name, attr))
+            found.append((name, attr))
+        return found
+
+
+def _cut(text: str) -> dict[str, str]:
+    return {"t": "repr", "r": text}
+
+
+def _callable_text(name: str, attr: Any) -> str:
+    if inspect.isclass(attr):
+        return f"class {attr.__qualname__}"
+    try:
+        signature = str(inspect.signature(attr))
+    except TypeError, ValueError:
+        signature = "(...)"
+    prefix = "async def" if inspect.iscoroutinefunction(attr) else "def"
+    return f"{prefix} {name}{signature}"
+
+
+_BRACKETS = {
+    "dict": ("{", "}"),
+    "tuple": ("(", ")"),
+    "set": ("{", "}"),
+    "frozenset": ("frozenset({", "})"),
+    "iter": ("<iterator [", "]>"),
+}
+
+
+def _tree_text(tree: Any, indent: str) -> str:
+    """A show() tree as plain text, an attribute or item to a line - for a
+    client that asks for no more than text, as `ha-repl --json` does."""
+    inner = indent + "    "
+    if isinstance(tree, list):
+        opening, closing, lines = "[", "]", [_tree_text(i, inner) for i in tree]
+    elif not isinstance(tree, dict):
+        return repr(tree)
+    elif tree["t"] == "repr":
+        return tree["r"]
+    elif tree["t"] == "obj":
+        opening, closing = f"{tree['n']}(", ")"
+        lines = [f"{k}={_tree_text(v, inner)}" for k, v in tree["f"]]
+    elif tree["t"] == "dict":
+        opening, closing = _BRACKETS["dict"]
+        lines = [
+            f"{_tree_text(k, inner)}: {_tree_text(v, inner)}" for k, v in tree["v"]
+        ]
+    else:
+        opening, closing = _BRACKETS[tree["t"]]
+        lines = [_tree_text(i, inner) for i in tree["v"]]
+    if not lines:
+        return opening + closing
+    body = "".join(f"{inner}{line},\n" for line in lines)
+    return f"{opening}\n{body}{indent}{closing}"
 
 
 async def _maybe_await(value: Any) -> Any:
@@ -814,7 +1023,7 @@ class SessionManager:
                     k
                     for k in s.globals_
                     if not k.startswith("__")
-                    and k not in ("print", "help", "_maybe_await", "unawait")
+                    and k not in ("print", "help", "show", "_maybe_await", "unawait")
                 ),
             }
             for s in self._sessions.values()

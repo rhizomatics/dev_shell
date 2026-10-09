@@ -14,6 +14,7 @@ component's own development environment.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
@@ -22,7 +23,7 @@ if TYPE_CHECKING:
 
     from .sql import SqlTool
 
-__all__ = ["MODE", "SERVER", "hass", "hass_api", "obj", "sql"]
+__all__ = ["MODE", "SERVER", "hass", "hass_api", "obj", "show", "sql"]
 
 MODE: Literal["live", "exec", "api"]
 SERVER: str | None  # the configured server's name, None if connected by URL
@@ -35,6 +36,9 @@ obj: Any
 
 # live and exec only
 sql: SqlTool
+
+# Looks inside an object, on whichever side the object is
+show: Callable[..., Any]
 
 # None in api mode if the REST API couldn't be reached
 hass_api: AsyncClient | None

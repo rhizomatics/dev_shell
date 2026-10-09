@@ -97,6 +97,10 @@ The first statement runs inside Home Assistant, the second locally with the name
 
 ## Querying the recorder
 
+Use `sql` for what was recorded in the past: state history, events and statistics. For what an
+entity's state is now, use `hass.states.get(...)` or `obj[...]`; the recorder lags behind, and
+leaves out any entity excluded from recording.
+
 A `sql` result is a local object holding the downloaded rows. `len(r)`, slices such as `r[:10]`
 and looping over rows work on it. `r[0]` is one row, read by position or column name, so
 `sql("select count(*) from events")[0][0]` is the number itself. Also:
@@ -116,6 +120,111 @@ Some recorder columns are legacy: still in the table, no longer written to, such
 gives one table from `sql.tables`; its `column_names` and `columns` describe it without
 running a query, and `class_name` and `description` are the class and docstring it has in
 `homeassistant.components.recorder.db_schema`.
+
+### Virtual tables
+
+The recorder keeps the name of a thing in a different table from its rows: a state's entity id,
+an event's type and a statistic's id each need a join. Four virtual tables do that join, and are
+queried as if they were real ones:
+
+| Virtual table | First column | Then the columns in use of |
+| ---- | ------------ | -------------------------- |
+| `state_history` | `entity_id` | `states` |
+| `event_history` | `event_type` | `events` |
+| `statistics_history` | `statistic_id` | `statistics` |
+| `statistics_short_term_history` | `statistic_id` | `statistics_short_term` |
+
+- A virtual table is not a table in the database. It is used in a query wherever a real one could
+  be: filtered, grouped, joined to other tables, real or virtual, or to itself.
+- `sql.tables` lists them among the real tables, each shown as `VirtualTable(...)` with `virtual`
+  set to `True`. `sql.table("state_history")` gives one: its `column_names`, and the query it
+  stands for as `definition`.
+- The join key itself is left out: `metadata_id` for states and statistics, `event_type_id` for
+  events.
+- They need server component 0.12.0 or later. If a query fails with no such table, write the
+  join out instead: `states.metadata_id = states_meta.metadata_id`,
+  `events.event_type_id = event_types.event_type_id`, `statistics.metadata_id = statistics_meta.id`.
+
+### State history
+
+`state_history` has one row per recorded state.
+
+```bash
+ha-repl --json exec -t 30 - <<'PY'
+import time
+since = time.time() - 24 * 3600
+sql(f"""
+    select state, last_updated_ts
+    from state_history
+    where entity_id = 'update.home_assistant_core_update' and last_updated_ts > {since}
+    order by last_updated_ts desc
+""", max_rows=50)
+PY
+```
+
+- Times are seconds since the epoch, as floats, in columns ending `_ts`: `last_updated_ts` on
+  every row, `last_changed_ts` only when it differs from that, so read
+  `coalesce(last_changed_ts, last_updated_ts)`. Work out a cutoff in Python, as above, rather
+  than with SQL date functions, which differ between SQLite, MariaDB and PostgreSQL.
+- `state` is always a string, with `unavailable` and `unknown` among the values, so filter those
+  out before casting to a number.
+- Attributes are in `state_attributes.shared_attrs` as a JSON string, joined on `attributes_id`.
+  Many state rows share one attributes row. Decode it locally with `json.loads`, as SQL JSON
+  functions also differ by database.
+- State history is purged after a number of days, 10 unless configured otherwise. For anything
+  older, use statistics.
+
+### Event history
+
+`event_history` has one row per recorded event, with the time in `time_fired_ts`.
+
+```python
+sql(
+    "select event_type, count(*) from event_history group by event_type order by 2 desc"
+)
+```
+
+The event's data is JSON in `event_data.shared_data`, joined on `data_id`, to decode locally:
+
+```python
+sql(
+    """
+    select e.time_fired_ts, d.shared_data
+    from event_history e
+    join event_data d on d.data_id = e.data_id
+    where e.event_type = 'call_service'
+    order by e.time_fired_ts desc
+""",
+    max_rows=20,
+)
+```
+
+State changes are not here: they are in `state_history`. Events are purged along with it.
+
+### Statistics
+
+`statistics_history` has one row an hour per statistic and is kept indefinitely.
+`statistics_short_term_history` has one row every 5 minutes and is purged with state history.
+`statistic_id` is an entity id for most statistics.
+
+```python
+sql(
+    """
+    select start_ts, mean, min, max, state, sum
+    from statistics_history
+    where statistic_id = 'sensor.outside_temperature'
+    order by start_ts desc
+""",
+    max_rows=48,
+)
+```
+
+`select statistic_id, unit_of_measurement from statistics_meta` lists the statistics there are,
+with their units.
+
+`start_ts` is the start of the period. Measurements fill `mean`, `min` and `max`; totals such as
+energy fill `state` and `sum`, where `sum` is the running total since the statistic began, so
+usage over a period is the difference between two rows.
 
 ## Getting data back
 
@@ -156,6 +265,28 @@ Assistant do, in a named session, until it is reset or Home Assistant restarts.
 - `help(thing)` inside a snippet prints a short summary of an object's methods and properties,
   for `obj`, `sql` and its results as well as `hass` objects. `help(thing, full=True)` is Python's
   own full help page.
+
+## Looking inside an object
+
+A state, entity, config entry or registry comes back as its `repr()`, which is often only a class
+name. `show(thing)` as the last expression gives its attributes and their values instead, as text
+in `value`, one attribute to a line:
+
+```bash
+ha-repl --json exec -t 30 - <<'PY'
+show(hass.config_entries.async_entries("mqtt")[0])
+PY
+```
+
+- Use it to find out what an object holds before writing code against it, rather than guessing
+  attribute names. `help(thing)` gives the methods; `show(thing)` gives the values.
+- Properties are read. Names starting with an underscore are left out unless `private=True`, and
+  methods unless `methods=True`.
+- Long values are cut short and say so: `... +N` for the items left out of a list or dict (30
+  shown, `max_items`), `+N` for the characters left out of a string (200 shown, `max_string`).
+  It is safe on `hass`, `hass.data` and the registries.
+- An object held by the one shown appears as its `repr()`. `depth=2` opens those up as well.
+- It only produces output as the last expression. It needs server component 0.12.0 or later.
 
 ## Without the server component
 

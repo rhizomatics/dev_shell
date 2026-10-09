@@ -19,6 +19,11 @@ handful of stable tables (events, states, statistics, ...) this is meant
 for. A column whose name isn't recognised there (e.g. an aggregate like
 COUNT(*)) falls back to a one-off peek at its own first non-null value, not
 a sniff of every column.
+
+A query can also name a virtual table (see _virtual_tables() below): a
+ready-made join that is not in the database, added to the query as a common table expression
+when the query mentions it, so nothing is ever created in the recorder's
+own database and the database still does all the work of the query.
 """
 
 from __future__ import annotations
@@ -26,6 +31,7 @@ from __future__ import annotations
 import functools
 import inspect
 import io
+import re
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
@@ -162,6 +168,131 @@ def _build_column(name: str, values: list[Any]) -> Any:
         )
 
 
+def _is_legacy(column: Any) -> bool:
+    """Declared in db_schema with one of its UNUSED_LEGACY_* types: still
+    in the table, no longer written to."""
+    return any(
+        column.type is v
+        for k, v in vars(db_schema).items()
+        if k.startswith("UNUSED_LEGACY")
+    )
+
+
+@dataclass(frozen=True)
+class _VirtualTable:
+    """A named join offered alongside the recorder's own tables. `select`
+    is the query it stands for, `columns` what that gives, in order."""
+
+    name: str
+    doc: str
+    columns: tuple[Any, ...]
+    select: str
+
+
+def _named_rows(
+    name: str, doc: str, rows: Any, key: str, names: Any, named: str, name_key: str
+) -> _VirtualTable:
+    """The virtual table of the `rows` table with `named`, from the `names` table
+    its `key` column points at, as the first column - then every column
+    of `rows` still in use, apart from `key` itself. Built from db_schema
+    rather than written out, so a column Home Assistant adds to, or
+    retires from, a table is followed here too."""
+    kept = [c for c in rows.c if not _is_legacy(c) and c.name != key]
+    columns = ", ".join([f"m.{named}", *(f"t.{c.name}" for c in kept)])
+    # Every name here is one of db_schema's own; nothing of a query's is in it.
+    select = (
+        f"select {columns} from {rows.name} t "  # nosec B608
+        f"join {names.name} m on m.{name_key} = t.{key}"
+    )
+    return _VirtualTable(name, doc, (names.c[named], *kept), select)
+
+
+@functools.cache
+def _virtual_tables() -> tuple[_VirtualTable, ...]:
+    states: Any = db_schema.States.__table__
+    events: Any = db_schema.Events.__table__
+    statistics: Any = db_schema.Statistics.__table__
+    short_term: Any = db_schema.StatisticsShortTerm.__table__
+    statistics_meta: Any = db_schema.StatisticsMeta.__table__
+    return (
+        _named_rows(
+            "state_history",
+            "State change history with each row's entity_id: states joined to "
+            "states_meta, without the legacy columns or the join key.",
+            states,
+            "metadata_id",
+            db_schema.StatesMeta.__table__,
+            "entity_id",
+            "metadata_id",
+        ),
+        _named_rows(
+            "event_history",
+            "Event history with each row's event_type: events joined to "
+            "event_types, without the legacy columns or the join key.",
+            events,
+            "event_type_id",
+            db_schema.EventTypes.__table__,
+            "event_type",
+            "event_type_id",
+        ),
+        _named_rows(
+            "statistics_history",
+            "Long term statistics with each row's statistic_id: statistics "
+            "joined to statistics_meta, without the legacy columns or the "
+            "join key.",
+            statistics,
+            "metadata_id",
+            statistics_meta,
+            "statistic_id",
+            "id",
+        ),
+        _named_rows(
+            "statistics_short_term_history",
+            "Short term statistics with each row's statistic_id: "
+            "statistics_short_term joined to statistics_meta, without the "
+            "legacy columns or the join key.",
+            short_term,
+            "metadata_id",
+            statistics_meta,
+            "statistic_id",
+            "id",
+        ),
+    )
+
+
+# Databases that would otherwise build a virtual table's whole result first when a
+# query uses it more than once, and so read all of `states` to do it.
+_NOT_MATERIALIZED_DIALECTS = ("sqlite", "postgresql")
+
+
+def _add_virtual_tables(query: str, dialect: str | None) -> str:
+    """`query` with a `with` clause defining each virtual table it mentions - going
+    by its words, not a parse - or as it was if it mentions none. Joins a
+    `with` clause the query already starts with, rather than adding a
+    second one.
+    """
+    words = set(re.findall(r"\w+", query.lower()))
+    virtual = [v for v in _virtual_tables() if v.name in words]
+    if not virtual:
+        return query
+    hint = " not materialized" if dialect in _NOT_MATERIALIZED_DIALECTS else ""
+    definitions = ", ".join(f"{v.name} as{hint} ({v.select})" for v in virtual)
+    tokens = [t for s in sqlparse.parse(query) for t in s.flatten()]
+    real = [
+        i
+        for i, t in enumerate(tokens)
+        if not t.is_whitespace and t.ttype not in sqlparse.tokens.Comment
+    ]
+    values = [t.value for t in tokens]
+    first = real[0]
+    if tokens[first].ttype is sqlparse.tokens.Keyword.CTE:
+        recursive = len(real) > 1 and tokens[real[1]].normalized == "RECURSIVE"
+        values.insert((real[1] if recursive else first) + 1, f" {definitions},")
+    else:
+        values.insert(first, f"with {definitions} ")
+    return "".join(values)
+
+
 def _check_select_only(query: str) -> None:
     statements = [s for s in sqlparse.parse(query) if s.token_first(skip_cm=True)]
     if not statements:
@@ -224,6 +355,9 @@ async def sql(
     from any other integration. At most `max_rows` rows are fetched (default
     1000) - rows beyond it are never transferred from the database, not
     just discarded afterwards; None means no cap at all.
+
+    The query can use a virtual table, such as `state_history`, as if it
+    were a real one - see _virtual_tables().
     """
     if max_rows is not None and max_rows < 1:
         raise SqlError("max_rows must be at least 1")
@@ -233,7 +367,7 @@ async def sql(
     except KeyError:
         raise SqlError("the recorder is not set up on this instance") from None
     columns, rows, truncated = await instance.async_add_executor_job(
-        _fetch_rows, hass, query, max_rows
+        _fetch_rows, hass, _add_virtual_tables(query, instance.dialect_name), max_rows
     )
     column_values = list(zip(*rows, strict=True)) if rows else [() for _ in columns]
     arrays = {
@@ -260,8 +394,11 @@ def table_schemas() -> list[dict[str, Any]]:
     name and docstring of the db_schema class mapped to each table, and a
     column is `legacy` when db_schema declares it with one of its
     UNUSED_LEGACY_* types: still in the table, no longer written to.
+
+    The virtual tables a query can name are listed among them, marked
+    `virtual`, with no class and with the query each stands for as its
+    `definition`.
     """
-    unused = [v for k, v in vars(db_schema).items() if k.startswith("UNUSED_LEGACY")]
     classes: dict[str, type] = {}
     for name, obj in vars(db_schema).items():
         # only the mapped classes themselves, not an alias of one (OLD_STATE)
@@ -270,19 +407,35 @@ def table_schemas() -> list[dict[str, Any]]:
         table = getattr(obj, "__table__", None)
         if table is not None:
             classes[table.name] = obj
-    return [
+    tables = [
         {
             "name": name,
             "class": cls.__name__,
             "doc": inspect.cleandoc(cls.__doc__ or ""),
+            "virtual": False,
             "columns": [
                 {
                     "name": column.name,
                     "type": str(column.type),
-                    "legacy": any(column.type is u for u in unused),
+                    "legacy": _is_legacy(column),
                 }
                 for column in cls.__table__.c  # type:ignore[attr-defined] # ty: ignore[unresolved-attribute]
             ],
         }
-        for name, cls in sorted(classes.items())
+        for name, cls in classes.items()
     ]
+    virtual = [
+        {
+            "name": table.name,
+            "class": "",
+            "doc": table.doc,
+            "virtual": True,
+            "definition": table.select,
+            "columns": [
+                {"name": column.name, "type": str(column.type), "legacy": False}
+                for column in table.columns
+            ],
+        }
+        for table in _virtual_tables()
+    ]
+    return sorted(tables + virtual, key=lambda t: t["name"])

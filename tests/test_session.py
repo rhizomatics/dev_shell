@@ -204,6 +204,7 @@ async def test_describe(manager):
     assert "foo" in info["variables"]
     assert "print" not in info["variables"]
     assert "help" not in info["variables"]
+    assert "show" not in info["variables"]
     assert "_maybe_await" not in info["variables"]
     assert "unawait" not in info["variables"]
 
@@ -594,4 +595,141 @@ def test_server_side_code_does_not_import_rich():
         for r in json.loads((_path.parent / "manifest.json").read_text())[
             "requirements"
         ]
+    )
+
+
+_THING = """
+import dataclasses
+
+@dataclasses.dataclass
+class Part:
+    n: int = 1
+
+class Thing:
+    kind = "lamp"
+
+    def __init__(self):
+        self.name = "x" * 500
+        self._secret = 1
+        self.numbers = list(range(100))
+        self.parts = {f"k{i}": Part(i) for i in range(40)}
+        self.part = Part()
+        self.other = Other()
+
+    @property
+    def state(self):
+        return "on"
+
+    @property
+    def broken(self):
+        raise ValueError("no")
+
+    def turn_on(self, brightness: int = 1): ...
+
+    async def go(self): ...
+
+class Other:
+    def __init__(self):
+        self.depth = [[1, [2]]]
+
+    def __repr__(self):
+        return "<Other>"
+
+thing = Thing()
+"""
+
+
+def _fields(tree):
+    assert tree["t"] == "obj"
+    return dict(tree["f"])
+
+
+async def test_show_gives_public_attributes_with_their_values(manager):
+    await run(manager, _THING)
+    result = await run(manager, "show(thing)")
+
+    assert result.error is None
+    assert result.value_tree["n"] == "Thing"
+    fields = _fields(result.value_tree)
+    # not private names or methods, and properties are read
+    assert list(fields) == [
+        "broken",
+        "kind",
+        "name",
+        "numbers",
+        "other",
+        "part",
+        "parts",
+        "state",
+    ]
+    assert fields["kind"] == "lamp"
+    assert fields["state"] == "on"
+    assert fields["broken"] == {"t": "repr", "r": "<ValueError: no>"}
+    # an object below the top is its repr, a dataclass its fields
+    assert fields["other"] == {"t": "repr", "r": "<Other>"}
+    assert fields["part"] == {"t": "obj", "n": "Part", "f": [["n", 1]]}
+
+
+async def test_show_cuts_long_values_short_and_says_by_how_much(manager):
+    await run(manager, _THING)
+    result = await run(manager, "show(thing, max_items=3, max_string=10)")
+
+    fields = _fields(result.value_tree)
+    assert fields["name"] == {"t": "repr", "r": "'xxxxxxxxxx'+490"}
+    assert fields["numbers"] == [0, 1, 2, {"t": "repr", "r": "... +97"}]
+    parts = fields["parts"]["v"]
+    assert [k for k, _ in parts[:3]] == ["k0", "k1", "k2"]
+    # below the depth asked for: its repr, not its fields
+    assert parts[0][1] == {"t": "repr", "r": "Part(n=0)"}
+    assert parts[3] == [{"t": "repr", "r": "..."}, {"t": "repr", "r": "+37"}]
+    # every attribute is there, however few items are asked for
+    assert len(fields) == 8
+
+
+async def test_show_private_and_methods_add_those(manager):
+    await run(manager, _THING)
+    result = await run(manager, "show(thing, private=True, methods=True)")
+
+    fields = _fields(result.value_tree)
+    assert fields["_secret"] == 1
+    assert fields["turn_on"] == {
+        "t": "repr",
+        "r": "def turn_on(brightness: int = 1)",
+    }
+    assert fields["go"] == {"t": "repr", "r": "async def go()"}
+    assert not any(name.startswith("__") for name in fields)
+
+
+async def test_show_depth_opens_up_the_objects_inside(manager):
+    await run(manager, _THING)
+
+    shallow = _fields((await run(manager, "show(thing, depth=0)")).value_tree)
+    assert shallow["numbers"] == {"t": "repr", "r": "<list of 100>"}
+    deep = _fields((await run(manager, "show(thing, depth=2)")).value_tree)
+    assert _fields(deep["other"]) == {"depth": [{"t": "repr", "r": "<list of 2>"}]}
+
+
+async def test_show_stops_at_its_budget_and_at_itself(manager):
+    await run(
+        manager,
+        "big = [str(n) * 150 for n in range(2000)]\nloop = []\nloop.append(loop)",
+    )
+
+    result = await run(manager, "show(big, max_items=5000)")
+    assert result.value_tree[-1] == {"t": "repr", "r": "..."}
+    assert len(json.dumps(result.value_tree)) < 120_000
+    assert (await run(manager, "show(loop)")).value_tree == [{"t": "repr", "r": "..."}]
+
+
+async def test_show_as_text_is_an_attribute_to_a_line(manager):
+    await run(manager, _THING)
+    result = await run(manager, "show(thing.part)")
+
+    assert result.value == "Part(\n    n=1,\n)"
+    assert result.shown
+    assert not (await run(manager, "thing.part")).shown
+    result = await run(manager, "show({'a': [1, (2,)], 'b': set()}, depth=3)")
+    assert result.value == (
+        "{\n    'a': [\n        1,\n        (\n            2,\n        ),\n    ],\n"
+        "    'b': {},\n}"
     )

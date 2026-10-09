@@ -8,6 +8,11 @@ you can call on it, not pydoc's full page - which for a class adds every
 special method, inherited method, data descriptor and the method resolution
 order.
 `help(thing, full=True)` is that full page.
+
+`show()` is here on the same terms: the server's own (session.py, `show`)
+sends back a picture of an object that only exists inside Home Assistant;
+this one is for an object that is already here, which rich can be handed
+directly.
 """
 
 from __future__ import annotations
@@ -20,7 +25,10 @@ import textwrap
 from typing import Any
 
 from rich.console import Console
+from rich.pretty import Pretty
 from rich.text import Text
+
+from .render import _Struct
 
 _INTRO = (
     "help(thing) summarises an object: what it is, and its methods, "
@@ -51,6 +59,92 @@ def make_help(console: Console) -> Any:
         console.print(_summary(thing, console.width))
 
     return shell_help
+
+
+# What rich lays out well as it stands; anything else is shown by its attributes.
+_AS_THEY_ARE: tuple[type, ...] = (
+    *(bool, int, float, complex, str, bytes, bytearray),
+    *(dict, list, tuple, set, frozenset),
+)
+
+
+class Shown:
+    """What show() returns: the object, with how it is to be laid out when
+    echoed as the last expression."""
+
+    def __init__(self, target: Any, **limits: Any) -> None:
+        self._target = target
+        self._limits = limits
+
+    def __rich__(self) -> Pretty:
+        return Pretty(self._target, **self._limits)
+
+    def __repr__(self) -> str:
+        return repr(self._target)
+
+
+def show(
+    thing: Any,
+    *,
+    private: bool = False,
+    methods: bool = False,
+    depth: int = 1,
+    max_items: int = 30,
+    max_string: int = 200,
+) -> Shown:
+    """Look inside an object: its attributes and their values, laid out
+    one to a line. Names starting with an underscore are left out unless
+    `private`, and methods unless `methods`, which lists them with their
+    signatures. Properties are read, as that is where much of an object's
+    state is.
+
+    Long values are cut short: a container to its first `max_items`, a
+    string to `max_string` characters, each saying how much was left out,
+    and anything more than `depth` levels below the object's own
+    attributes to `...`.
+    """
+    target = thing
+    if not (
+        thing is None
+        or isinstance(thing, _AS_THEY_ARE)
+        or dataclasses.is_dataclass(thing)
+    ):
+        cls = type(type(thing).__qualname__, (_Struct,), {})
+        target = cls(_attributes(thing, private=private, methods=methods))
+    return Shown(
+        target, max_length=max_items, max_string=max_string, max_depth=depth + 1
+    )
+
+
+def _attributes(thing: Any, *, private: bool, methods: bool) -> list[tuple[str, Any]]:
+    found: list[tuple[str, Any]] = []
+    for name in dir(thing):
+        if name.startswith("__") or (name.startswith("_") and not private):
+            continue
+        try:
+            attr = getattr(thing, name)
+        except Exception as err:  # noqa: BLE001 - a property can raise anything
+            attr = _Text(f"<{type(err).__name__}: {err}>")
+        if inspect.isroutine(attr) or inspect.isclass(attr):
+            if not methods:
+                continue
+            attr = _Text(
+                f"class {attr.__qualname__}"
+                if inspect.isclass(attr)
+                else f"def {name}{_signature(attr)}"
+            )
+        found.append((name, attr))
+    return found
+
+
+class _Text:
+    """A value shown as this text, rather than as a quoted string."""
+
+    def __init__(self, text: str) -> None:
+        self.text = text
+
+    def __repr__(self) -> str:
+        return self.text
 
 
 def _is_summarisable(obj: Any) -> bool:

@@ -85,6 +85,16 @@ hass.states.get("sun.sun").state  # returns sun position as string
 hass.states.get("sun.sun").attributes["next_dawn"]  # date time from attributes
 ```
 
+#### Look inside an object
+
+`show()` gives the attributes and their values, where the object alone would print as its class name.
+
+```python
+show(hass.config)
+show(hass.states.get("sun.sun"))
+show(hass.config_entries.async_entries("mqtt")[0], private=True)
+```
+
 #### Get integration data
 
 Note that each integration can have wildly different data, and some like `mqtt` can be huge.
@@ -115,12 +125,59 @@ sql("select count(*) from statistics").show()
 
 #### Joins
 
-Get the textual event type when dumping events
+Get the event data when dumping events. The [`event_history` virtual table](./sql.md#virtual-tables) already has the textual event type, and is joined here like any table.
 
 ```python
 sql(
-    "select * from events e inner join event_types et on et.event_type_id=e.event_type_id"
+    "select * from event_history e inner join event_data d on d.data_id=e.data_id"
 ).show()
+```
+
+#### Long term statistics for an entity
+
+The [`statistics_history` virtual table](./sql.md#virtual-tables) has an hourly row for each statistic, kept after state history has been purged.
+
+```python
+sql("""
+    select start_ts, mean, min, max, state, sum
+    from statistics_history
+    where statistic_id = 'sensor.outside_temperature'
+    order by start_ts desc
+""").show()
+```
+
+#### State history for an entity
+
+- `states` has no entity id of its own, so this uses the [`state_history` virtual table](./sql.md#virtual-tables), which adds it
+- Times are seconds since the epoch, in the `_ts` columns, so the cutoff is worked out in Python
+
+```python
+import time
+
+since = time.time() - 24 * 3600
+sql(f"""
+    select state, last_updated_ts
+    from state_history
+    where entity_id = 'update.home_assistant_core_update' and last_updated_ts > {since}
+    order by last_updated_ts desc
+""").show()
+```
+
+#### Find the top talkers
+
+This uses a `HAVING` query to filter the aggregate values.
+
+It also writes out the join of `states` to `states_meta` that gets each state's entity id, to show what the [`state_history` virtual table](./sql.md#virtual-tables) stands for. The other examples here use a virtual table instead.
+
+```python
+sql("""
+    SELECT m.entity_id, COUNT(*) as "States"
+    FROM states s
+    INNER JOIN states_meta m ON m.metadata_id = s.metadata_id
+    GROUP BY m.entity_id
+    HAVING COUNT(*) > 100
+    ORDER BY COUNT(*) DESC
+""").show()
 ```
 
 #### Distinct field analysis 
@@ -143,6 +200,25 @@ in sql.table("events").column_names }
     'context_parent_id_bin': 1679,
     'event_type_id': 42
 }
+```
+
+#### Domain / Cardinality analysis on states
+
+This is a handy way of checking the variability within column states - how many values, how many unique values and the max and minimum values (which could be numeric or string, the latter sorting alphanumerically).
+
+It also demonstrates column renaming for the result sets, and filtering the `state_history` virtual table with a where clause, with no join or table aliases needed. Note that the formatting and upper case here is purely for readability.
+
+```python
+sql("""
+    SELECT  entity_id,
+            COUNT(*) as States,
+            COUNT(distinct state) as "Distinct States",
+            MIN(state) as "Min State",
+            MAX(state) as "Max State"
+        FROM state_history
+        WHERE entity_id like 'sensor.%'
+        GROUP BY entity_id
+    """).show()
 ```
 
 !!! tip

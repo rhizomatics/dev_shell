@@ -39,6 +39,39 @@ async def _setup(hass: HomeAssistant, **options) -> None:
     await hass.async_block_till_done()
 
 
+async def test_ws_exec_show_looks_inside_a_home_assistant_object(
+    recorder_mock, hass: HomeAssistant, enable_custom_integrations: None, hass_ws_client
+):
+    await _setup(hass)
+    hass.states.async_set("sensor.test", "42", {"unit_of_measurement": "W"})
+    client = await hass_ws_client(hass)
+
+    ids = iter(range(1, 10))
+
+    async def show(code: str) -> dict:
+        await client.send_json({
+            "id": next(ids),
+            "type": "ha_repl_server/exec",
+            "code": code,
+        })
+        result = (await client.receive_json())["result"]
+        assert result["error"] is None
+        assert result["value_tree"]["t"] == "obj"
+        return {"": result["value_tree"]["n"], **dict(result["value_tree"]["f"])}
+
+    state = await show("show(hass.states.get('sensor.test'))")
+    assert state[""] == "State"
+    assert (state["entity_id"], state["state"]) == ("sensor.test", "42")
+    assert state["attributes"] == {"t": "dict", "v": [["unit_of_measurement", "W"]]}
+    assert not any(name.startswith("_") for name in state)
+
+    # the biggest object there is comes back, and comes back small
+    root = await show("show(hass)")
+    assert root[""] == "HomeAssistant"
+    assert {"config", "states", "data"} <= set(root)
+    assert len(str(root)) < 100_000
+
+
 async def test_ws_sql_returns_arrow_the_client_can_read(
     recorder_mock, hass: HomeAssistant, enable_custom_integrations: None, hass_ws_client
 ):

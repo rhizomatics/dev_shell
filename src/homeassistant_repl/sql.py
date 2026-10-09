@@ -91,8 +91,34 @@ class SqlTable:
         among them only if `legacy`."""
         return [c for c in self._columns if self.legacy or not c.legacy]
 
+    @property
+    def virtual(self) -> bool:
+        """Whether this is a virtual table - a ready-made join to query
+        like a table - rather than a real table in the database."""
+        return False
+
     def __repr__(self) -> str:
         return f"Table({self.name!r}, columns={self.column_names!r})"
+
+
+@dataclass(frozen=True, repr=False)
+class SqlVirtualTable(SqlTable):
+    """A virtual table: a ready-made join the server offers under this
+    name, to query as if it were a table. It is not a table in the
+    database - `state_history`, say, is `states` with each row's
+    `entity_id` from `states_meta` - and has no class in db_schema."""
+
+    definition: str = ""
+    """The query this name stands for."""
+
+    @property
+    def virtual(self) -> bool:
+        """Whether this is a virtual table - a ready-made join to query
+        like a table - rather than a real table in the database."""
+        return True
+
+    def __repr__(self) -> str:
+        return f"VirtualTable({self.name!r}, columns={self.column_names!r})"
 
 
 @dataclass(frozen=True)
@@ -470,7 +496,8 @@ class SqlTool:
 
     `.max_rows` is this shell's default row cap (set it to change the
     default for every call after, or to None to remove it entirely) and
-    `.tables` the recorder's tables, to explore the schema without a query
+    `.tables` the recorder's tables, real and virtual, to explore the
+    schema without a query
     - `.table(name)` picks one of them out by name.
     """
 
@@ -484,19 +511,20 @@ class SqlTool:
         if the server has no sql to offer (switched off in the
         integration's options, or a server too old to have the command)."""
         reply = await client.call("ha_repl_server/sql_tables")
-        tables = [
-            SqlTable(
-                t["name"],
-                tuple(
-                    SqlColumn(c["name"], c["type"], c.get("legacy", False))
-                    for c in t["columns"]
-                ),
-                # absent from a server older than this client
-                t.get("class", ""),
-                t.get("doc", ""),
+        tables: list[SqlTable] = []
+        for t in reply["tables"]:
+            columns = tuple(
+                SqlColumn(c["name"], c["type"], c.get("legacy", False))
+                for c in t["columns"]
             )
-            for t in reply["tables"]
-        ]
+            # class and doc are absent from a server older than this client
+            described = (t["name"], columns, t.get("class", ""), t.get("doc", ""))
+            if t.get("virtual"):
+                tables.append(
+                    SqlVirtualTable(*described, definition=t.get("definition", ""))
+                )
+            else:
+                tables.append(SqlTable(*described))
         return cls(client, tables=tables)
 
     def table(self, name: str, *, legacy: bool = False) -> SqlTable:
@@ -537,10 +565,19 @@ class SqlTool:
         return SqlResult.from_arrow(
             base64.b64decode(reply["arrow"]),
             truncated=reply["truncated"],
-            tables=self.tables,
+            tables=self._tables_of(query),
             legacy=legacy,
             hidden=self._unnamed_legacy(query),
         )
+
+    def _tables_of(self, query: str) -> list[SqlTable]:
+        """The tables a result of this query could be described by: the
+        virtual tables it mentions - going by its words - or, if none, the
+        real ones. A virtual table's columns are also those of the tables
+        it joins, so without this neither could be told from the other."""
+        words = set(re.findall(r"\w+", query.lower()))
+        virtual = [t for t in self.tables if t.virtual and t.name.lower() in words]
+        return virtual or [t for t in self.tables if not t.virtual]
 
     def _unnamed_legacy(self, query: str) -> frozenset[str]:
         """Names of legacy columns of the tables this query mentions that

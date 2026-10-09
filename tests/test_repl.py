@@ -66,6 +66,18 @@ async def test_help_on_something_in_home_assistant_runs_there():
     assert client.executed == ["help(hass.states)"]
 
 
+async def test_show_runs_on_the_side_its_argument_is_on(capsys):
+    client = FakeClient()
+    live = _live(client)
+
+    assert await live.run("show(hass.config)")
+    assert client.executed == ["show(hass.config)"]
+
+    assert await live.run("show(complex(1, 2), private=True)")
+    assert client.executed == ["show(hass.config)"]
+    assert "_complex__" not in capsys.readouterr().out
+
+
 async def test_command_using_hass_or_obj_runs_on_the_server():
     client = FakeClient()
     live = _live(client)
@@ -407,6 +419,24 @@ async def test_capture_takes_a_server_value_as_data_and_drops_error_frames():
 
     assert live.capture.value == {"a": [1, 2]}
     assert live.capture.error == {"type": "E", "traceback": "E\n"}
+
+
+async def test_capture_takes_what_show_made_as_its_text():
+    class Answering(FakeClient):
+        async def call(self, type_: str, **payload: Any) -> Any:
+            result = await super().call(type_, **payload)
+            if type_ == "ha_repl_server/exec":
+                result["value"] = "Config(\n    country='GB',\n)"
+                result["value_tree"] = {"t": "obj", "n": "Config", "f": []}
+                result["shown"] = True
+            return result
+
+    live = _live(Answering())
+    live.capture = Captured()
+
+    await live.run("show(hass.config)")
+
+    assert live.capture.value == "Config(\n    country='GB',\n)"
 
 
 async def test_local_auto_await_does_not_rewrite_class_bodies():

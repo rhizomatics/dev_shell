@@ -29,7 +29,7 @@ from rich.console import Console
 from rich.pretty import Pretty
 from rich.traceback import Traceback
 
-from .local_help import make_help
+from .local_help import make_help, show
 
 _cell_counter = itertools.count(1)
 
@@ -50,6 +50,7 @@ class LocalSession:
         self.globals_.setdefault("_maybe_await", _maybe_await)
         self.globals_.setdefault("unawait", unawait)
         self.globals_.setdefault("help", make_help(console))
+        self.globals_.setdefault("show", show)
 
     async def run(self, source: str, *, echo: bool = True) -> bool:
         """Execute source, printing the trailing expression's value (if any,

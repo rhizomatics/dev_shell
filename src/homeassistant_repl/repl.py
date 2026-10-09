@@ -323,8 +323,10 @@ class LiveSession:
             if result["stdout"] is not None:
                 self.capture.stdout += result["stdout"]
             tree = result.get("value_tree")
+            # What show() made is already text laid out to be read.
+            as_text = tree is None or result.get("shown")
             self.capture.value = (
-                result["value"] if tree is None else _jsonable(decode_value(tree))
+                result["value"] if as_text else _jsonable(decode_value(tree))
             )
             # The frames are for drawing a traceback, not for a JSON consumer.
             self.capture.error = result["error"] and {
@@ -349,7 +351,7 @@ class LiveSession:
             for name in self.local.globals_
             if not name.startswith("__")
             # the shell's own, with a counterpart inside Home Assistant
-            and name not in ("_maybe_await", "unawait", "help")
+            and name not in ("_maybe_await", "unawait", "help", "show")
         }
 
 

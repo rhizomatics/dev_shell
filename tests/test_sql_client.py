@@ -22,6 +22,7 @@ from homeassistant_repl.sql import (
     SqlRow,
     SqlTable,
     SqlTool,
+    SqlVirtualTable,
 )
 
 
@@ -276,6 +277,56 @@ async def test_sqltool_connect_downloads_tables():
     assert (tool.tables[1].class_name, tool.tables[1].description) == ("", "")
 
 
+async def test_sqltool_connect_makes_virtual_tables_of_those_marked_so():
+    class Client(_FakeClient):
+        async def call(self, type_: str, **payload):
+            reply = await super().call(type_, **payload)
+            reply["tables"].append({
+                "name": "t_history",
+                "class": "",
+                "doc": "Things, named.",
+                "virtual": True,
+                "definition": "select 1",
+                "columns": [{"name": "id", "type": "INTEGER"}],
+            })
+            return reply
+
+    tool = await SqlTool.connect(Client())
+
+    assert [type(t) for t in tool.tables] == [SqlTable, SqlTable, SqlVirtualTable]
+    assert [t.virtual for t in tool.tables] == [False, False, True]
+    virtual = tool.table("t_history")
+    assert isinstance(virtual, SqlVirtualTable)
+    assert repr(virtual) == "VirtualTable('t_history', columns=['id'])"
+    assert (virtual.description, virtual.definition) == ("Things, named.", "select 1")
+    # asked for with legacy columns, it is still a virtual table
+    assert isinstance(tool.table("t_history", legacy=True), SqlVirtualTable)
+
+
+async def test_result_of_a_virtual_table_is_described_by_it_not_its_tables():
+    states = SqlTable(
+        "states",
+        (
+            SqlColumn("entity_id", "CHAR", legacy=True),
+            SqlColumn("state", "VARCHAR(255)"),
+            SqlColumn("metadata_id", "BIGINT"),
+        ),
+    )
+    virtual = SqlVirtualTable(
+        "state_history",
+        (SqlColumn("entity_id", "VARCHAR(255)"), SqlColumn("state", "VARCHAR(255)")),
+    )
+    client = _FakeClient(_server_arrow_bytes(entity_id=["sensor.a"], state=["1"]))
+    tool = SqlTool(client, tables=[virtual, states])
+
+    result = await tool("select * from State_History")
+    assert result.table is virtual
+    assert result.column_names == ["entity_id", "state"]
+    # and a table's result is still the table's, though the virtual one has
+    # its columns
+    assert (await tool("select state from states")).table is states
+
+
 async def test_table_has_legacy_columns_only_when_asked():
     tool = await SqlTool.connect(_FakeClient())
     other = tool.table("other")
@@ -318,7 +369,7 @@ async def test_sqltool_leaves_out_unnamed_legacy_columns(query, kwargs, expected
 
     assert result.column_names == expected
     assert result.table is tool.table("other")
-    # nothing was dropped, only kept out of view
+    # nothing was dropped, only kept out of virtual
     result.legacy = True
     assert result.column_names == ["zzz", "old", "name"]
 

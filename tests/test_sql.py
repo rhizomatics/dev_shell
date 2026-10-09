@@ -6,11 +6,18 @@ is tests/test_sql_client.py's business."""
 
 from __future__ import annotations
 
+import re
+from datetime import timedelta
 from typing import Any
 
 import nanoarrow as na
 import pytest
+from homeassistant.components.recorder.models import StatisticMeanType
+from homeassistant.components.recorder.statistics import (
+    async_add_external_statistics,
+)
 from homeassistant.core import HomeAssistant
+from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.components.recorder.common import (
     async_wait_recording_done,
 )
@@ -18,6 +25,7 @@ from pytest_homeassistant_custom_component.components.recorder.common import (
 from custom_components.ha_repl_server.sql import (
     ArrowResult,
     SqlError,
+    _add_virtual_tables,
     sql,
     table_schemas,
 )
@@ -124,6 +132,182 @@ async def test_sql_rejects_empty_query(recorder_mock, hass: HomeAssistant):
 async def test_sql_rejects_bad_max_rows(recorder_mock, hass: HomeAssistant):
     with pytest.raises(SqlError, match="max_rows"):
         await sql(hass, "select 1", max_rows=0)
+
+
+async def test_sql_state_history_has_entity_id_without_a_join(
+    recorder_mock, hass: HomeAssistant
+):
+    hass.states.async_set("sensor.test", "42")
+    hass.states.async_set("sensor.other", "7")
+    await _settle(hass)
+
+    result = await sql(
+        hass, "select * from state_history where entity_id = 'sensor.test'"
+    )
+
+    rows = _batch(result).to_pylist()
+    assert [(r["entity_id"], r["state"]) for r in rows] == [("sensor.test", "42")]
+    names = list(rows[0])
+    assert names[0] == "entity_id"
+    assert "last_updated_ts" in names
+    # neither the join key nor the legacy columns
+    assert not {"metadata_id", "last_updated", "attributes", "event_id"} & set(names)
+
+
+async def test_sql_state_history_joins_a_with_clause_and_itself(
+    recorder_mock, hass: HomeAssistant
+):
+    hass.states.async_set("sensor.test", "1")
+    hass.states.async_set("sensor.test", "2")
+    await _settle(hass)
+
+    result = await sql(
+        hass,
+        "with latest as (select max(last_updated_ts) as ts from state_history) "
+        "select h.state, p.state as previous from state_history h "
+        "join latest on latest.ts = h.last_updated_ts "
+        "join state_history p on p.state_id = h.old_state_id",
+    )
+
+    assert _batch(result).to_pylist() == [{"state": "2", "previous": "1"}]
+
+
+async def test_sql_event_history_has_event_type_without_a_join(
+    recorder_mock, hass: HomeAssistant
+):
+    hass.bus.async_fire("test_happened", {"n": 1})
+    await _settle(hass)
+
+    result = await sql(
+        hass, "select * from event_history where event_type = 'test_happened'"
+    )
+
+    rows = _batch(result).to_pylist()
+    assert len(rows) == 1
+    names = list(rows[0])
+    assert names[0] == "event_type"
+    assert {"time_fired_ts", "data_id"} <= set(names)
+    assert not {"event_type_id", "time_fired", "event_data"} & set(names)
+
+
+@pytest.mark.parametrize(
+    "table", ["statistics_history", "statistics_short_term_history"]
+)
+async def test_sql_statistics_tables_have_statistic_id_without_a_join(
+    recorder_mock, hass: HomeAssistant, table: str
+):
+    start = dt_util.utcnow().replace(minute=0, second=0, microsecond=0)
+    async_add_external_statistics(
+        hass,
+        {
+            "has_sum": True,
+            "mean_type": StatisticMeanType.NONE,
+            "name": "Energy",
+            "source": "test",
+            "statistic_id": "test:energy",
+            "unit_class": "energy",
+            "unit_of_measurement": "kWh",
+        },
+        [
+            {"start": start - timedelta(hours=1), "state": 1.0, "sum": 1.0},
+            {"start": start, "state": 3.0, "sum": 4.0},
+        ],
+    )
+    await _settle(hass)
+
+    result = await sql(
+        hass, f"select * from {table} where statistic_id = 'test:energy'"
+    )
+
+    rows = _batch(result).to_pylist()
+    names = [f.name for f in _batch(result).schema.fields]
+    assert names[0] == "statistic_id"
+    assert {"start_ts", "mean", "state", "sum"} <= set(names)
+    assert not {"metadata_id", "start", "created"} & set(names)
+    # external statistics are long term only
+    expected = [4.0, 1.0] if table == "statistics_history" else []
+    assert sorted((r["sum"] for r in rows), reverse=True) == expected
+
+
+@pytest.mark.parametrize(
+    ("query", "expected"),
+    [
+        ("select 1 from states", "select 1 from states"),
+        (
+            "select 1 from state_history",
+            "with state_history as (...) select 1 from state_history",
+        ),
+        (
+            "select 1 from event_history e join state_history s",
+            (
+                "with state_history as (...), event_history as (...) "
+                "select 1 from event_history e join state_history s"
+            ),
+        ),
+        # a virtual table's name inside another's is not a mention of it
+        (
+            "select 1 from statistics_short_term_history",
+            (
+                "with statistics_short_term_history as (...) "
+                "select 1 from statistics_short_term_history"
+            ),
+        ),
+        (
+            "-- recent\n  SELECT 1 FROM State_History",
+            "-- recent\n  with state_history as (...) SELECT 1 FROM State_History",
+        ),
+        (
+            "with a as (select 1 from state_history) select * from a",
+            "with state_history as (...), a as (select 1 from state_history) select * from a",
+        ),
+        (
+            "WITH RECURSIVE a as (select 1 from state_history) select * from a",
+            (
+                "WITH RECURSIVE state_history as (...), "
+                "a as (select 1 from state_history) select * from a"
+            ),
+        ),
+    ],
+)
+def test_add_virtual_tables_defines_those_mentioned_in_one_with_clause(query, expected):
+    added = _add_virtual_tables(query, "mysql")
+    assert re.sub(r"as \(select m\..*? = t\.\w+\)", "as (...)", added) == expected
+
+
+def test_add_virtual_tables_stops_one_being_built_whole_where_that_can_be_said():
+    assert " as not materialized (" in _add_virtual_tables(
+        "select 1 from state_history", "sqlite"
+    )
+    assert " as not materialized (" in _add_virtual_tables(
+        "select 1 from state_history", "postgresql"
+    )
+    assert "materialized" not in _add_virtual_tables(
+        "select 1 from state_history", "mysql"
+    )
+
+
+def test_table_schemas_lists_virtual_tables_among_the_tables():
+    tables = {t["name"]: t for t in table_schemas()}
+
+    assert [n for n, t in tables.items() if t["virtual"]] == [
+        "event_history",
+        "state_history",
+        "statistics_history",
+        "statistics_short_term_history",
+    ]
+    assert tables["event_history"]["columns"][0]["name"] == "event_type"
+    assert tables["statistics_history"]["columns"][0]["name"] == "statistic_id"
+    virtual = tables["state_history"]
+    assert virtual["virtual"]
+    assert not tables["states"]["virtual"]
+    names = [c["name"] for c in virtual["columns"]]
+    assert names[0] == "entity_id"
+    assert virtual["columns"][0]["type"] == "VARCHAR(255)"
+    in_use = [c["name"] for c in tables["states"]["columns"] if not c["legacy"]]
+    assert names[1:] == [n for n in in_use if n != "metadata_id"]
+    assert not any(c["legacy"] for c in virtual["columns"])
+    assert virtual["definition"].startswith("select m.entity_id, t.state_id, ")
+    assert "definition" not in tables["states"]
 
 
 def test_table_schemas_lists_current_recorder_tables_with_columns():
